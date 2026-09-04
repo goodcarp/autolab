@@ -1,0 +1,23 @@
+AutoLab by AutoMoto
+Copyright 2026 A. Carpenter
+
+This product includes software developed for AutoLab by AutoMoto:
+  - the AutoLab site (this repository root),
+  - sources/universal-vehicle-configurator (Web 4.0-enabled Vehicle Configurator),
+  - sources/r2-blueprint (Agentic Owner's Guide),
+  - sources/autolab-3d-creation-engine (AutoLab 3D Creation Engine),
+all licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components, each under its own license:
+  - three.js (MIT), vendored at
+    sources/universal-vehicle-configurator/public/garage/vendor/ (see LICENSE there)
+    and loaded from jsdelivr by sources/r2-blueprint.
+  - Volvo EX30 GLB by Mehdi Lagzouli / LagzDesign, packaged by OpenX Assets
+    (MPL-2.0 AND CC-BY-4.0), at
+    sources/universal-vehicle-configurator/public/models/ (see the NOTICE.md there).
+    Retained as a licensed reference and no-WebGL fallback; not the default vehicle.
+  - Inter and IBM Plex Mono fonts (SIL Open Font License 1.1), loaded from Google Fonts.
+
+AutoLab and AutoMoto are independent and unofficial and are not associated with,
+endorsed by, or sponsored by Rivian, Volvo, or any manufacturer. Vehicle names
+and specifications are used nominatively to identify the products discussed.

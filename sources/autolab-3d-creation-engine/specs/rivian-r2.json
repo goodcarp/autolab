@@ -1,0 +1,32 @@
+{
+  "id": "rivian-r2",
+  "label": "Rivian R2",
+  "units": "m",
+  "note": "Published figures only. Anchors, never shape — see Measure, Don't Look, finding 02: specification tables are exact but sparse, and are not a substitute for an orthographic drawing when fitting a curve.",
+  "sources": [
+    {
+      "id": "rivian_r2_public",
+      "title": "Rivian R2 vehicle specifications",
+      "url": "https://rivian.com/r2",
+      "retrieved": "2026-09-03",
+      "kind": "manufacturer specification table"
+    }
+  ],
+  "tolerances_mm": {
+    "default": 10,
+    "wheelbase_m": 3,
+    "frontTrack_m": 3,
+    "rearTrack_m": 3
+  },
+  "dimensions": {
+    "length_m": 4.722,
+    "widthOverBody_m": 1.905,
+    "widthOverMirrors_m": 2.151,
+    "height_m": 1.699,
+    "wheelbase_m": 2.936,
+    "frontTrack_m": 1.64,
+    "rearTrack_m": 1.64,
+    "frontOverhang_m": 0.842,
+    "rearOverhang_m": 0.944
+  }
+}

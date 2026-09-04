@@ -1,0 +1,1606 @@
+.vehicle-canvas {
+  --paint-color: #1d4b3c;
+  --pan-x: 0%;
+  --pan-y: 0%;
+  --parallax-x: 0px;
+  --parallax-y: 0px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 32rem;
+}
+
+.vc-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: clamp(34rem, 72vh, 58rem);
+  overflow: hidden;
+  border: 1px solid rgba(22, 28, 24, 0.1);
+  border-radius: clamp(1rem, 2vw, 1.75rem);
+  color: #17211d;
+  background:
+    radial-gradient(circle at calc(49% + var(--parallax-x)) calc(45% + var(--parallax-y)), rgba(255, 255, 255, 0.98), rgba(240, 236, 225, 0.58) 36%, transparent 67%),
+    linear-gradient(145deg, #f5f2e9, #e4e0d4);
+  box-shadow: 0 1.5rem 5rem rgba(25, 31, 26, 0.12);
+  cursor: grab;
+  isolation: isolate;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+  transition: color 480ms ease, background 560ms ease, border-color 480ms ease;
+}
+
+.vc-stage[data-dragging] {
+  cursor: grabbing;
+}
+
+.vc-stage:focus-visible {
+  box-shadow: 0 0 0 3px #c7ff39, 0 1.5rem 5rem rgba(25, 31, 26, 0.12);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-stage {
+  color: #dff9ff;
+  border-color: rgba(117, 227, 255, 0.25);
+  background:
+    radial-gradient(circle at calc(50% + var(--parallax-x)) calc(48% + var(--parallax-y)), rgba(19, 92, 116, 0.58), transparent 42%),
+    linear-gradient(148deg, #06151f, #0a2a41 58%, #071822);
+}
+
+.vc-environment,
+.vc-environment > span {
+  position: absolute;
+  pointer-events: none;
+}
+
+.vc-environment {
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.vc-environment__light {
+  left: calc(44% + var(--parallax-x));
+  top: calc(7% + var(--parallax-y));
+  width: 48%;
+  height: 50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.68);
+  filter: blur(4rem);
+  transform: rotate(-14deg);
+  transition: background 500ms ease;
+}
+
+.vc-environment__grid {
+  inset: -10%;
+  opacity: 0.13;
+  background-image:
+    linear-gradient(rgba(35, 64, 54, 0.26) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 64, 54, 0.26) 1px, transparent 1px);
+  background-size: 3.5rem 3.5rem;
+  mask-image: radial-gradient(circle at 50% 50%, black 0 44%, transparent 76%);
+  transform: translate(calc(var(--parallax-x) * -0.2), calc(var(--parallax-y) * -0.2));
+  transition: opacity 500ms ease, background-image 500ms ease;
+}
+
+.vc-environment__orbit {
+  left: 50%;
+  top: 51%;
+  border: 1px solid rgba(47, 91, 77, 0.14);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  transition: border-color 500ms ease, transform 700ms ease;
+}
+
+.vc-environment__orbit--one {
+  width: 74%;
+  aspect-ratio: 1.8;
+}
+
+.vc-environment__orbit--two {
+  width: 44%;
+  aspect-ratio: 1;
+}
+
+.vc-environment__ground {
+  left: 14%;
+  right: 13%;
+  bottom: 19%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(22, 36, 30, 0.2);
+  filter: blur(1.35rem);
+  transform: translate(calc(var(--pan-x) * -0.25), calc(var(--pan-y) * 0.08));
+  transition: background 500ms ease, opacity 500ms ease;
+}
+
+.vc-live-layer {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vehicle-canvas[data-renderer="live_3d"] .vc-live-layer {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vehicle-canvas[data-renderer="live_3d"] .vc-object {
+  z-index: 6;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+/* Only the healthy live composite hides the authored frames. While the GLB is
+   still downloading the authored art stays up, so the stage is never empty;
+   .vc-live-layer starts at opacity 0 and fades in over it, so there is no
+   doubled silhouette during the handoff. */
+.vehicle-canvas[data-renderer="live_3d"] .vc-angle-view,
+.vehicle-canvas[data-renderer="live_3d"] .vc-profile-view {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vehicle-canvas[data-renderer="live_3d"] .vc-hotspot {
+  pointer-events: auto;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-environment__light {
+  background: rgba(94, 218, 255, 0.12);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-environment__grid {
+  opacity: 0.46;
+  background-image:
+    linear-gradient(rgba(128, 224, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(128, 224, 255, 0.14) 1px, transparent 1px);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-environment__orbit {
+  border-color: rgba(122, 228, 255, 0.26);
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-environment__ground {
+  background: rgba(95, 224, 255, 0.22);
+}
+
+.vc-hud {
+  position: absolute;
+  z-index: 12;
+  inset: 1.1rem 1.15rem auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.vc-hud__identity {
+  display: grid;
+  gap: 0.18rem;
+  max-width: 22rem;
+}
+
+.vc-hud__identity strong {
+  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  font-weight: 580;
+  letter-spacing: -0.025em;
+}
+
+.vc-hud__identity > span:last-child,
+.vc-hud__index,
+.vc-status,
+.vc-focus-card__kind,
+.vc-footer,
+.vc-view-picker > button > span:last-child {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vc-hud__identity > span:last-child {
+  color: rgba(23, 33, 29, 0.56);
+  font-size: 0.52rem;
+}
+
+.vc-hud__index {
+  color: #3d665b;
+  font-size: 0.55rem;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-hud__identity > span:last-child,
+.vehicle-canvas[data-mode="blueprint"] .vc-hud__index {
+  color: rgba(207, 246, 255, 0.58);
+}
+
+.vc-mode-switch {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid rgba(20, 31, 26, 0.11);
+  border-radius: 999px;
+  background: rgba(250, 248, 241, 0.68);
+  box-shadow: 0 0.5rem 2rem rgba(25, 31, 26, 0.07);
+  backdrop-filter: blur(1.25rem);
+  pointer-events: auto;
+}
+
+.vc-mode-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.56rem 0.78rem;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(23, 33, 29, 0.65);
+  background: transparent;
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.vc-mode-switch button svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.vc-mode-switch button[aria-pressed="true"] {
+  color: #14201b;
+  background: #fffefa;
+  box-shadow: 0 0.35rem 1rem rgba(23, 29, 25, 0.1);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-mode-switch {
+  border-color: rgba(137, 229, 255, 0.2);
+  background: rgba(4, 21, 31, 0.65);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-mode-switch button {
+  color: rgba(216, 249, 255, 0.58);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-mode-switch button[aria-pressed="true"] {
+  color: #e5fbff;
+  background: rgba(67, 166, 196, 0.26);
+  box-shadow: inset 0 0 0 1px rgba(139, 232, 255, 0.18), 0 0 1.5rem rgba(60, 200, 240, 0.12);
+}
+
+.vc-status {
+  position: absolute;
+  z-index: 11;
+  top: 5.5rem;
+  left: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(23, 33, 29, 0.58);
+  font-size: 0.52rem;
+}
+
+.vc-status > svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  animation: vc-spin 900ms linear infinite;
+}
+
+.vc-status__dot {
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 50%;
+  background: #62a790;
+  box-shadow: 0 0 0 0.22rem rgba(98, 167, 144, 0.13);
+}
+
+.vc-model-attribution {
+  position: absolute;
+  z-index: 11;
+  top: 6.35rem;
+  left: 1.2rem;
+  color: rgba(23, 33, 29, 0.48);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.45rem;
+  letter-spacing: 0.055em;
+  text-decoration-color: rgba(23, 33, 29, 0.2);
+  text-underline-offset: 0.18rem;
+  text-transform: uppercase;
+  transition: color 180ms ease;
+}
+
+.vc-model-attribution:hover,
+.vc-model-attribution:focus-visible {
+  color: rgba(23, 33, 29, 0.78);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-status {
+  color: rgba(210, 247, 255, 0.58);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-status__dot {
+  background: #80e9ff;
+  box-shadow: 0 0 0 0.22rem rgba(95, 218, 246, 0.13), 0 0 0.9rem rgba(89, 222, 255, 0.42);
+}
+
+.vc-object {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 49%;
+  width: min(94%, 76rem);
+  aspect-ratio: 16 / 9;
+  transform:
+    translate(calc(-50% + var(--pan-x)), calc(-50% + var(--pan-y)))
+    translate(var(--parallax-x), var(--parallax-y));
+  transform-origin: 50% 60%;
+  transition: transform 460ms cubic-bezier(0.18, 0.8, 0.2, 1), filter 300ms ease;
+}
+
+.vc-stage[data-dragging] .vc-object {
+  transition: filter 300ms ease;
+}
+
+.vehicle-canvas[data-preset="wheel"] .vc-object {
+  transform:
+    translate(calc(-35% + var(--pan-x)), calc(-34% + var(--pan-y)))
+    translate(var(--parallax-x), var(--parallax-y))
+    scale(1.72);
+}
+
+.vc-angle-view,
+.vc-profile-view,
+.vc-interior-view {
+  position: absolute;
+  inset: 0;
+  transition: opacity 360ms ease, transform 580ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vc-angle-view {
+  opacity: 1;
+}
+
+.vc-profile-view {
+  opacity: 0;
+  transform: translateX(2.5%) scale(0.97);
+}
+
+.vc-interior-view {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2%) scale(0.97);
+}
+
+.vc-interior-view__fallback-vehicle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.vehicle-canvas[data-renderer="live_3d"] .vc-interior-view__fallback-vehicle {
+  display: none;
+}
+
+.vehicle-canvas:not([data-preset="angle"]) .vc-angle-view,
+.vehicle-canvas[data-mode="blueprint"] .vc-angle-view {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vehicle-canvas[data-preset="profile"] .vc-profile-view,
+.vehicle-canvas[data-preset="wheel"] .vc-profile-view,
+.vehicle-canvas[data-mode="blueprint"] .vc-profile-view {
+  opacity: 1;
+  transform: none;
+}
+
+.vehicle-canvas[data-preset="interior"][data-mode="showroom"] .vc-interior-view {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.vehicle-canvas[data-preset="interior"] .vc-object {
+  top: 50%;
+  width: min(91%, 71rem);
+}
+
+.vc-cabin {
+  position: absolute;
+  left: 5%;
+  top: 7%;
+  width: 90%;
+  height: 80%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 45% 45% 17% 17% / 24% 24% 20% 20%;
+  background:
+    radial-gradient(circle at 50% 84%, color-mix(in srgb, var(--interior-accent) 24%, transparent), transparent 45%),
+    linear-gradient(155deg, #131715, #080b0a 66%, #111713);
+  box-shadow:
+    0 2.4rem 4rem rgba(0, 0, 0, 0.38),
+    inset 0 0 0 0.55rem rgba(0, 0, 0, 0.28),
+    inset 0 2rem 5rem rgba(255, 255, 255, 0.035);
+  transform: perspective(100rem) rotateX(2deg);
+}
+
+.vc-cabin,
+.vc-cabin span,
+.vc-cabin i {
+  transition: background 420ms ease, border-color 420ms ease, box-shadow 420ms ease, opacity 420ms ease;
+}
+
+.vc-cabin__roof,
+.vc-cabin__glass,
+.vc-cabin__pillar,
+.vc-cabin__steering,
+.vc-cabin__console,
+.vc-cabin__door,
+.vc-cabin__ambient,
+.vc-seat,
+.vc-seat i,
+.vc-cabin__dashboard > span {
+  position: absolute;
+  display: block;
+}
+
+.vc-cabin__roof {
+  z-index: 8;
+  left: 6%;
+  right: 6%;
+  top: 3%;
+  height: 7%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #151a17, #070908);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5);
+}
+
+.vc-cabin__glass {
+  z-index: 1;
+  left: 7%;
+  right: 7%;
+  top: 7%;
+  height: 45%;
+  overflow: hidden;
+  border-radius: 48% 48% 9% 9% / 24% 24% 9% 9%;
+  background:
+    radial-gradient(circle at 56% 21%, rgba(214, 238, 235, 0.2), transparent 22%),
+    linear-gradient(180deg, #1c373d 0%, #587576 48%, #b0b0a1 49%, #292f2a 50%, #151b18 100%);
+  box-shadow: inset 0 -2rem 3rem rgba(0, 0, 0, 0.33);
+}
+
+.vc-cabin__horizon {
+  left: 0;
+  right: 0;
+  top: 49%;
+  height: 1px;
+  background: rgba(238, 245, 232, 0.45);
+  box-shadow: 0 0.75rem 2rem rgba(213, 225, 206, 0.18);
+}
+
+.vc-cabin__pillar {
+  z-index: 7;
+  top: 4%;
+  width: 5.2%;
+  height: 58%;
+  background: linear-gradient(90deg, #090c0a, #252b27 48%, #0a0c0a);
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.45);
+}
+
+.vc-cabin__pillar--left {
+  left: 10%;
+  transform: skewX(-12deg);
+}
+
+.vc-cabin__pillar--right {
+  right: 10%;
+  transform: skewX(12deg);
+}
+
+.vc-cabin__dashboard {
+  position: absolute;
+  z-index: 5;
+  left: 4%;
+  right: 4%;
+  top: 43%;
+  height: 31%;
+  perspective: 50rem;
+}
+
+.vc-cabin__dash-surface {
+  inset: 0;
+  border-radius: 18% 18% 8% 8% / 24% 24% 12% 12%;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.13), transparent 32%),
+    color-mix(in srgb, var(--interior-color) 72%, #111512);
+  box-shadow:
+    inset 0 0.12rem 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1.6rem 3rem rgba(0, 0, 0, 0.34),
+    0 1.2rem 2rem rgba(0, 0, 0, 0.35);
+  transform: rotateX(13deg);
+}
+
+.vc-cabin__trim {
+  z-index: 2;
+  left: 7%;
+  right: 7%;
+  top: 49%;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--interior-accent) 12% 88%, transparent);
+  box-shadow: 0 0 1rem color-mix(in srgb, var(--interior-accent) 45%, transparent);
+}
+
+.vc-cabin__display {
+  z-index: 4;
+  top: 6%;
+  overflow: hidden;
+  border: 1px solid rgba(176, 228, 232, 0.24);
+  border-radius: 0.55rem;
+  background:
+    linear-gradient(140deg, rgba(106, 196, 192, 0.22), transparent 45%),
+    #07110f;
+  box-shadow: 0 0.8rem 1.5rem rgba(0, 0, 0, 0.28), inset 0 0 1.25rem rgba(82, 187, 180, 0.08);
+}
+
+.vc-cabin__display i {
+  position: absolute;
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(159, 237, 229, 0.53);
+}
+
+.vc-cabin__display i:nth-child(1) { left: 12%; top: 23%; width: 38%; }
+.vc-cabin__display i:nth-child(2) { left: 12%; top: 43%; width: 67%; }
+.vc-cabin__display i:nth-child(3) { left: 12%; top: 63%; width: 48%; }
+.vc-cabin__display i:nth-child(4) { left: 67%; top: 23%; width: 18%; height: 48%; border-radius: 0.25rem; }
+
+.vc-cabin__display--driver {
+  left: 16%;
+  width: 19%;
+  height: 39%;
+}
+
+.vc-cabin__display--center {
+  left: 43%;
+  width: 26%;
+  height: 52%;
+}
+
+.vc-cabin__steering {
+  z-index: 9;
+  left: 17.5%;
+  top: 48%;
+  width: 15%;
+  aspect-ratio: 1;
+  border: clamp(0.34rem, 0.8vw, 0.72rem) solid #161a17;
+  border-radius: 45% 45% 50% 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0.8rem 1.3rem rgba(0, 0, 0, 0.36);
+  transform: perspective(18rem) rotateX(18deg);
+}
+
+.vc-cabin__steering::before,
+.vc-cabin__steering::after,
+.vc-cabin__steering i {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  background: #252b27;
+  transform: translate(-50%, -50%);
+}
+
+.vc-cabin__steering::before { width: 78%; height: 7%; }
+.vc-cabin__steering::after { width: 8%; height: 52%; }
+.vc-cabin__steering i { width: 29%; aspect-ratio: 1; border-radius: 50%; }
+
+.vc-cabin__console {
+  z-index: 8;
+  left: 42%;
+  top: 62%;
+  width: 17%;
+  height: 31%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.1rem 1.1rem 0.55rem 0.55rem;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--interior-color) 82%, #252a26), #101310);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.32);
+  transform: perspective(24rem) rotateX(28deg);
+}
+
+.vc-cabin__console i {
+  position: absolute;
+  top: 17%;
+  width: 24%;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--interior-accent) 42%, transparent);
+  border-radius: 50%;
+}
+
+.vc-cabin__console i:first-child { left: 20%; }
+.vc-cabin__console i:last-child { right: 20%; }
+
+.vc-seat {
+  z-index: 7;
+  bottom: -14%;
+  width: 29%;
+  height: 48%;
+  filter: drop-shadow(0 1.2rem 1.4rem rgba(0, 0, 0, 0.38));
+}
+
+.vc-seat--driver { left: 2%; }
+.vc-seat--passenger { right: 2%; }
+
+.vc-seat__headrest,
+.vc-seat__back,
+.vc-seat__cushion {
+  background-color: var(--interior-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 -1.2rem 2rem rgba(0, 0, 0, 0.2);
+}
+
+.vc-seat__headrest {
+  left: 31%;
+  top: 0;
+  width: 38%;
+  height: 25%;
+  border-radius: 42% 42% 26% 26%;
+}
+
+.vc-seat__back {
+  left: 14%;
+  top: 18%;
+  width: 72%;
+  height: 58%;
+  border-radius: 38% 38% 24% 24% / 19% 19% 29% 29%;
+}
+
+.vc-seat__cushion {
+  left: 5%;
+  bottom: 0;
+  width: 90%;
+  height: 32%;
+  border-radius: 35% 35% 22% 22% / 34% 34% 18% 18%;
+}
+
+.vc-seat__seam {
+  left: 28%;
+  top: 30%;
+  width: 44%;
+  height: 34%;
+  border: 1px solid color-mix(in srgb, var(--interior-accent) 56%, transparent);
+  border-radius: 32% 32% 22% 22%;
+  background: transparent;
+  opacity: 0.72;
+}
+
+.vc-interior-view[data-interior-material="textile"] .vc-seat__headrest,
+.vc-interior-view[data-interior-material="textile"] .vc-seat__back,
+.vc-interior-view[data-interior-material="textile"] .vc-seat__cushion,
+.vc-interior-view[data-interior-material="textile"] .vc-material-sample__surface {
+  background-image:
+    repeating-linear-gradient(42deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-42deg, rgba(0, 0, 0, 0.045) 0 1px, transparent 1px 4px);
+}
+
+.vc-interior-view[data-interior-material="vegan-leather"] .vc-seat__headrest,
+.vc-interior-view[data-interior-material="vegan-leather"] .vc-seat__back,
+.vc-interior-view[data-interior-material="vegan-leather"] .vc-seat__cushion,
+.vc-interior-view[data-interior-material="vegan-leather"] .vc-material-sample__surface {
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.14), transparent 24% 70%, rgba(0, 0, 0, 0.14));
+}
+
+.vc-interior-view[data-interior-material="leather"] .vc-seat__headrest,
+.vc-interior-view[data-interior-material="leather"] .vc-seat__back,
+.vc-interior-view[data-interior-material="leather"] .vc-seat__cushion,
+.vc-interior-view[data-interior-material="leather"] .vc-material-sample__surface {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 70% 65%, rgba(0, 0, 0, 0.12) 0 1px, transparent 1.5px);
+  background-size: 7px 9px, 9px 7px;
+}
+
+.vc-interior-view[data-interior-tone="light"] .vc-seat__headrest,
+.vc-interior-view[data-interior-tone="light"] .vc-seat__back,
+.vc-interior-view[data-interior-tone="light"] .vc-seat__cushion {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08), inset 0 -1.2rem 2rem rgba(0, 0, 0, 0.08);
+}
+
+.vc-cabin__door {
+  z-index: 4;
+  bottom: 4%;
+  width: 23%;
+  height: 39%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--interior-color) 76%, #111512);
+  box-shadow: inset 0 0 2rem rgba(0, 0, 0, 0.25);
+}
+
+.vc-cabin__door--left {
+  left: -7%;
+  border-radius: 0 70% 12% 0;
+  transform: skewY(5deg);
+}
+
+.vc-cabin__door--right {
+  right: -7%;
+  border-radius: 70% 0 0 12%;
+  transform: skewY(-5deg);
+}
+
+.vc-cabin__door i {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 25%;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: var(--interior-accent);
+}
+
+.vc-cabin__ambient {
+  z-index: 10;
+  left: 13%;
+  right: 13%;
+  top: 58%;
+  height: 1px;
+  background: var(--interior-accent);
+  box-shadow: 0 0 0.8rem var(--interior-accent), 0 0 2rem color-mix(in srgb, var(--interior-accent) 45%, transparent);
+  opacity: 0.58;
+}
+
+.vc-material-sample {
+  position: absolute;
+  z-index: 12;
+  right: 1.2rem;
+  /* Tucked under the mode switch, in clear sky, so it never lands on the car. */
+  top: 5.4rem;
+  bottom: auto;
+  width: clamp(2.9rem, 4.4vw, 3.7rem);
+  aspect-ratio: 1;
+  padding: 0.38rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 1.1rem;
+  background: rgba(8, 12, 10, 0.72);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.3);
+  transform: rotate(4deg);
+}
+
+.vc-material-sample__surface {
+  position: absolute;
+  inset: 0.38rem;
+  overflow: hidden;
+  border-radius: 0.78rem;
+  background-color: var(--interior-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.vc-material-sample__stitch {
+  position: absolute;
+  inset: 19%;
+  border: 1px dashed var(--interior-accent);
+  border-radius: 0.58rem;
+  opacity: 0.72;
+}
+
+.vc-interior-view__caption {
+  position: absolute;
+  z-index: 13;
+  right: 1.2rem;
+  top: calc(5.4rem + clamp(2.9rem, 4.4vw, 3.7rem) + 0.45rem);
+  bottom: auto;
+  display: grid;
+  justify-items: end;
+  gap: 0.18rem;
+  color: #eef5f0;
+  text-align: right;
+}
+
+.vc-interior-view__caption > span,
+.vc-interior-view__caption small {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+  color: rgba(229, 241, 233, 0.56);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.47rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vc-interior-view__caption svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.vc-interior-view__caption strong {
+  max-width: 11rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.15rem);
+  font-weight: 540;
+  letter-spacing: -0.03em;
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"][data-mode="showroom"] .vc-stage {
+  color: #ecf4ee;
+  border-color: rgba(184, 206, 191, 0.15);
+  background:
+    radial-gradient(circle at calc(48% + var(--parallax-x)) calc(43% + var(--parallax-y)), rgba(70, 84, 75, 0.48), transparent 40%),
+    linear-gradient(148deg, #161b18, #090c0a 58%, #171c18);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-environment__grid {
+  opacity: 0.1;
+  background-image:
+    linear-gradient(rgba(202, 221, 208, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(202, 221, 208, 0.12) 1px, transparent 1px);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-environment__orbit {
+  border-color: rgba(196, 218, 202, 0.12);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-environment__ground {
+  opacity: 0;
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-hud__identity > span:last-child,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-hud__index,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-status,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-footer {
+  color: rgba(224, 239, 229, 0.54);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-mode-switch {
+  border-color: rgba(213, 232, 219, 0.15);
+  background: rgba(8, 12, 10, 0.64);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-mode-switch button {
+  color: rgba(225, 239, 229, 0.58);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-mode-switch button[aria-pressed="true"] {
+  color: #eef5f0;
+  background: rgba(103, 122, 109, 0.3);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-view-picker > button {
+  color: rgba(226, 239, 230, 0.54);
+  border-color: rgba(218, 235, 223, 0.14);
+  background: rgba(7, 11, 8, 0.66);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-view-picker > button[aria-pressed="true"] {
+  color: #f0f6f2;
+  border-color: rgba(214, 235, 220, 0.58);
+  background: rgba(79, 96, 84, 0.48);
+}
+
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-view-picker__thumbnail {
+  background: #151b17;
+}
+
+/* On the live path the stage stays light, so the caption authored for the dark
+   cabin mock has to flip to ink or it is invisible over the bodywork. */
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption {
+  color: rgba(23, 33, 29, 0.9);
+  text-shadow: 0 1px 2px rgba(250, 249, 245, 0.75);
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption > span,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption small {
+  color: rgba(23, 33, 29, 0.62);
+}
+
+/* Layered compositor: a near-white render plus an alpha mask of the paintable
+   body, tinted by multiply. Mask sizing mirrors the base's object-fit so the
+   two stay registered at any container size. */
+[data-layered-frame] {
+  position: absolute;
+  inset: 0;
+}
+
+.layered-frame__base,
+.layered-frame__paint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.layered-frame__base {
+  object-fit: contain;
+}
+
+.layered-frame__paint {
+  mix-blend-mode: multiply;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.vc-angle-view__image,
+.vc-profile-view__base,
+.vc-profile-view__blueprint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.vc-angle-view__image {
+  filter: drop-shadow(0 2rem 2.2rem rgba(15, 24, 19, 0.18));
+}
+
+.vc-profile-view__base {
+  z-index: 1;
+  filter: drop-shadow(0 2rem 2.1rem rgba(12, 23, 18, 0.22));
+  transition: opacity 420ms ease, filter 420ms ease;
+}
+
+.vc-profile-view__blueprint {
+  z-index: 5;
+  opacity: 0;
+  filter: drop-shadow(0 0 1rem rgba(80, 216, 255, 0.38));
+  transform: scale(0.99);
+  transition: opacity 420ms ease, transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-profile-view__base {
+  opacity: 0.06;
+  filter: saturate(0) brightness(0.42);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-profile-view__blueprint {
+  opacity: 1;
+  transform: none;
+}
+
+.vc-wheel {
+  --wheel-scale: 1;
+  position: absolute;
+  z-index: 4;
+  left: 19%;
+  top: 66%;
+  width: 17.2%;
+  aspect-ratio: 1;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(var(--wheel-scale));
+  transition: opacity 260ms ease, transform 460ms cubic-bezier(0.18, 0.82, 0.2, 1);
+}
+
+.vc-wheel--rear {
+  left: 79%;
+}
+
+.vehicle-canvas[data-preset="profile"] .vc-wheel,
+.vehicle-canvas[data-preset="wheel"] .vc-wheel {
+  opacity: 1;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-wheel {
+  opacity: 0.35;
+  filter: saturate(0) brightness(1.5);
+}
+
+.vc-wheel__tire,
+.vc-wheel__face,
+.vc-wheel__aero {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 50%;
+}
+
+.vc-wheel__tire {
+  overflow: hidden;
+  border: clamp(0.28rem, 0.65vw, 0.58rem) solid #151917;
+  background: #111412;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0.2rem 0.5rem rgba(0, 0, 0, 0.28);
+}
+
+.vc-wheel__face {
+  inset: 9%;
+  overflow: hidden;
+  background: #28302c;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.vc-wheel__face img {
+  position: absolute;
+  left: -21%;
+  top: -12%;
+  width: 142%;
+  height: 142%;
+  object-fit: cover;
+  filter: saturate(0) contrast(1.15) brightness(0.84);
+}
+
+.vc-wheel__aero {
+  inset: 18%;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: repeating-conic-gradient(from 8deg, rgba(223, 231, 226, 0.56) 0 7deg, transparent 7deg 22deg);
+  mix-blend-mode: screen;
+  transition: transform 420ms ease, background 300ms ease, opacity 300ms ease;
+}
+
+.vc-wheel[data-wheel-style="terrain"] .vc-wheel__aero {
+  opacity: 0.72;
+  background: repeating-conic-gradient(from 2deg, rgba(214, 223, 218, 0.76) 0 11deg, transparent 11deg 30deg);
+  transform: rotate(9deg) scale(0.92);
+}
+
+.vc-wheel[data-wheel-style="sport"] .vc-wheel__aero {
+  background: repeating-conic-gradient(from 0deg, rgba(235, 239, 237, 0.68) 0 4deg, transparent 4deg 14deg);
+  transform: rotate(-7deg) scale(1.04);
+}
+
+.vehicle-canvas[data-preset="wheel"] .vc-wheel--front {
+  box-shadow: 0 0 0 0.22rem rgba(199, 255, 57, 0.8), 0 0 2rem rgba(130, 185, 45, 0.18);
+  border-radius: 50%;
+}
+
+.vc-hotspots {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vc-hotspot {
+  position: absolute;
+  left: var(--anchor-x);
+  top: var(--anchor-y);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(18, 37, 30, 0.26);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.68), 0 0 0 0.42rem rgba(255, 255, 255, 0.12);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease, opacity 260ms ease;
+}
+
+.vc-hotspot > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vc-hotspot svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.vc-hotspot:hover,
+.vc-hotspot:focus-visible,
+.vc-hotspot[data-active] {
+  color: #142019;
+  background: #c7ff39;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.88), 0 0 0 0.56rem rgba(199, 255, 57, 0.18), 0 0 1.5rem rgba(103, 135, 43, 0.24);
+  transform: translate(-50%, -50%) scale(1.08);
+  outline: none;
+}
+
+.vehicle-canvas[data-preset="angle"] .vc-hotspots,
+.vehicle-canvas[data-preset="interior"] .vc-hotspots,
+.vehicle-canvas[data-preset="wheel"] .vc-hotspot:not([data-hotspot="wheels"]),
+.vehicle-canvas[data-mode="blueprint"] .vc-hotspot:not([data-active]) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-hotspot {
+  color: #dffaff;
+  background: rgba(21, 108, 137, 0.5);
+  box-shadow: 0 0 0 1px rgba(157, 237, 255, 0.72), 0 0 1rem rgba(93, 224, 255, 0.3);
+}
+
+.vc-focus-card {
+  position: absolute;
+  z-index: 15;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: 7.25rem;
+  width: min(18.5rem, calc(100% - 2rem));
+  padding: 1rem 1rem 0.9rem;
+  border: 1px solid rgba(23, 36, 30, 0.14);
+  border-radius: 1rem;
+  background: rgba(253, 251, 245, 0.86);
+  box-shadow: 0 1.2rem 3rem rgba(21, 29, 24, 0.16);
+  backdrop-filter: blur(1.4rem);
+  animation: vc-card-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  user-select: text;
+}
+
+.vc-focus-card__kind {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+  color: #3d665b;
+  font-size: 0.52rem;
+}
+
+.vc-focus-card__kind svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.vc-focus-card strong {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 590;
+  letter-spacing: -0.03em;
+}
+
+.vc-focus-card p {
+  margin: 0.35rem 0 0.85rem;
+  color: rgba(23, 33, 29, 0.64);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.vc-focus-card > button {
+  padding: 0;
+  border: 0;
+  color: #263d35;
+  background: transparent;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  cursor: pointer;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-focus-card {
+  border-color: rgba(140, 230, 255, 0.28);
+  color: #e4faff;
+  background: rgba(5, 25, 37, 0.83);
+  box-shadow: 0 1.2rem 3rem rgba(0, 7, 11, 0.28), inset 0 0 2rem rgba(83, 211, 244, 0.06);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-focus-card__kind,
+.vehicle-canvas[data-mode="blueprint"] .vc-focus-card p,
+.vehicle-canvas[data-mode="blueprint"] .vc-focus-card > button {
+  color: rgba(218, 248, 255, 0.66);
+}
+
+.vc-view-picker {
+  position: absolute;
+  z-index: 14;
+  left: 1rem;
+  bottom: 3.6rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vc-view-picker > button {
+  display: grid;
+  gap: 0.28rem;
+  width: 4.7rem;
+  padding: 0.28rem;
+  border: 1px solid rgba(18, 29, 24, 0.13);
+  border-radius: 0.72rem;
+  color: rgba(22, 31, 27, 0.58);
+  background: rgba(253, 251, 245, 0.68);
+  cursor: pointer;
+  backdrop-filter: blur(1rem);
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.vc-view-picker > button:hover,
+.vc-view-picker > button:focus-visible {
+  color: #15201b;
+  border-color: rgba(22, 31, 27, 0.36);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.vc-view-picker > button[aria-pressed="true"] {
+  color: #15201b;
+  border-color: #15201b;
+  background: rgba(255, 254, 250, 0.94);
+  box-shadow: 0 0.45rem 1.4rem rgba(21, 31, 25, 0.12);
+}
+
+.vc-view-picker__thumbnail {
+  position: relative;
+  height: 2.65rem;
+  overflow: hidden;
+  border-radius: 0.48rem;
+  background: #e7e3d8;
+}
+
+.vc-view-picker__thumbnail img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.vc-view-picker__cabin {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(180deg, #30454a 0 42%, #111613 43%);
+}
+
+.vc-view-picker__cabin i {
+  position: absolute;
+  display: block;
+  background: var(--interior-color);
+}
+
+.vc-view-picker__cabin i:nth-child(1) {
+  left: 8%;
+  right: 8%;
+  top: 45%;
+  height: 17%;
+  border-radius: 30% 30% 8% 8%;
+}
+
+.vc-view-picker__cabin i:nth-child(2),
+.vc-view-picker__cabin i:nth-child(3) {
+  bottom: -10%;
+  width: 24%;
+  height: 48%;
+  border-radius: 45% 45% 20% 20%;
+}
+
+.vc-view-picker__cabin i:nth-child(2) { left: 15%; }
+.vc-view-picker__cabin i:nth-child(3) { right: 15%; }
+
+.vc-view-picker > button > span:last-child {
+  padding: 0.1rem 0.15rem;
+  font-size: 0.47rem;
+  text-align: left;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-view-picker > button {
+  color: rgba(216, 248, 255, 0.52);
+  border-color: rgba(133, 228, 255, 0.18);
+  background: rgba(3, 22, 33, 0.7);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-view-picker > button[aria-pressed="true"] {
+  color: #e2faff;
+  border-color: rgba(145, 234, 255, 0.7);
+  background: rgba(30, 100, 124, 0.34);
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-view-picker__thumbnail {
+  background: #071c29;
+}
+
+.vc-footer {
+  position: absolute;
+  z-index: 13;
+  inset: auto 1.1rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: rgba(21, 31, 26, 0.54);
+  font-size: 0.51rem;
+  pointer-events: none;
+}
+
+.vc-drag-hint,
+.vc-selection-readout,
+.vc-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.vc-drag-hint {
+  position: absolute;
+  left: 0;
+}
+
+.vc-drag-hint svg,
+.vc-reset svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.vc-selection-readout > span {
+  width: 0.52rem;
+  height: 0.52rem;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(17, 25, 21, 0.18);
+}
+
+.vc-reset {
+  position: absolute;
+  right: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.vehicle-canvas[data-mode="blueprint"] .vc-footer {
+  color: rgba(214, 248, 255, 0.52);
+}
+
+/* The DOM art is a same-model safety frame, never a second live layer. Keep it
+   available for WebGL failure, but completely out of the healthy 3D composite. */
+.vehicle-canvas[data-renderer="live_3d"] .vc-angle-view,
+.vehicle-canvas[data-renderer="live_3d"] .vc-profile-view,
+.vehicle-canvas[data-renderer="live_3d"] .vc-wheel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="wheel"] .vc-hotspots {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vehicle-canvas[data-preset="wheel"] .vc-hud__identity,
+.vehicle-canvas[data-preset="wheel"] .vc-status,
+.vehicle-canvas[data-preset="wheel"] .vc-model-attribution,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-hud__identity,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-status,
+.vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-model-attribution {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vc-asset-fallback {
+  position: absolute;
+  z-index: 10;
+  inset: 18% 17%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  color: rgba(29, 42, 35, 0.64);
+  text-align: center;
+}
+
+.vc-asset-fallback > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-bottom: 0.3rem;
+}
+
+.vc-asset-fallback strong {
+  font-size: 0.9rem;
+}
+
+.vc-asset-fallback > span:last-child {
+  font-size: 0.72rem;
+}
+
+.vc-asset-fallback__outline {
+  position: absolute;
+  inset: 18% 8%;
+  border: 1px solid currentColor;
+  border-radius: 45% 50% 18% 20% / 55% 58% 28% 32%;
+  opacity: 0.22;
+}
+
+.vc-asset-fallback__outline span {
+  position: absolute;
+  bottom: -8%;
+  width: 18%;
+  aspect-ratio: 1;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.vc-asset-fallback__outline span:first-child { left: 14%; }
+.vc-asset-fallback__outline span:last-child { right: 13%; }
+
+.vehicle-canvas[data-mode="blueprint"] .vc-asset-fallback {
+  color: rgba(214, 248, 255, 0.64);
+}
+
+.vc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes vc-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes vc-card-in {
+  from { opacity: 0; transform: translateY(0.6rem) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 760px) {
+  .vehicle-canvas {
+    min-height: 29rem;
+  }
+
+  .vc-stage {
+    min-height: 34rem;
+    border-radius: 1rem;
+  }
+
+  .vc-hud {
+    inset: 0.8rem 0.8rem auto;
+  }
+
+  .vc-hud__identity > span:last-child,
+  .vc-status,
+  .vc-model-attribution {
+    display: none;
+  }
+
+  .vc-hud__identity strong {
+    max-width: 9rem;
+    font-size: 0.78rem;
+  }
+
+  .vc-mode-switch button {
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .vc-mode-switch button svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .vc-object {
+    top: 46%;
+    width: 118%;
+  }
+
+  .vehicle-canvas[data-preset="wheel"] .vc-object {
+    transform:
+      translate(calc(-31% + var(--pan-x)), calc(-25% + var(--pan-y)))
+      scale(1.82);
+  }
+
+  .vc-hotspot {
+    left: clamp(1.6rem, var(--anchor-x), calc(100% - 1.6rem));
+    top: clamp(1.6rem, var(--anchor-y), calc(100% - 1.6rem));
+  }
+
+  .vc-focus-card {
+    right: 0.8rem;
+    bottom: 7.4rem;
+    width: min(17rem, calc(100% - 1.6rem));
+  }
+
+  .vc-view-picker {
+    left: 0.7rem;
+    bottom: 3.3rem;
+    gap: 0.3rem;
+  }
+
+  .vc-view-picker > button {
+    width: 3.85rem;
+  }
+
+  .vc-view-picker__thumbnail {
+    height: 2rem;
+  }
+
+  .vc-drag-hint,
+  .vc-reset {
+    font-size: 0;
+  }
+
+  .vc-footer {
+    inset: auto 0.8rem 0.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-canvas *,
+  .vehicle-canvas *::before,
+  .vehicle-canvas *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * The open-body control sits with the mode switch rather than in the view rail:
+ * both change how the vehicle is presented, and neither changes the build.
+ */
+.vc-mode-switch--open {
+  margin-left: 0.5rem;
+}
+
+/*
+ * Interior legibility on the live path.
+ *
+ * The interior treatment above is scoped to the authored still because, when it
+ * was written, the live interior view swapped the body for a light stand-in
+ * cabin. A body that carries its own cabin is dark inside, so the HUD's
+ * showroom-weight type now sits as dark grey on near-black. These rules restate
+ * only the legibility part — not the stage background or the environment
+ * decorations, which the live canvas draws for itself.
+ */
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"][data-mode="showroom"] .vc-stage {
+  color: #ecf4ee;
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-hud__identity > span:last-child,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-hud__index,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-status,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-model-attribution,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-footer {
+  color: rgba(224, 239, 229, 0.62);
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-hud__identity strong {
+  color: #f2f8f4;
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-mode-switch {
+  border-color: rgba(213, 232, 219, 0.15);
+  background: rgba(8, 12, 10, 0.64);
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-mode-switch button {
+  color: rgba(225, 239, 229, 0.58);
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-mode-switch button[aria-pressed="true"] {
+  color: #eef5f0;
+  background: rgba(103, 122, 109, 0.3);
+}
+
+/*
+ * The palette caption sits over the cabin itself on the live path, where its
+ * unbacked type lands on upholstery of roughly its own value. A soft scrim
+ * keeps it readable without putting a panel over the seat it is describing.
+ */
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption {
+  padding: 0.5rem 0.72rem;
+  border-radius: 0.65rem;
+  background: linear-gradient(200deg, rgba(9, 13, 11, 0.72), rgba(9, 13, 11, 0.5));
+  backdrop-filter: blur(6px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption > span,
+.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption small {
+  color: rgba(230, 241, 234, 0.78);
+}

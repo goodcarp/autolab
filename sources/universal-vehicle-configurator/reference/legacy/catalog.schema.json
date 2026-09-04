@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "uconf/0.1/catalog.schema.json",
+  "title": "uconf catalog",
+  "description": "Vendor-neutral, agent-legible product configuration catalog. A catalog is a pure data document; (catalog, selections, buyer_context) -> {price, specs, violations, incentives, tco} must be computable deterministically with no network access.",
+  "type": "object",
+  "required": ["format", "product", "groups", "options"],
+  "properties": {
+    "format": { "const": "uconf/0.1" },
+
+    "product": {
+      "type": "object",
+      "required": ["id", "make", "model", "year", "market", "data_as_of"],
+      "properties": {
+        "id": { "type": "string" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "integer" },
+        "body": { "type": "string" },
+        "market": { "type": "string", "description": "e.g. US" },
+        "currency": { "type": "string", "default": "USD" },
+        "data_as_of": { "type": "string", "format": "date" },
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "disclaimer": { "type": "string" },
+        "assembly": { "type": "object", "properties": { "country": {"type": "string"}, "plant": {"type": "string"} }, "description": "Needed by incentive predicates (e.g. US-assembly requirements)." },
+        "calibration": { "type": "object", "description": "Published checksum figures to test the pricing engine against (e.g. vendor's advertised fully-loaded price)." }
+      }
+    },
+
+    "groups": {
+      "type": "array",
+      "description": "Selection groups in display/evaluation order. Exactly one group should have role:'base' (the trim/build group whose options carry base prices).",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "select"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "select": { "enum": ["one", "many"] },
+          "required": { "type": "boolean", "default": false },
+          "role": { "enum": ["base", "option"], "default": "option" },
+          "default": { "type": "string", "description": "option id preselected" }
+        }
+      }
+    },
+
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "group", "label", "price"],
+        "properties": {
+          "id": { "type": "string", "description": "stable, agent-facing id: group.slug" },
+          "group": { "type": "string" },
+          "label": { "type": "string" },
+          "vendor_code": { "type": "string", "description": "the seller's own option code, if known (for deep-linking back into the vendor configurator)" },
+          "price": {
+            "type": "object",
+            "required": ["amount", "mode"],
+            "properties": {
+              "amount": { "type": "number" },
+              "mode": { "enum": ["base", "delta"], "description": "base = sets the configured base price (trim options); delta = adds to it" },
+              "confidence": { "enum": ["verified", "estimated"], "default": "verified" },
+              "note": { "type": "string" }
+            }
+          },
+          "effects": { "$ref": "#/$defs/effects", "description": "unconditional spec effects, applied when selected" },
+          "overrides": {
+            "type": "array",
+            "description": "conditional effects for combination-specific published data (e.g. this wheel yields 307 mi on the Performance trim specifically)",
+            "items": {
+              "type": "object",
+              "required": ["when", "effects"],
+              "properties": { "when": { "$ref": "#/$defs/expr" }, "effects": { "$ref": "#/$defs/effects" } }
+            }
+          },
+          "availability": { "$ref": "#/$defs/expr", "description": "option is selectable only when this holds" },
+          "delivery": { "type": "object", "properties": { "window": { "type": "string" } }, "description": "earliest delivery window this option imposes on the build" },
+          "copy": {
+            "type": "object",
+            "properties": {
+              "short": { "type": "string" },
+              "long": { "type": "string" },
+              "value_note": { "type": "string", "description": "the buyer's-margin note: an editorial, buyer-side read on whether this option earns its price. This field is the format's soul; sellers will never publish it." }
+            }
+          },
+          "render": { "type": "object", "properties": { "hex": {"type": "string"}, "mesh_target": {"type": "string"}, "mesh_swap": {"type": "string"} } },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+
+    "rules": {
+      "type": "array",
+      "description": "Cross-option constraints. A rule fires when `when` holds and `require` does not.",
+      "items": {
+        "type": "object",
+        "required": ["id", "when", "require", "message"],
+        "properties": {
+          "id": { "type": "string" },
+          "when": { "$ref": "#/$defs/expr" },
+          "require": { "$ref": "#/$defs/expr" },
+          "message": { "type": "string" },
+          "severity": { "enum": ["error", "warning"], "default": "error" }
+        }
+      }
+    },
+
+    "fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "amount"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "amount": { "type": "number" },
+          "confidence": { "enum": ["verified", "estimated"] },
+          "note": { "type": "string" }
+        }
+      }
+    },
+
+    "incentives": {
+      "type": "array",
+      "description": "Savings programs as predicates over (build, price, buyer_context). Expired programs stay in the catalog with status:'expired' so an agent can EXPLAIN absence — 'why is there no federal credit' deserves an answer, not a shrug.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "type", "status", "eligibility"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "jurisdiction": { "type": "object", "properties": { "country": {"type":"string"}, "region": {"type":"string"}, "program": {"type":"string"} } },
+          "type": { "enum": ["tax_credit", "rebate", "deduction", "utility_rebate", "vendor_incentive"] },
+          "status": { "enum": ["active", "expired", "scheduled", "funds_limited"] },
+          "effective": { "type": "object", "properties": { "from": {"type":"string"}, "to": {"type":"string"} } },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "fixed": { "type": "number" },
+              "estimate_note": { "type": "string", "description": "for non-fixed amounts (deductions, pct formulas) describe the estimator" }
+            }
+          },
+          "eligibility": { "$ref": "#/$defs/expr" },
+          "claim": { "enum": ["point_of_sale", "tax_return", "utility_portal", "at_purchase"] },
+          "source": { "type": "string" },
+          "confidence": { "enum": ["verified", "estimated"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "tco_model": {
+      "type": "object",
+      "properties": {
+        "mi_per_kwh_est": { "type": "number" },
+        "mi_per_kwh_confidence": { "enum": ["verified", "estimated"] },
+        "maintenance_per_year_est": { "type": "number" },
+        "defaults": { "type": "object", "properties": { "miles_per_year": {"type":"number"}, "years": {"type":"number"}, "kwh_rate_home": {"type":"number"}, "pct_home_charging": {"type":"number"}, "kwh_rate_public": {"type":"number"} } }
+      }
+    },
+
+    "scene": {
+      "type": "object",
+      "description": "3D staging: mesh source + part map + camera presets + scripted demos. Tools focus_part/orbit_to/demo_feature resolve against this.",
+      "properties": {
+        "model": { "type": "object", "properties": { "src": {"type":"string"}, "format": {"type":"string"}, "license": {"type":"string"}, "attribution": {"type":"string"}, "status": {"type":"string"} } },
+        "parts": { "type": "object", "additionalProperties": { "type": "string" }, "description": "semantic part id -> glTF node name" },
+        "cameras": { "type": "array", "items": { "type": "object", "required": ["id"], "properties": { "id": {"type":"string"}, "label": {"type":"string"}, "pos": {"type":"array"}, "target": {"type":"array"} } } },
+        "demos": { "type": "array", "items": { "type": "object", "required": ["id", "steps"], "properties": { "id": {"type":"string"}, "label": {"type":"string"}, "steps": {"type":"array"} } } }
+      }
+    },
+
+    "export": {
+      "type": "object",
+      "properties": {
+        "vendor_url_template": { "type": "string", "description": "template for deep-linking the configured build back into the seller's own configurator, using vendor_codes. The buyer's room hands you to the seller's checkout with your build intact." },
+        "confidence": { "enum": ["verified", "experimental"] },
+        "note": { "type": "string" }
+      }
+    }
+  },
+
+  "$defs": {
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["spec", "op", "value"],
+        "properties": {
+          "spec": { "type": "string", "description": "e.g. range_mi, hp, torque_lbft, zero_to_sixty_s, battery, drivetrain, seats, tow_lbs" },
+          "op": { "enum": ["set", "add", "mul"] },
+          "value": {},
+          "confidence": { "enum": ["verified", "estimated"] }
+        }
+      }
+    },
+    "expr": {
+      "description": "Tiny boolean expression language. Deterministic, no side effects. Evaluated against {selections, price, specs, buyer}.",
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "object", "required": ["all"], "properties": { "all": { "type": "array", "items": { "$ref": "#/$defs/expr" } } } },
+        { "type": "object", "required": ["any"], "properties": { "any": { "type": "array", "items": { "$ref": "#/$defs/expr" } } } },
+        { "type": "object", "required": ["not"], "properties": { "not": { "$ref": "#/$defs/expr" } } },
+        { "type": "object", "required": ["selected"], "properties": { "selected": { "type": "string", "description": "option id" } } },
+        { "type": "object", "required": ["var", "op", "value"], "properties": { "var": { "type": "string", "description": "dot-path into {price, specs, buyer}, e.g. buyer.state, price.msrp_as_configured" }, "op": { "enum": ["eq", "ne", "lt", "lte", "gt", "gte", "in", "truthy"] }, "value": {} } }
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string" },
+        "confidence": { "enum": ["verified", "estimated"] },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

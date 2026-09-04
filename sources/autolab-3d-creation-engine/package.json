@@ -1,0 +1,21 @@
+{
+  "name": "autolab-3d-creation-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A ruler that measures the model directly, instead of measuring a picture of it.",
+  "scripts": {
+    "clearance": "node src/cli.mjs clearance",
+    "dims": "node src/cli.mjs dims",
+    "extremes": "node src/cli.mjs extremes",
+    "fit": "node src/cli.mjs fit",
+    "overlaps": "node src/cli.mjs overlaps",
+    "parts": "node src/cli.mjs parts",
+    "section": "node src/cli.mjs section",
+    "selftest": "node src/cli.mjs selftest",
+    "symmetry": "node src/cli.mjs symmetry"
+  },
+  "dependencies": {
+    "three": "0.185.1"
+  }
+}

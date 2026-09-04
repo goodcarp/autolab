@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoLab by AutoMoto</title>
+<meta name="description" content="Agent-native, web 4.0 tools for car lovers. A WebMCP vehicle configurator, an agentic owner's guide with a live digital twin, and the 3D creation engine that measures the model instead of looking at it.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="assets/brand/autolab-mark.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AutoLab by AutoMoto">
+<meta property="og:title" content="AutoLab by AutoMoto">
+<meta property="og:description" content="Agent-native, web 4.0 tools for car lovers. Configure, own, and build vehicles with an AI agent that can see, know, and change the product through WebMCP.">
+<meta property="og:url" content="https://goodcarp.github.io/autolab/">
+<meta property="og:image" content="https://goodcarp.github.io/autolab/configure/images/autolab-social-card.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" aria-label="AutoLab by AutoMoto home">
+    <img class="brand-mark" src="assets/brand/autolab-mark.png" alt="" width="44" height="41">
+    <span class="brand-word">AutoLab <small>by AutoMoto <sup>©</sup></small></span>
+  </a>
+  <nav class="nav" aria-label="Experiences">
+    <a href="configure/">Configure</a>
+    <a href="garage/">Garage</a>
+    <a href="engine/">Engine</a>
+    <a href="https://github.com/goodcarp/autolab" rel="noopener">GitHub</a>
+  </nav>
+  <button class="chip" id="chip" type="button" aria-live="polite" aria-expanded="false" aria-controls="tools-sheet">
+    <span class="dot" aria-hidden="true"></span><span id="chip-label">Manual mode</span>
+  </button>
+</header>
+
+<section class="hero">
+  <p class="eyebrow">Introducing</p>
+  <h1>Agent-native,<br>web&nbsp;4.0 tools<br>for car lovers.</h1>
+  <p class="lede">Your car is the most misunderstood machine you use every day. Your AI agent can already talk. AutoLab lets it <em>see, know, and change</em> the vehicle in front of you, through WebMCP tools the page itself publishes.</p>
+  <div class="cta">
+    <a class="btn primary" href="configure/">Open the Configurator</a>
+    <a class="btn" href="garage/">Open the Owner's Guide</a>
+    <a class="btn ghost" href="engine/">See the Engine</a>
+  </div>
+  <p class="hero-note">Works by hand in any browser. With ChatGPT desktop or Chrome 149+ and <code>chrome://flags/#enable-webmcp-testing</code>, the agent gets the tools too.</p>
+</section>
+
+<section class="experiences" id="experiences">
+  <div class="sec-h"><span class="num">01</span><h2>Three experiences. One vehicle. One shared state.</h2></div>
+  <div class="cards">
+    <article class="card" id="card-configure">
+      <div class="card-top">
+        <span class="tag">Sales</span>
+        <span class="count">17 WebMCP tools</span>
+      </div>
+      <h3>Web 4.0-enabled Vehicle Configurator</h3>
+      <p>Claude or ChatGPT can now help you build, and bring home, your dream car. Your agent walks you through the build, prices it, explores options, and configures the vehicle right in front of your eyes: a digital showroom built for the agentic age.</p>
+      <ul class="feats">
+        <li>Revision-safe build transactions the person can interrupt or undo</li>
+        <li>Dynamic pricing, financing, energy and multi-year ownership cost</li>
+        <li>Incentive engine with dated, citable sources</li>
+        <li>Camera, showroom, Blueprint and component focus under agent control</li>
+      </ul>
+      <div class="card-actions">
+        <a class="btn primary" href="configure/">Open</a>
+        <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/universal-vehicle-configurator" rel="noopener">Source</a>
+      </div>
+    </article>
+
+    <article class="card" id="card-garage">
+      <div class="card-top">
+        <span class="tag">Ownership</span>
+        <span class="count">13 WebMCP tools</span>
+      </div>
+      <h3>Agentic Owner's Guide</h3>
+      <p>Understand, explore and learn about your vehicle like never before. A real-time digital twin, drawn in code as a general-arrangement sheet, that an agent can point at, open up, drive, explode and measure while it explains what you are looking at.</p>
+      <ul class="feats">
+        <li>42 named components; frame, highlight and measure any two in metres</li>
+        <li>Six authored technical views, orthographic and perspective</li>
+        <li>Doors, frunk, liftgate and charge port open; body dissolves to the skateboard</li>
+        <li>The same twin is embedded in the Configurator as <b>Garage</b>, synced to your build</li>
+      </ul>
+      <div class="card-actions">
+        <a class="btn primary" href="garage/">Open</a>
+        <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint" rel="noopener">Source</a>
+      </div>
+    </article>
+
+    <article class="card" id="card-engine">
+      <div class="card-top">
+        <span class="tag">Framework</span>
+        <span class="count">15 instruments</span>
+      </div>
+      <h3>AutoLab 3D Creation Engine</h3>
+      <p>An agent-native spatial-reasoning tool and framework for code-native 3D model creation by large language models. A ruler that measures the model directly, instead of measuring a picture of it. It is how the vehicle above got built.</p>
+      <ul class="feats">
+        <li>Fits published dimensions with tolerances, and names the part that owns each miss</li>
+        <li>Sections, clearances, symmetry and silhouette deviation, no camera in the loop</li>
+        <li>Proposes a curve, proves it, and refuses to write over anyone's work</li>
+        <li>Self-test gate: refuses to certify a model whose wheelbase is wrong</li>
+      </ul>
+      <div class="card-actions">
+        <a class="btn primary" href="engine/">Open</a>
+        <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" rel="noopener">Source</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="why">
+  <div class="sec-h"><span class="num">02</span><h2>Why WebMCP</h2></div>
+  <div class="cols">
+    <div>
+      <h3>The agent sees what you see</h3>
+      <p>Every screen publishes its tools on <code>document.modelContext</code>. There is no scraping and no screenshot-guessing: the agent reads the same revisioned build the person is editing, and every change it makes lands in the same state, on the same screen, at the same moment.</p>
+    </div>
+    <div>
+      <h3>The person always wins</h3>
+      <p>Tools that change the build take an <code>expectedRevision</code> and reject on conflict. A multi-stage agent transaction can be interrupted by clicking any control, and the receipt says which stages landed. Presentation tools move the camera, never the configuration.</p>
+    </div>
+    <div>
+      <h3>Every claim is citable</h3>
+      <p>Incentive outcomes carry source records with titles, URLs and retrieval dates. Digital-twin measurements state their basis: an independent reconstruction fitted to published dimensions, not manufacturer CAD. The agent can say where a number came from.</p>
+    </div>
+  </div>
+</section>
+
+<section class="judges" id="judges">
+  <div class="sec-h"><span class="num">03</span><h2>Try it with an agent</h2></div>
+  <div class="cols two">
+    <div>
+      <h3>ChatGPT desktop</h3>
+      <p>Update to the latest version, then open any AutoLab URL in the app's built-in browser. Ask it to read the current build. The header chip on each page switches from <b>Manual mode</b> to the number of registered tools when the API is picked up.</p>
+      <h3>Chrome 149+</h3>
+      <p>Enable the flag, restart Chrome, load the page:</p>
+      <pre><code>chrome://flags/#enable-webmcp-testing</code></pre>
+      <p>Any other browser gets the same experiences by hand. In the Owner's Guide, <code>window.r2</code> exposes the identical tool API for devtools and automation.</p>
+    </div>
+    <div>
+      <h3>Starter prompts</h3>
+      <ul class="prompts">
+        <li><button type="button" data-copy>Configure the cheapest R2 that can tow, then tell me what changed.</button></li>
+        <li><button type="button" data-copy>I'm in Colorado, I'll finance, and I can install a home charger. What do I actually qualify for?</button></li>
+        <li><button type="button" data-copy>Switch to the all-terrain wheels and show me the wheel close-up.</button></li>
+        <li><button type="button" data-copy>Take me into the Garage, reveal the structural battery, and explain what I am looking at.</button></li>
+        <li><button type="button" data-copy>Open every panel on my configured R2, then show me where the charge port is.</button></li>
+        <li><button type="button" data-copy>Measure from the front wheel to the rear wheel. Does it match the published wheelbase?</button></li>
+      </ul>
+      <p class="fine">Click a prompt to copy it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="surface" id="surface">
+  <div class="sec-h"><span class="num">04</span><h2>The tool surface</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Page</th><th>Tools</th><th>What an agent can do</th></tr></thead>
+    <tbody>
+      <tr><td><a href="configure/">Configure</a></td><td>17</td><td>Read the build, price, incentives and revision; list valid options; simulate; apply an interruptible multi-stage transaction; interrupt; undo; present showroom, camera, Blueprint and focus; capture buyer context; estimate payment, energy and ownership cost; compare up to three builds; read the twin; list 42 parts; reveal, frame and highlight; authored views; lights, motion, dissolve, openings, explode; measure; switch surfaces.</td></tr>
+      <tr><td><a href="configure/garage/">Configure → Garage</a></td><td>14</td><td>The embedded twin's own drawing tools, plus <code>set_vehicle_context</code> so the configured paint, wheels, interior, range and price arrive with the vehicle.</td></tr>
+      <tr><td><a href="garage/">Owner's Guide</a></td><td>13</td><td>State, view, motion, camera, orbit, frame, list and get parts, measure, highlight, annotations, published specification, reset.</td></tr>
+      <tr><td><a href="engine/">Engine</a></td><td>2</td><td>Read the measured fit report and the instrument list for the model that both experiences render.</td></tr>
+      <tr><td>This page</td><td>3</td><td>List the experiences, open one, read the overview and how to run it with an agent.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="cols two">
+    <div>
+      <h3>Registration</h3>
+      <pre><code>const api = document.modelContext ?? navigator.modelContext;
+await api.registerTool({
+  name: "open_autolab_experience",
+  description: "Open the Configurator, the Owner's Guide or the Engine.",
+  inputSchema: { type: "object",
+    properties: { experience: { type: "string",
+      enum: ["configure", "garage", "engine"] } },
+    required: ["experience"], additionalProperties: false },
+  execute: async ({ experience }) =&gt; open(experience)
+});</code></pre>
+    </div>
+    <div>
+      <h3>Contract</h3>
+      <p>Closed top-level schemas. Human-readable titles. Explicit read-only, non-destructive and idempotency hints. Errors carry the recovery: <code>no part "flux capacitor". Call list_parts for the 42 available ids.</code> Structured JSON in metres. Build-changing tools are revision-gated; presentation tools are not, because they cannot lose anyone's work.</p>
+    </div>
+  </div>
+</section>
+
+<section class="manifesto">
+  <p class="eyebrow">Dope questions, for car people in the AI age</p>
+  <div class="lines">
+    <p>What if agents could truly help you understand the product you're buying?</p>
+    <p>Or the product you already own?</p>
+    <p>Or help the company that sold it to you fix the thing, the right way, at the lowest cost, the first time you bring it in?</p>
+    <p class="big">Your car got smarter. Your AI got smarter.<br>How about we all get a little smarter.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-brand">
+    <img src="assets/brand/autolab-lockup.png" alt="AutoLab by AutoMoto" width="330" height="50">
+    <p>An entry to <a href="https://webmcp.devpost.com/" rel="noopener">The WebMCP Challenge</a>. One public repository, <a href="https://github.com/goodcarp/autolab" rel="noopener">goodcarp/autolab</a>, holds this site and the three experiences under <code>sources/</code>: the <a href="https://github.com/goodcarp/autolab/tree/main/sources/universal-vehicle-configurator" rel="noopener">configurator</a>, the <a href="https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint" rel="noopener">owner's guide</a> and the <a href="https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" rel="noopener">3D creation engine</a>. Apache-2.0; see LICENSE and NOTICE.</p>
+  </div>
+  <p class="fine">AutoLab and AutoMoto are independent and unofficial. This project is not associated with, endorsed by, or sponsored by Rivian or any manufacturer. The vehicle geometry is an independent reconstruction fitted to published dimensions and photographs, not manufacturer CAD. Vehicle names and specifications are used nominatively to identify the products being discussed.</p>
+</footer>
+
+<div class="sheet" id="tools-sheet" hidden>
+  <div class="sheet-h"><b id="sheet-title">Agent tools on this page</b><button type="button" id="sheet-close" aria-label="Close">×</button></div>
+  <div id="sheet-body"></div>
+</div>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

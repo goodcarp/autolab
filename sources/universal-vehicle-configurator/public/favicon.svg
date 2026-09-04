@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AutoLab by AutoMoto">
+  <rect width="64" height="64" rx="14" fill="#101210"/>
+  <circle cx="32" cy="32" r="19" fill="none" stroke="#c7ff39" stroke-width="3.5"/>
+  <path d="M22 42 32 20l10 22M26.4 33.5h11.2" fill="none" stroke="#c7ff39" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

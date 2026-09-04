@@ -1,0 +1,244 @@
+:root{
+  --paper:#f4f6fa;
+  --paper-2:#eef1f7;
+  --ink:#1c2b4f;
+  --ink-2:#3b4a6b;
+  --ink-soft:#7c8aa6;
+  --grid:#d3dbe9;
+  --grid-major:#bcc7db;
+  --accent:#c94b31;
+  --dim:#2f7d76;
+  --btn-active:#1c2b4f;
+  --btn-toggle:#4c5d84;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --minor:14px;
+  --major:70px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--paper);overflow:hidden;font-family:var(--mono);color:var(--ink);
+  -webkit-font-smoothing:antialiased;user-select:none}
+body{
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(to right, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size:var(--major) var(--major), var(--major) var(--major), var(--minor) var(--minor), var(--minor) var(--minor);
+  background-position:center center;
+}
+#sheet{position:absolute;inset:0;}
+.frame{position:absolute;pointer-events:none;border:1px solid var(--ink);opacity:.75}
+.frame-outer{inset:10px 12px 10px 12px}
+.frame-inner{inset:34px 36px 34px 36px}
+.zone{position:absolute;pointer-events:none;display:flex;color:var(--ink-soft);font-size:10px;letter-spacing:.08em}
+.zone-top{top:10px;left:36px;right:36px;height:24px}
+.zone-bottom{bottom:10px;left:36px;right:36px;height:24px}
+.zone-left{top:34px;bottom:34px;left:12px;width:24px;flex-direction:column}
+.zone-right{top:34px;bottom:34px;right:12px;width:24px;flex-direction:column}
+.zone span{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.zone-top span:not(:last-child)::after,.zone-bottom span:not(:last-child)::after{content:"";position:absolute;right:0;top:-2px;bottom:-2px;width:1px;background:var(--ink);opacity:.5}
+.zone-left span:not(:last-child)::after,.zone-right span:not(:last-child)::after{content:"";position:absolute;bottom:0;left:-2px;right:-2px;height:1px;background:var(--ink);opacity:.5}
+
+#stage{position:absolute;inset:35px 37px 35px 37px;overflow:hidden}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl.dragging{cursor:grabbing}
+#gl.hovering{cursor:pointer}
+#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;font-family:var(--mono)}
+#overlay text{font-family:var(--mono)}
+
+header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;pointer-events:none}
+#hdr-left{left:52px}
+#hdr-right{right:52px;text-align:right;flex-direction:column;align-items:flex-end;gap:0}
+.hdr-title{font-size:14px;font-weight:600;letter-spacing:.32em;color:var(--ink)}
+.hdr-sub{font-size:10.5px;letter-spacing:.12em;color:var(--ink-soft);margin-top:4px}
+.logo{width:30px;height:30px;border:1.5px solid var(--ink);transform:rotate(45deg);display:flex;align-items:center;justify-content:center;margin:1px 8px 0 4px}
+.logo span{width:12px;height:12px;border:1.5px solid var(--accent)}
+
+.panel{position:absolute;background:rgba(244,246,250,.92);border:1.5px solid var(--ink);box-shadow:0 0 0 3px rgba(244,246,250,.6);
+  transition:opacity .35s ease, transform .35s ease;pointer-events:auto}
+.panel.hidden{opacity:0;pointer-events:none;transform:translateY(-6px)}
+.panel-h{font-size:11.5px;font-weight:600;letter-spacing:.28em;padding:6px 8px 6px 12px;border-bottom:1.5px solid var(--ink);background:rgba(28,43,79,.06);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-min{font-family:var(--mono);font-size:13px;line-height:1;width:20px;height:20px;padding:0;border:1.2px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;letter-spacing:0}
+.panel-min:hover{background:rgba(28,43,79,.1)}
+.panel-min:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.panel.min > :not(.panel-h):not(.tb-title){display:none}
+.panel.min .panel-h,.panel.min .tb-title{border-bottom:none}
+.panel.min{width:auto;min-width:0}
+.panel.min .tb-big{font-size:12px;line-height:1.4}
+.panel.min .tb-lbl{display:none}
+#key{left:52px;top:116px;width:470px}
+.key-grid{display:grid;grid-template-columns:1fr 1fr;padding:8px 10px 4px 10px;gap:0 8px}
+.key-grid > div:nth-child(odd){border-right:1px solid rgba(28,43,79,.25);padding-right:8px}
+.key-item{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-2);height:27px;white-space:nowrap;cursor:pointer}
+.key-item.hot{color:var(--accent)}
+.num{width:20px;height:20px;border:1.2px solid var(--ink);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink);flex:none;background:var(--paper)}
+.key-item.hot .num{border-color:var(--accent);color:var(--accent)}
+.key-foot{display:flex;justify-content:space-between;border-top:1px solid rgba(28,43,79,.35);padding:6px 12px;font-size:9.5px;letter-spacing:.14em;color:var(--ink-soft)}
+.key-foot b{color:var(--ink);font-weight:600}
+
+#instr{right:52px;top:116px;width:292px}
+.instr-grid{padding:8px 12px 10px 12px;display:grid;grid-template-columns:1fr auto;row-gap:5px;font-size:10.5px;letter-spacing:.06em}
+.instr-grid .k{color:var(--ink-soft)}
+.instr-grid .v{color:var(--ink);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+
+#controls{left:52px;bottom:52px;padding:8px 12px}
+.ctl-row{display:flex;align-items:center;gap:10px;margin:4px 0}
+.ctl-label{width:52px;font-size:9.5px;letter-spacing:.2em;color:var(--ink-soft)}
+.ctl-btns{display:flex;gap:5px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink);background:var(--paper);border:1.5px solid var(--ink);
+  min-width:72px;height:27px;padding:0 6px;cursor:pointer;transition:background .35s ease,color .35s ease}
+.btn:hover{background:rgba(28,43,79,.08)}
+.btn.active{background:var(--btn-active);color:#fff}
+.btn.toggled{background:var(--btn-active);color:#fff;border-color:var(--ink)}
+.btn.pulse{animation:pulse .5s ease}
+@keyframes pulse{0%{background:var(--accent);color:#fff}100%{background:var(--paper);color:var(--ink)}}
+
+#titleblock{right:52px;bottom:52px;width:480px}
+.tb-title{padding:8px 8px 10px 14px;border-bottom:1.5px solid var(--ink);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.panel.min .tb-title{padding:6px 8px 6px 12px;align-items:center}
+.tb-lbl{font-size:9px;letter-spacing:.22em;color:var(--ink-soft)}
+.tb-big{font-size:15px;font-weight:600;letter-spacing:.18em;line-height:1.55;margin-top:2px}
+.tb-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.tb-cell{padding:6px 10px 7px 12px;border-right:1px solid rgba(28,43,79,.35);border-bottom:1px solid rgba(28,43,79,.35)}
+.tb-cell:nth-child(4n){border-right:none}
+.tb-cell:nth-last-child(-n+4){border-bottom:none}
+.tb-cell .tb-lbl{font-size:8.5px}
+.tb-cell .tb-val{font-size:11.5px;font-weight:600;letter-spacing:.08em;margin-top:2px;white-space:nowrap}
+.tb-cell .tb-val.red{color:var(--accent)}
+
+#hint{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);font-size:9.5px;letter-spacing:.22em;color:var(--ink-soft);opacity:.8;pointer-events:none}
+#viewtitle{position:absolute;left:50%;bottom:66px;transform:translateX(-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity .4s ease}
+#viewtitle.show{opacity:1}
+.vt-rule{width:175px;height:1.5px;background:var(--ink);margin:0 auto 7px auto}
+.vt-name{font-size:16px;font-weight:600;letter-spacing:.36em}
+.vt-sub{font-size:10px;letter-spacing:.14em;color:var(--ink-soft);margin-top:5px}
+
+#tooltip{position:absolute;pointer-events:none;background:rgba(244,246,250,.96);border:1.5px solid var(--accent);padding:6px 12px 7px 12px;
+  opacity:0;transition:opacity .15s ease;box-shadow:0 0 0 3px rgba(244,246,250,.7);z-index:5}
+#tooltip.show{opacity:1}
+.tt-name{font-size:11.5px;font-weight:600;letter-spacing:.2em;color:var(--accent)}
+.tt-desc{font-size:10px;letter-spacing:.06em;color:var(--ink-soft);margin-top:3px;white-space:nowrap}
+
+#fallback[hidden]{display:none}
+#fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink);background:var(--paper);z-index:50;text-align:center;padding:40px}
+
+@media (max-width:1700px){ .vt-sub{font-size:9.5px;letter-spacing:.07em} }
+@media (max-width:1100px){
+  #key{width:380px}.key-item{font-size:10px}
+  #titleblock{width:400px}
+  #instr{width:250px}
+}
+
+/* ---- sheet cards: one control fades them all away, matching the PANELS dissolve ---- */
+#cards-toggle{position:absolute;top:52px;right:52px;width:26px;height:26px;padding:0;z-index:6;
+  border:1.5px solid var(--ink);background:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .18s ease,opacity .3s ease}
+#cards-toggle:hover{background:rgba(28,43,79,.1)}
+#cards-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#cards-toggle span{display:block;width:12px;height:12px;border:1.5px solid var(--ink);position:relative}
+#cards-toggle span::after{content:"";position:absolute;inset:-1.5px;border-top:1.5px solid var(--ink);
+  transform:rotate(45deg);transform-origin:center;opacity:0;transition:opacity .2s ease}
+body.cards-off #cards-toggle span::after{opacity:1}
+body.cards-off #cards-toggle{opacity:.45}
+body.cards-off #cards-toggle:hover{opacity:1}
+/* the dissolve: the cards fade and lift the way the shell does under PANELS */
+#key,#instr,#controls,#titleblock,#hdr-left,#hdr-right{transition:opacity .45s ease,transform .45s ease}
+/* the very first paint must not animate: a page opened with the cards hidden should simply have none */
+body.no-card-anim #key,body.no-card-anim #instr,body.no-card-anim #controls,
+body.no-card-anim #titleblock,body.no-card-anim #hdr-left,body.no-card-anim #hdr-right,
+body.no-card-anim #cards-toggle{transition:none}
+body.cards-off #key,body.cards-off #instr,body.cards-off #controls,
+body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
+  opacity:0;transform:translateY(-8px);pointer-events:none}
+
+/* ---- narrow sheets ------------------------------------------------------------------
+   The drawing sheet is drawn for a wide aspect. As the window narrows the cards are shrunk,
+   then re-stacked down the left, then reduced to the controls and a one-line title block, so
+   the drawing itself always keeps the middle of the sheet. ---------------------------------- */
+@media (max-width:1500px){
+  #key{width:412px}
+  .key-item{font-size:10.5px;height:24px}
+  #titleblock{width:392px}
+  .tb-big{font-size:13px;letter-spacing:.14em}
+  #instr{width:262px}
+}
+@media (max-width:1240px){
+  #hdr-right{display:none}
+  #controls{bottom:auto;top:112px;left:52px}
+  #key{top:196px;width:392px}
+  #instr{top:112px;width:236px}
+  .instr-grid{font-size:9.5px}
+  #titleblock{width:320px}
+  .tb-grid{grid-template-columns:repeat(2,1fr)}
+  .tb-cell:nth-child(2n){border-right:none}
+  .tb-cell:nth-child(4n){border-right:1px solid rgba(28,43,79,.35)}
+}
+@media (max-width:980px){
+  #key,#instr{display:none}
+  #stage{inset:28px 30px}
+  .frame-inner{inset:27px 29px}
+  .zone-top{top:8px;left:29px;right:29px;height:19px}
+  .zone-bottom{bottom:8px;left:29px;right:29px;height:19px}
+  .zone-left{top:27px;bottom:27px;left:10px;width:19px}
+  .zone-right{top:27px;bottom:27px;right:10px;width:19px}
+  header{top:40px}
+  #hdr-left{left:40px}
+  .hdr-title{font-size:12px;letter-spacing:.22em}
+  .hdr-sub{font-size:9px}
+  .logo{width:24px;height:24px}
+  #cards-toggle{top:40px;right:40px}
+  #controls{top:88px;left:40px;padding:6px 9px}
+  .btn{min-width:62px;height:24px;font-size:10px;padding:0 5px}
+  .ctl-label{width:46px;font-size:8.5px;letter-spacing:.14em}
+  #titleblock{width:290px;right:40px;bottom:40px}
+  .tb-big{font-size:11.5px;letter-spacing:.1em}
+  .tb-cell .tb-val{font-size:10px}
+}
+@media (max-width:640px){
+  #stage{inset:20px 20px}
+  .frame-outer{inset:6px 6px}
+  .frame-inner{inset:19px 19px}
+  .zone-top,.zone-bottom,.zone-left,.zone-right{display:none}
+  header{top:28px}
+  #hdr-left{left:26px;gap:8px}
+  .hdr-sub{display:none}
+  .hdr-title{font-size:10.5px;letter-spacing:.16em}
+  .logo{width:20px;height:20px;margin:0 5px 0 0}
+  .logo span{width:8px;height:8px}
+  #cards-toggle{top:26px;right:26px;width:22px;height:22px}
+  #controls{top:60px;left:26px;right:26px;padding:5px 7px}
+  .ctl-row{gap:6px;margin:3px 0;min-width:0}
+  .ctl-label{width:38px;font-size:8px;letter-spacing:.1em}
+  .ctl-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;flex:1;min-width:0}
+  .btn{min-width:0;width:100%;height:23px;font-size:9.5px;padding:0 2px;letter-spacing:.04em;overflow:hidden}
+  #titleblock{width:auto;left:26px;right:26px;bottom:26px;max-width:calc(100vw - 52px)}
+  .tb-title{padding:5px 8px 6px 10px}
+  .tb-lbl{font-size:7.5px}
+  .tb-big{font-size:10.5px;line-height:1.4;letter-spacing:.06em;overflow-wrap:anywhere}
+  .tb-grid{display:none}
+  #viewtitle{bottom:44px}
+  .vt-name{font-size:11px;letter-spacing:.18em}
+  .vt-rule{width:110px;margin-bottom:4px}
+  .vt-sub{font-size:8px}
+  #hint{display:none}
+}
+
+/* short viewports (phone held sideways, or a squat browser pane): the cards have to give up
+   the vertical space, so the title block loses its grid and the controls sit in one strip */
+@media (max-height:520px){
+  #key,#instr{display:none}
+  .hdr-sub{display:none}
+  #controls{top:auto;bottom:20px;left:20px;padding:5px 8px}
+  #titleblock{bottom:20px;right:20px;width:auto;max-width:44vw}
+  .tb-grid{display:none}
+  .tb-big{font-size:10.5px;line-height:1.35}
+  #viewtitle,#hint{display:none}
+  header{top:22px}
+  #hdr-left{left:22px}
+  #cards-toggle{top:22px;right:22px}
+  #stage{inset:16px 18px}
+  .frame-outer{inset:5px 6px}
+  .frame-inner{inset:15px 17px}
+  .zone-top,.zone-bottom,.zone-left,.zone-right{display:none}
+}

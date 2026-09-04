@@ -1,0 +1,5 @@
+.DS_Store
+
+# AutoLab writes this before it splices a curve into vehicle.js; it is its rollback copy,
+# so it must stay on disk — but it is a generated artifact, not source.
+src/*.autolab-backup

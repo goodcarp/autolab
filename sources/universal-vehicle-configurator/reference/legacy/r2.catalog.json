@@ -1,0 +1,472 @@
+{
+  "format": "uconf/0.1",
+
+  "product": {
+    "id": "rivian-r2-2026",
+    "make": "Rivian",
+    "model": "R2",
+    "year": 2026,
+    "body": "Midsize electric SUV",
+    "market": "US",
+    "currency": "USD",
+    "data_as_of": "2026-08-31",
+    "sources": [
+      "Rivian press release 2026-03-11 (trims & pricing)",
+      "Rivian configurator (rivian.com/configurations/builder/r2) via public config URLs",
+      "Electrek 2026-05-15 (configurator options & pricing)",
+      "InsideEVs 2026-05-15 (fully-loaded pricing)",
+      "RivianTrackr buyer's guide (range-by-wheel data)",
+      "CarBuzz 2026-08 (tow package pricing)"
+    ],
+    "disclaimer": "Independent buyer-side tool. Not affiliated with, endorsed by, or sponsored by Rivian or any manufacturer. Vehicle names and specifications are used nominatively to identify real products. Verify all pricing and eligibility with the seller and a tax professional before purchase.",
+    "assembly": { "country": "US", "plant": "Normal, Illinois" },
+    "delivery_order": ["Available now", "Spring 2026", "Late 2026", "2027"],
+    "calibration": {
+      "published_fully_loaded_performance": 62745,
+      "note": "InsideEVs reports a fully-equipped Performance w/ Launch Package at $62,745. Use to calibrate estimated option prices as they firm up."
+    }
+  },
+
+  "groups": [
+    { "id": "build", "label": "Build", "select": "one", "required": true, "role": "base", "default": "build.performance" },
+    { "id": "paint", "label": "Paint", "select": "one", "required": true, "default": "paint.esker_silver" },
+    { "id": "wheels", "label": "Wheels", "select": "one", "required": true, "default": "wheels.lt21_as" },
+    { "id": "interior", "label": "Interior", "select": "one", "required": true, "default": "interior.black_crater" },
+    { "id": "towing", "label": "Towing", "select": "many", "required": false },
+    { "id": "charging", "label": "Charging", "select": "many", "required": false }
+  ],
+
+  "options": [
+    {
+      "id": "build.performance",
+      "group": "build",
+      "label": "R2 Performance (Launch Package)",
+      "vendor_code": "BLD-PRF2",
+      "price": { "amount": 57990, "mode": "base", "confidence": "verified" },
+      "effects": [
+        { "spec": "drivetrain", "op": "set", "value": "Dual-motor AWD", "confidence": "verified" },
+        { "spec": "hp", "op": "set", "value": 656, "confidence": "verified" },
+        { "spec": "torque_lbft", "op": "set", "value": 609, "confidence": "verified" },
+        { "spec": "zero_to_sixty_s", "op": "set", "value": 3.6, "confidence": "verified" },
+        { "spec": "range_mi", "op": "set", "value": 330, "confidence": "verified" },
+        { "spec": "adas", "op": "set", "value": "Autonomy+ hands-free, lifetime (Launch Package)", "confidence": "verified" }
+      ],
+      "delivery": { "window": "Available now" },
+      "copy": {
+        "short": "656 hp dual-motor AWD, 330 mi, 0-60 in 3.6s.",
+        "long": "Launch Package bundles Autonomy+ (lifetime), the Tow Package, a Launch key fob, and access to Launch Green paint — for a limited time.",
+        "value_note": "The bundle math matters: Autonomy+ and the Tow Package ride free here. If you wanted both anyway, the real gap to Premium shrinks well below the sticker gap."
+      },
+      "provenance": { "source": "Rivian press release 2026-03-11; Electrek 2026-05-15", "confidence": "verified" }
+    },
+    {
+      "id": "build.premium",
+      "group": "build",
+      "label": "R2 Premium",
+      "vendor_code": "BLD-PRM2",
+      "price": { "amount": 53990, "mode": "base", "confidence": "verified" },
+      "effects": [
+        { "spec": "drivetrain", "op": "set", "value": "Dual-motor AWD", "confidence": "verified" },
+        { "spec": "range_mi", "op": "set", "value": 330, "confidence": "verified" }
+      ],
+      "delivery": { "window": "Late 2026" },
+      "copy": {
+        "short": "Dual-motor AWD, 330 mi.",
+        "value_note": "Power figure unpublished as of data_as_of. $4,000 under Performance, but no Launch Package bundle — price the extras you'd add back."
+      },
+      "provenance": { "source": "Rivian press release 2026-03-11", "confidence": "verified" }
+    },
+    {
+      "id": "build.standard_rwd",
+      "group": "build",
+      "label": "R2 Standard RWD",
+      "vendor_code": "BLD-STND2 / DTN-RWDS",
+      "price": { "amount": 44990, "mode": "base", "confidence": "verified" },
+      "effects": [
+        { "spec": "drivetrain", "op": "set", "value": "RWD", "confidence": "verified" },
+        { "spec": "range_mi", "op": "set", "value": 275, "confidence": "verified" },
+        { "spec": "battery", "op": "set", "value": "Standard pack", "confidence": "verified" }
+      ],
+      "delivery": { "window": "2027" },
+      "copy": {
+        "short": "The $44,990 entry point. 275 mi.",
+        "value_note": "The anchor price, not the value pick — $3,500 more buys 70 extra miles of range one trim up."
+      },
+      "provenance": { "source": "RivianTrackr buyer's guide; Rivian configurator", "confidence": "verified" }
+    },
+    {
+      "id": "build.standard_rwd_lr",
+      "group": "build",
+      "label": "R2 Standard RWD Long Range",
+      "vendor_code": "BLD-STND2 / BAT-L02",
+      "price": { "amount": 48490, "mode": "base", "confidence": "verified" },
+      "effects": [
+        { "spec": "drivetrain", "op": "set", "value": "RWD", "confidence": "verified" },
+        { "spec": "range_mi", "op": "set", "value": 345, "confidence": "verified" },
+        { "spec": "battery", "op": "set", "value": "Long Range pack", "confidence": "verified" }
+      ],
+      "delivery": { "window": "2027" },
+      "copy": {
+        "short": "The range champion of the entire lineup: 345 mi.",
+        "value_note": "The quiet winner. More range than the Performance for $9,500 less. If range is your constraint, the lineup's best answer is its second-cheapest trim."
+      },
+      "provenance": { "source": "RivianTrackr buyer's guide", "confidence": "verified" }
+    },
+    {
+      "id": "build.standard_awd_lr",
+      "group": "build",
+      "label": "R2 Standard AWD Long Range",
+      "vendor_code": "BLD-STND2 / DTN-AWD / BAT-L02",
+      "price": { "amount": 51990, "mode": "base", "confidence": "verified" },
+      "effects": [
+        { "spec": "drivetrain", "op": "set", "value": "Dual-motor AWD", "confidence": "verified" },
+        { "spec": "range_mi", "op": "set", "value": 330, "confidence": "verified" },
+        { "spec": "battery", "op": "set", "value": "Long Range pack", "confidence": "verified" }
+      ],
+      "delivery": { "window": "2027" },
+      "copy": { "short": "AWD with the Long Range pack. 330 mi." },
+      "provenance": { "source": "RivianTrackr buyer's guide", "confidence": "verified" }
+    },
+
+    {
+      "id": "paint.esker_silver",
+      "group": "paint",
+      "label": "Esker Silver",
+      "vendor_code": "EXP-ESV",
+      "price": { "amount": 0, "mode": "delta", "confidence": "verified" },
+      "render": { "hex": "#B9BCBF", "mesh_target": "body_paint" },
+      "copy": { "value_note": "The only no-cost color in the palette. Every other choice is $1,000+ of paint." },
+      "provenance": { "source": "Electrek 2026-05-15", "confidence": "verified" }
+    },
+    {
+      "id": "paint.glacier_white",
+      "group": "paint",
+      "label": "Glacier White",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "published range for non-silver colors is $1,000-$2,000; exact figure unverified" },
+      "render": { "hex": "#EDEFEF", "mesh_target": "body_paint" },
+      "provenance": { "source": "Jalopnik 2026-05-15 (color exists); price within Electrek's published range", "confidence": "estimated" }
+    },
+    {
+      "id": "paint.catalina_blue",
+      "group": "paint",
+      "label": "Catalina Blue",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "published range $1,000-$2,000; exact figure unverified" },
+      "render": { "hex": "#2E4E6B", "mesh_target": "body_paint" },
+      "provenance": { "source": "Rivian press release imagery (color exists)", "confidence": "estimated" }
+    },
+    {
+      "id": "paint.forest_green",
+      "group": "paint",
+      "label": "Forest Green",
+      "vendor_code": "EXP-FGR",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "published range $1,000-$2,000; exact figure unverified" },
+      "render": { "hex": "#2F4436", "mesh_target": "body_paint" },
+      "delivery": { "window": "Late 2026" },
+      "copy": { "value_note": "Choosing this color moves your delivery to late 2026 regardless of trim availability." },
+      "provenance": { "source": "Jalopnik/InsideEVs 2026-05-15", "confidence": "verified" }
+    },
+    {
+      "id": "paint.launch_green",
+      "group": "paint",
+      "label": "Launch Green",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "Launch Package exclusive; exact price unverified" },
+      "render": { "hex": "#4A5D3A", "mesh_target": "body_paint" },
+      "availability": { "selected": "build.performance" },
+      "copy": { "value_note": "Launch Package exclusive — a scarcity play. If resale stories move you, exclusivity colors historically hold a small premium." },
+      "provenance": { "source": "Electrek 2026-05-15 (exclusivity verified)", "confidence": "verified" }
+    },
+    {
+      "id": "paint.borealis",
+      "group": "paint",
+      "label": "Borealis",
+      "price": { "amount": 2000, "mode": "delta", "confidence": "estimated", "note": "top of published $1,000-$2,000 range; exact figure unverified" },
+      "render": { "hex": "#4B3A6B", "mesh_target": "body_paint" },
+      "availability": { "selected": "build.performance" },
+      "delivery": { "window": "2027" },
+      "copy": { "value_note": "Performance-only, and not until 2027. Two thousand dollars and a year of waiting, for purple. (A great purple, admittedly.)" },
+      "provenance": { "source": "Jalopnik/InsideEVs 2026-05-15", "confidence": "verified" }
+    },
+
+    {
+      "id": "wheels.lt21_as",
+      "group": "wheels",
+      "label": "21\" Liquid Tungsten All-Season",
+      "vendor_code": "WHL-21B",
+      "price": { "amount": 0, "mode": "delta", "confidence": "verified" },
+      "render": { "mesh_swap": "wheel_21" },
+      "availability": { "any": [ { "selected": "build.performance" }, { "selected": "build.premium" }, { "selected": "build.standard_awd_lr" } ] },
+      "copy": {
+        "short": "Forged aluminum, Pirelli all-seasons. The range-maximizing choice.",
+        "value_note": "All R2 wheels share a 32\" overall diameter — the look changes, the stance doesn't."
+      },
+      "provenance": { "source": "Rivian stories page; Electrek. Availability-by-trim is inferred, not published.", "confidence": "estimated" }
+    },
+    {
+      "id": "wheels.bs20_at",
+      "group": "wheels",
+      "label": "20\" Black Sand All-Terrain",
+      "vendor_code": "WHL-20B",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "option price unverified" },
+      "render": { "mesh_swap": "wheel_20at" },
+      "overrides": [
+        {
+          "when": { "any": [ { "selected": "build.performance" }, { "selected": "build.premium" } ] },
+          "effects": [ { "spec": "range_mi", "op": "set", "value": 307, "confidence": "verified" } ]
+        },
+        {
+          "when": { "any": [ { "selected": "build.standard_rwd" }, { "selected": "build.standard_rwd_lr" }, { "selected": "build.standard_awd_lr" } ] },
+          "effects": [ { "spec": "range_mi", "op": "mul", "value": 0.93, "confidence": "estimated" } ]
+        }
+      ],
+      "copy": {
+        "short": "BF Goodrich all-terrains for on/off-road confidence.",
+        "value_note": "This wheel costs 23 miles of range on the Performance (330 to 307) — about a fifth of your daily buffer, spent on a look and a tire. Know that going in; plenty of buyers would still take the trade."
+      },
+      "provenance": { "source": "RivianTrackr (307 mi on Performance verified); Standard-trim effect is a scaled estimate", "confidence": "estimated" }
+    },
+    {
+      "id": "wheels.bc20_as",
+      "group": "wheels",
+      "label": "20\" Bicolor Carbon All-Season",
+      "price": { "amount": 500, "mode": "delta", "confidence": "estimated", "note": "existence verified; price and trim availability unverified" },
+      "render": { "mesh_swap": "wheel_20as" },
+      "copy": { "short": "Aluminum with satin machined details, Pirelli all-seasons." },
+      "provenance": { "source": "Rivian stories page (existence)", "confidence": "estimated" }
+    },
+    {
+      "id": "wheels.mg19_as",
+      "group": "wheels",
+      "label": "19\" Machined Graphite All-Season",
+      "vendor_code": "WHL-19A",
+      "price": { "amount": 0, "mode": "delta", "confidence": "verified" },
+      "render": { "mesh_swap": "wheel_19" },
+      "availability": { "any": [ { "selected": "build.standard_rwd" }, { "selected": "build.standard_rwd_lr" }, { "selected": "build.standard_awd_lr" } ] },
+      "copy": { "short": "The Standard-trim wheel." },
+      "provenance": { "source": "Rivian configurator OG metadata (Standard + 19\" pairing observed)", "confidence": "estimated" }
+    },
+
+    {
+      "id": "interior.black_crater",
+      "group": "interior",
+      "label": "Black Crater",
+      "vendor_code": "INT-SBC",
+      "price": { "amount": 0, "mode": "delta", "confidence": "verified" },
+      "copy": { "short": "Dark volcanic tones, light headliner, natural fiber accents. ('Signature' spec on Performance/Premium.)" },
+      "provenance": { "source": "Rivian stories page; Electrek", "confidence": "verified" }
+    },
+    {
+      "id": "interior.coastal_cloud",
+      "group": "interior",
+      "label": "Coastal Cloud Signature",
+      "vendor_code": "INT-PCC",
+      "price": { "amount": 1000, "mode": "delta", "confidence": "estimated", "note": "option price unverified" },
+      "copy": { "short": "The lighter-toned interior.", "value_note": "Light interiors photograph beautifully and wear honestly. Budget for the occasional detail." },
+      "provenance": { "source": "Electrek (existence)", "confidence": "verified" }
+    },
+
+    {
+      "id": "towing.launch_included",
+      "group": "towing",
+      "label": "Tow Package (Launch Package — included)",
+      "price": { "amount": 0, "mode": "delta", "confidence": "verified" },
+      "availability": { "selected": "build.performance" },
+      "effects": [ { "spec": "tow_hitch", "op": "set", "value": true, "confidence": "verified" } ],
+      "render": { "mesh_target": "hitch" },
+      "copy": { "value_note": "Free with Launch Package. The same hardware and software runs ~$3,450 bought separately — this bundle is where the Performance earns back sticker." },
+      "provenance": { "source": "Electrek (bundle contents); CarBuzz (standalone pricing)", "confidence": "verified" }
+    },
+    {
+      "id": "towing.standalone",
+      "group": "towing",
+      "label": "Tow Package (hitch + tow software)",
+      "price": { "amount": 3450, "mode": "delta", "confidence": "estimated", "note": "$2,500 hitch + $950 software per CarBuzz, post-launch-incentive pricing; bundling/availability by trim unverified" },
+      "availability": { "not": { "selected": "build.performance" } },
+      "effects": [ { "spec": "tow_hitch", "op": "set", "value": true, "confidence": "verified" } ],
+      "render": { "mesh_target": "hitch" },
+      "provenance": { "source": "CarBuzz 2026-08", "confidence": "estimated" }
+    },
+
+    {
+      "id": "charging.home_l2",
+      "group": "charging",
+      "label": "Home Level 2 charger + installation (third-party, typical)",
+      "price": { "amount": 1500, "mode": "delta", "confidence": "estimated", "note": "not a Rivian option; typical hardware+install cost carried so TCO and utility-rebate math can see it" },
+      "effects": [ { "spec": "home_charging", "op": "set", "value": "Level 2", "confidence": "verified" } ],
+      "copy": { "value_note": "Carried in the build so the savings tools can do their job: utility rebates key off this line." },
+      "provenance": { "source": "typical US install cost", "confidence": "estimated" }
+    }
+  ],
+
+  "rules": [
+    {
+      "id": "warn.delivery_gate_color",
+      "when": { "any": [ { "selected": "paint.forest_green" }, { "selected": "paint.borealis" } ] },
+      "require": false,
+      "message": "Heads up: this paint choice gates your delivery date (Forest Green: late 2026; Borealis: 2027) even if your trim is available sooner.",
+      "severity": "warning"
+    }
+  ],
+
+  "fees": [
+    { "id": "destination", "label": "Destination & delivery", "amount": 1800, "confidence": "estimated", "note": "R2 destination fee unpublished as of data_as_of; figure mirrors Rivian R1 practice. Verify at order." }
+  ],
+
+  "incentives": [
+    {
+      "id": "federal_30d_new_ev",
+      "label": "Federal Clean Vehicle Credit (30D)",
+      "jurisdiction": { "country": "US", "program": "IRC 30D" },
+      "type": "tax_credit",
+      "status": "expired",
+      "effective": { "to": "2025-09-30" },
+      "amount": { "fixed": 7500 },
+      "eligibility": true,
+      "claim": "tax_return",
+      "source": "One Big Beautiful Bill Act (2025); IRS Form 8936 guidance",
+      "confidence": "verified",
+      "notes": "Ended for vehicles acquired after Sep 30, 2025. Kept in catalog so the agent can explain its absence rather than shrug."
+    },
+    {
+      "id": "federal_30c_charger",
+      "label": "Federal home charger credit (30C)",
+      "jurisdiction": { "country": "US", "program": "IRC 30C" },
+      "type": "tax_credit",
+      "status": "expired",
+      "effective": { "to": "2026-06-30" },
+      "amount": { "estimate_note": "was 30% of charger + install, up to $1,000" },
+      "eligibility": { "selected": "charging.home_l2" },
+      "claim": "tax_return",
+      "source": "IRS guidance; multiple 2026 secondary sources",
+      "confidence": "verified",
+      "notes": "Expired Jun 30, 2026 — two months before this catalog's data_as_of."
+    },
+    {
+      "id": "co_imvc",
+      "label": "Colorado Innovative Motor Vehicle Credit",
+      "jurisdiction": { "country": "US", "region": "CO", "program": "IMVC" },
+      "type": "tax_credit",
+      "status": "active",
+      "amount": { "fixed": 750 },
+      "eligibility": {
+        "all": [
+          { "var": "buyer.state", "op": "eq", "value": "CO" },
+          { "var": "price.msrp_as_configured", "op": "lte", "value": 80000 }
+        ]
+      },
+      "claim": "tax_return",
+      "source": "CO DOR guidance via 2026 dealer/secondary sources",
+      "confidence": "verified",
+      "notes": "Dropped from $3,500 (2025) to $750 for 2026. Point-of-sale assignment ended Jan 1, 2026 — this is now a tax-return claim."
+    },
+    {
+      "id": "co_imvc_under35k_bonus",
+      "label": "Colorado IMVC low-MSRP bonus",
+      "jurisdiction": { "country": "US", "region": "CO", "program": "IMVC" },
+      "type": "tax_credit",
+      "status": "active",
+      "amount": { "fixed": 2500 },
+      "eligibility": {
+        "all": [
+          { "var": "buyer.state", "op": "eq", "value": "CO" },
+          { "var": "price.base_msrp", "op": "lte", "value": 35000 }
+        ]
+      },
+      "claim": "tax_return",
+      "source": "CO DOR guidance via 2026 dealer/secondary sources",
+      "confidence": "verified",
+      "notes": "No R2 trim qualifies (base $44,990) — carried so the agent can explain the near-miss honestly."
+    },
+    {
+      "id": "xcel_home_wiring",
+      "label": "Xcel Energy home charging wiring rebate",
+      "jurisdiction": { "country": "US", "region": "CO", "program": "Xcel EV Accelerate" },
+      "type": "utility_rebate",
+      "status": "active",
+      "amount": { "fixed": 500, "estimate_note": "commonly cited $500; wiring rebates up to $1,300 ($2,300 income-qualified) reported. Generally requires time-of-use or managed-charging enrollment." },
+      "eligibility": {
+        "all": [
+          { "var": "buyer.utility", "op": "eq", "value": "xcel" },
+          { "selected": "charging.home_l2" }
+        ]
+      },
+      "claim": "utility_portal",
+      "source": "Xcel Energy EV programs via 2026 secondary sources",
+      "confidence": "estimated"
+    },
+    {
+      "id": "federal_auto_loan_interest_deduction",
+      "label": "Federal auto-loan interest deduction (US-assembled vehicles)",
+      "jurisdiction": { "country": "US", "program": "OBBBA auto-loan interest provision" },
+      "type": "deduction",
+      "status": "active",
+      "effective": { "to": "2028-12-31" },
+      "amount": { "estimate_note": "deduct up to $10,000/yr of loan interest on a financed, new, US-assembled vehicle through 2028; income phase-outs apply. Real value depends on rate, term, and bracket — the engine reports it as a flagged opportunity, not a number." },
+      "eligibility": {
+        "all": [
+          { "var": "buyer.financing", "op": "truthy", "value": true },
+          { "var": "product.assembly.country", "op": "eq", "value": "US" }
+        ]
+      },
+      "claim": "tax_return",
+      "source": "2026 secondary sources on OBBBA provisions",
+      "confidence": "estimated",
+      "notes": "The R2 is assembled in Normal, Illinois, so it qualifies on the assembly test. A seller's configurator will never surface this; a buyer's tool must."
+    }
+  ],
+
+  "tco_model": {
+    "mi_per_kwh_est": 2.9,
+    "mi_per_kwh_confidence": "estimated",
+    "maintenance_per_year_est": 300,
+    "defaults": { "miles_per_year": 12000, "years": 5, "kwh_rate_home": 0.15, "pct_home_charging": 0.85, "kwh_rate_public": 0.42 }
+  },
+
+  "scene": {
+    "model": { "src": "TBD", "format": "glTF", "license": "TBD — require CC0 or CC-BY", "attribution": "TBD", "status": "unsourced: day-one task is finding a CC0/CC-BY midsize-SUV mesh; semantic part map below is mesh-agnostic" },
+    "parts": {
+      "body_paint": "body_shell",
+      "wheel_fl": "wheel_front_left",
+      "hitch": "rear_hitch",
+      "frunk": "front_trunk",
+      "charge_port": "charge_port",
+      "interior_shell": "interior"
+    },
+    "cameras": [
+      { "id": "front34", "label": "Front three-quarter", "pos": [4.2, 1.6, 3.4], "target": [0, 0.8, 0] },
+      { "id": "side", "label": "Profile", "pos": [5.2, 1.2, 0], "target": [0, 0.9, 0] },
+      { "id": "rear34", "label": "Rear three-quarter", "pos": [-4.2, 1.6, 3.2], "target": [0, 0.8, 0] },
+      { "id": "hitch", "label": "Hitch close-up", "pos": [-2.4, 0.7, 1.1], "target": [-2.0, 0.5, 0] },
+      { "id": "top", "label": "Overhead", "pos": [0.5, 6.0, 0.5], "target": [0, 0, 0] }
+    ],
+    "demos": [
+      {
+        "id": "range_reality",
+        "label": "What the wheel choice actually costs",
+        "steps": [
+          { "camera": "side" },
+          { "caption": "21\" all-seasons: 330 miles of rated range." },
+          { "set_option": "wheels.bs20_at" },
+          { "highlight": "wheel_fl" },
+          { "caption": "Same car, all-terrain look: 307 miles. The wheel just spent 23 miles of your range." },
+          { "set_option": "wheels.lt21_as" }
+        ]
+      },
+      {
+        "id": "tow_demo",
+        "label": "Tow package walkthrough",
+        "steps": [
+          { "camera": "rear34" },
+          { "orbit_to": "hitch" },
+          { "highlight": "hitch" },
+          { "caption": "2\" receiver plus tow software. Free in the Launch Package; ~$3,450 bought separately." }
+        ]
+      }
+    ]
+  },
+
+  "export": {
+    "vendor_url_template": "https://rivian.com/configurations/builder/r2?CONFIG=GEN-1_{year}_RGN-USA_BAT-{bat}_MOT-{mot}_BLD-{bld}_DTN-{dtn}_WHL-{whl}_EXP-{exp}_INT-{int}",
+    "confidence": "experimental",
+    "note": "Slot vocabulary harvested from public configurator URLs (observed: BLD-PRF2/PRM2/STND2, DTN-AWD/RWDS, WHL-19A/20B/21B, EXP-ESV/FGR, INT-SBC/PCC, BAT-L02, MOT-202). BAT/MOT codes per trim not fully mapped. If completed, export_build() can hand the buyer to Rivian's own checkout with their exact build pre-loaded — the buyer's room opens the door back into the seller's."
+  }
+}

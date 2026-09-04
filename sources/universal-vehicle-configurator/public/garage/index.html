@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoLab Garage · Rivian R2 Digital Twin</title>
+<meta name="description" content="An agent-operable Rivian R2 digital twin for owner guidance, component inspection, and service context.">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/addons/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="sheet">
+  <div class="zone zone-top"></div>
+  <div class="zone zone-bottom"></div>
+  <div class="zone zone-left"></div>
+  <div class="zone zone-right"></div>
+  <div class="frame frame-outer"></div>
+  <div class="frame frame-inner"></div>
+
+  <button id="cards-toggle" type="button" aria-label="Hide the drawing panels" title="Hide panels (H)"><span></span></button>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="hint">DRAG TO ORBIT · SCROLL TO ZOOM</div>
+    <div id="viewtitle"><div class="vt-rule"></div><div class="vt-name"></div><div class="vt-sub"></div></div>
+    <div id="tooltip"><div class="tt-name"></div><div class="tt-desc"></div></div>
+  </div>
+
+  <header id="hdr-left">
+    <div class="logo"><span></span></div>
+    <div>
+      <div class="hdr-title" id="hdr-left-title"></div>
+      <div class="hdr-sub" id="hdr-left-sub"></div>
+    </div>
+  </header>
+  <header id="hdr-right">
+    <div class="hdr-title" id="hdr-right-title"></div>
+    <div class="hdr-sub" id="hdr-right-sub"></div>
+  </header>
+
+  <section class="panel" id="key">
+    <div class="panel-h"><span>KEY TO ITEMS</span><button class="panel-min" type="button" aria-label="Minimize key" title="Minimize">−</button></div>
+    <div class="key-grid" id="key-grid"></div>
+    <div class="key-foot"><span>PROJECTION <b>FIRST ANGLE</b></span><span>UNITS <b>MM</b></span><span>TOL. <b>±2</b></span></div>
+  </section>
+
+  <section class="panel" id="instr">
+    <div class="panel-h"><span>INSTRUMENTATION</span><button class="panel-min" type="button" aria-label="Minimize instrumentation" title="Minimize">−</button></div>
+    <div class="instr-grid" id="instr-grid"></div>
+  </section>
+
+  <section class="panel" id="controls">
+    <div class="ctl-row"><span class="ctl-label">VIEW</span><div class="ctl-btns" id="view-btns"></div></div>
+    <div class="ctl-row"><span class="ctl-label">MOTION</span><div class="ctl-btns" id="motion-btns"></div></div>
+  </section>
+
+  <section class="panel" id="titleblock">
+    <div class="tb-title"><div><div class="tb-lbl">TITLE</div><div class="tb-big" id="tb-title"></div></div><button class="panel-min" type="button" aria-label="Minimize title block" title="Minimize">−</button></div>
+    <div class="tb-grid" id="tb-grid"></div>
+    <!--
+      The Garage is a supported entry point on its own, and on its own it reads
+      as a manufacturer engineering release: a title block, a drawing number and
+      a revision letter. Say plainly what it is.
+    -->
+    <p class="tb-note">Independent reconstruction by AutoMoto. Not affiliated with, endorsed by,
+      or sponsored by Rivian. Geometry is fitted to published dimensions and photographs — not
+      manufacturer CAD, not a scan. Vehicle names are used nominatively to identify a real product.</p>
+  </section>
+</div>
+<div id="fallback" hidden>
+  <div>This drawing needs WebGL2. The complete rendering engine ships with AutoLab.</div>
+</div>
+<script type="module" src="src/main.js" onerror="document.getElementById('fallback').hidden=false"></script>
+</body>
+</html>

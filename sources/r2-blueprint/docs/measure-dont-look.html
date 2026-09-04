@@ -1,0 +1,843 @@
+<title>Measure, Don't Look</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#fbfaf8;
+  --surface:#f1efea;
+  --surface-2:#e9e6df;
+  --ink:#1a1c1b;
+  --ink-2:#55595a;
+  --ink-3:#8a8d88;
+  --rule:#d8d5ce;
+  --rule-hard:#b9b5ab;
+  --dev:#b0472c;
+  --dev-soft:#f0ddd6;
+  --ok:#2f6b5e;
+  --ok-soft:#dbe8e3;
+  --display:"Archivo",-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --measure:66ch;
+  --rail:5.5rem;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#17191a;
+    --surface:#1e2123;
+    --surface-2:#262a2c;
+    --ink:#e9e7e2;
+    --ink-2:#aeb2b0;
+    --ink-3:#7d817f;
+    --rule:#2e3234;
+    --rule-hard:#454a4c;
+    --dev:#e0765a;
+    --dev-soft:#3a2620;
+    --ok:#63b7a3;
+    --ok-soft:#1d2f2b;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#17191a;
+  --surface:#1e2123;
+  --surface-2:#262a2c;
+  --ink:#e9e7e2;
+  --ink-2:#aeb2b0;
+  --ink-3:#7d817f;
+  --rule:#2e3234;
+  --rule-hard:#454a4c;
+  --dev:#e0765a;
+  --dev-soft:#3a2620;
+  --ok:#63b7a3;
+  --ok-soft:#1d2f2b;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.62;
+  font-optical-sizing:auto;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:78rem;margin:0 auto;padding:0 1.5rem 6rem}
+
+/* ---- title block: the document convention of a dimensional report ---- */
+.block{
+  border:1px solid var(--rule-hard);
+  margin:2.5rem 0 3.5rem;
+  background:var(--surface);
+}
+.block-head{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:.75rem 1.5rem;
+  padding:1.25rem 1.5rem;border-bottom:1px solid var(--rule-hard);
+}
+.block-head h1{
+  font-family:var(--display);font-weight:700;font-size:clamp(1.7rem,4.4vw,2.5rem);
+  letter-spacing:-.02em;line-height:1.05;margin:0;text-wrap:balance;flex:1 1 18rem;
+}
+.block-head .sub{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+.fields{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+}
+.field{padding:.8rem 1.5rem;border-right:1px solid var(--rule);border-top:1px solid var(--rule)}
+.field:first-child{border-top:none}
+@media (min-width:40rem){.field{border-top:none}}
+.field:last-child{border-right:none}
+.field dt{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 .3rem;
+}
+.field dd{
+  margin:0;font-family:var(--mono);font-size:.95rem;font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--ink);
+}
+.field dd.good{color:var(--ok)}
+
+.lede{
+  font-size:1.14rem;color:var(--ink-2);max-width:var(--measure);margin:0 0 3rem;
+}
+
+/* ---- numbered sections with a rail ---- */
+section{margin:0 0 3.5rem;scroll-margin-top:2rem}
+.sec-head{display:flex;gap:1.5rem;align-items:baseline;margin:0 0 1.25rem}
+.num{
+  flex:0 0 var(--rail);text-align:right;
+  font-family:var(--mono);font-size:.78rem;font-weight:600;letter-spacing:.08em;
+  color:var(--dev);padding-top:.42rem;font-variant-numeric:tabular-nums;
+}
+h2{
+  font-family:var(--display);font-weight:600;font-size:1.5rem;letter-spacing:-.015em;
+  line-height:1.2;margin:0;text-wrap:balance;flex:1;
+}
+h3{
+  font-family:var(--display);font-weight:600;font-size:1.02rem;letter-spacing:.01em;
+  margin:2rem 0 .6rem;color:var(--ink);
+}
+.body{margin-left:0}
+@media (min-width:52rem){.body{margin-left:calc(var(--rail) + 1.5rem)}}
+.body>p,.body>ul,.body>ol{max-width:var(--measure)}
+p{margin:0 0 1rem}
+ul,ol{margin:0 0 1rem;padding-left:1.2rem}
+li{margin:0 0 .5rem}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+em{font-style:italic}
+a{color:var(--dev);text-decoration-thickness:1px;text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--dev);outline-offset:3px;border-radius:2px}
+
+code{
+  font-family:var(--mono);font-size:.86em;background:var(--surface);
+  padding:.1em .34em;border-radius:2px;color:var(--ink);
+}
+pre{
+  font-family:var(--mono);font-size:.82rem;line-height:1.6;
+  background:var(--surface);border:1px solid var(--rule);
+  padding:1rem 1.15rem;margin:0 0 1.25rem;overflow-x:auto;
+}
+pre code{background:none;padding:0;font-size:inherit}
+
+/* ---- the finding rule: a claim set off from the prose ---- */
+.rule{
+  border-left:3px solid var(--dev);background:var(--dev-soft);
+  padding:.85rem 1.15rem;margin:0 0 1.25rem;max-width:var(--measure);
+  font-size:1rem;
+}
+.rule .tag{
+  display:block;font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dev);margin-bottom:.3rem;
+}
+
+/* ---- tables ---- */
+/* Provenance note: these findings come from a different build, and the document's
+   premise is that every finding is earned, so say where. */
+.lead-note{
+  margin:0 0 1.5rem;padding-left:.9rem;border-left:2px solid var(--rule);
+  font-size:.92em;opacity:.72
+}
+.tbl{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.92rem}
+caption{
+  text-align:left;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);padding:.7rem 1rem;
+  border-bottom:1px solid var(--rule);background:var(--surface);
+}
+th,td{text-align:left;padding:.6rem 1rem;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;background:var(--surface);
+}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tool td:first-child{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+
+/* ---- rounds indicator: how many visual passes a defect survived ---- */
+.rounds{display:inline-flex;gap:2px;vertical-align:-1px}
+.rounds i{width:5px;height:11px;background:var(--dev);display:block;border-radius:1px}
+.rounds i.pale{background:var(--rule-hard)}
+
+/* ---- source ranking ---- */
+.ranked{list-style:none;padding:0;counter-reset:src;max-width:var(--measure)}
+.ranked li{
+  display:grid;grid-template-columns:2.1rem 1fr;gap:.9rem;
+  padding:.7rem 0;border-top:1px solid var(--rule);margin:0;
+}
+.ranked li::before{
+  counter-increment:src;content:counter(src);
+  font-family:var(--mono);font-size:.8rem;font-weight:600;
+  color:var(--ink);background:var(--surface-2);
+  display:grid;place-items:center;height:1.7rem;border-radius:2px;
+}
+.ranked li:last-child::before{color:var(--ink-3)}
+.ranked b{font-family:var(--display);font-weight:600;font-size:.98rem}
+
+/* ---- kernel stack ---- */
+.stack{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:0 0 1.5rem}
+.layer{background:var(--paper);padding:.9rem 1.15rem;display:grid;gap:.15rem}
+.layer .name{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;color:var(--dev);
+}
+.layer .what{font-size:.96rem;color:var(--ink-2)}
+.layer .what b{color:var(--ink);font-weight:600}
+
+/* ---- deviation strip ---- */
+.strip{
+  display:flex;flex-wrap:wrap;gap:.5rem;align-items:stretch;margin:0 0 1.5rem;
+}
+.step{
+  flex:1 1 7rem;border:1px solid var(--rule);background:var(--surface);padding:.7rem .9rem;
+}
+.step .k{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.step .v{font-family:var(--mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3}
+.step:last-child .v{color:var(--ok)}
+.step .why{font-size:.82rem;color:var(--ink-2);line-height:1.4;margin-top:.15rem}
+
+footer{
+  border-top:1px solid var(--rule-hard);margin-top:4rem;padding-top:1.25rem;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:var(--ink-3);
+  display:flex;flex-wrap:wrap;gap:.5rem 2rem;
+}
+@media (prefers-reduced-motion:no-preference){
+  a{transition:color .15s ease}
+}
+</style>
+
+<div class="wrap">
+
+<div class="block">
+  <div class="block-head">
+    <h1>Measure, Don&rsquo;t Look</h1>
+    <span class="sub">Dimensional report &middot; findings 1&ndash;14</span>
+  </div>
+  <dl class="fields">
+    <div class="field"><dt>Subject</dt><dd>Rivian R2</dd></div>
+    <div class="field"><dt>Method</dt><dd>Procedural three.js</dd></div>
+    <div class="field"><dt>Reference</dt><dd>Official ortho</dd></div>
+    <div class="field"><dt>Mean deviation</dt><dd class="good">3.4 mm</dd></div>
+    <div class="field"><dt>Shape only</dt><dd class="good">1.6 mm</dd></div>
+    <div class="field"><dt>See&#8209;through</dt><dd class="good">0 px</dd></div>
+  </dl>
+</div>
+
+<p class="lede">Findings from reconstructing a Rivian R2 as procedural three.js geometry, written as
+inputs for a reusable Skill. Everything here is a conclusion drawn from something that actually went
+wrong or actually worked in the build &mdash; not a plan for how it might go.</p>
+
+<section id="s1">
+  <div class="sec-head"><span class="num">01</span><h2>The finding that dominates all the others</h2></div>
+  <div class="body">
+    <div class="rule"><span class="tag">Finding</span>
+      Vision review does not converge. Measurement does.</div>
+
+    <p>Across this build, every defect that survived more than one round survived because it was being
+    judged by looking at a picture. Every one of them fell out in a single pass the moment it was
+    turned into a number.</p>
+
+    <div class="tbl">
+      <table>
+        <caption>Defects by rounds of visual review survived</caption>
+        <thead><tr><th>Defect</th><th>Rounds</th><th>How it actually resolved</th></tr></thead>
+        <tbody>
+          <tr><td>Windscreen base 111&nbsp;mm too far forward</td>
+              <td class="n"><span class="rounds" role="img" aria-label="4 rounds"><i></i><i></i><i></i><i></i></span></td>
+              <td>One silhouette measurement against the official drawing</td></tr>
+          <tr><td>A&#8209;pillar &ldquo;too thick&rdquo;</td>
+              <td class="n"><span class="rounds" role="img" aria-label="3 rounds"><i></i><i></i><i></i></span></td>
+              <td>The thick edge was the <em>far</em> pillar&rsquo;s shadow through the glass &mdash; a fact about the image, not the model</td></tr>
+          <tr><td>Windscreen &ldquo;hangs over the cowl&rdquo;</td>
+              <td class="n"><span class="rounds" role="img" aria-label="2 rounds"><i></i><i></i></span></td>
+              <td>Profiled the silhouette column by column: 21&nbsp;mm tall at the tip, split into two rims</td></tr>
+          <tr><td>Side windows &ldquo;have a seam&rdquo;</td>
+              <td class="n"><span class="rounds" role="img" aria-label="3 rounds"><i></i><i></i><i></i></span></td>
+              <td>Counted background pixels inside the silhouette: a 12.8&nbsp;mm hole, exact height printed</td></tr>
+          <tr><td>Roof 15&nbsp;mm low</td>
+              <td class="n"><span class="rounds" role="img" aria-label="nearly a false alarm"><i class="pale"></i></span></td>
+              <td>The <em>measurement</em> was wrong, not the model &mdash; see finding 03</td></tr>
+          <tr><td>Bar across both door openings</td>
+              <td class="n"><span class="rounds" role="img" aria-label="1 round"><i></i></span></td>
+              <td>Isolating the body shell: four captures, no reasoning</td></tr>
+          <tr><td>Rear lamp band &ldquo;inside out&rdquo;</td>
+              <td class="n"><span class="rounds" role="img" aria-label="1 round"><i></i></span></td>
+              <td>Arithmetic on five offsets against one occluder plane</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The productive loop is <code>render &rarr; extract silhouette &rarr; calibrate to known
+    dimensions &rarr; diff in millimetres &rarr; edit</code>. The unproductive loop is
+    <code>render &rarr; look &rarr; describe &rarr; edit</code>. A Skill should make the first loop the
+    default and treat screenshots as a final acceptance check, not as the working instrument.</p>
+
+    <p>Concretely: the first tool call after any geometry edit should be a numeric check, not a
+    screenshot. Screenshots are for &ldquo;does this read as a car&rdquo;, never for &ldquo;is this
+    edge in the right place&rdquo;.</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sec-head"><span class="num">02</span><h2>Reference sources are not interchangeable</h2></div>
+  <div class="body">
+    <ol class="ranked">
+      <li><div><b>Manufacturer orthographic dimension drawings.</b> Vector-rendered, no perspective, and
+        they carry their own dimension callouts with extension lines &mdash; so the drawing calibrates
+        itself. The only source worth fitting curves to directly.</div></li>
+      <li><div><b>Published specification tables.</b> Exact but sparse: length, width, height, wheelbase,
+        track, overhangs, clearance, tyre size. Anchors, never shape.</div></li>
+      <li><div><b>Factory / body&#8209;in&#8209;white photographs.</b> The best structural evidence available &mdash;
+        they show how panels actually meet, with no paint or reflection to hide a joint. Read topology
+        from them, not dimensions.</div></li>
+      <li><div><b>Press and configurator photography.</b> Good for surface character, actively misleading
+        for measurement: bright glass, studio reflections and long lenses all move edges.</div></li>
+      <li><div><b>Renders and fan art.</b> Do not use. They inherit someone else&rsquo;s errors.</div></li>
+    </ol>
+
+    <p>The trap, found the hard way: the official drawings were <em>self-consistent in wheelbase and
+    height to 0.7% but drawn about 5% short overall</em>, and the front drawing&rsquo;s width
+    calibration was internally inconsistent &mdash; front tyres scaling to 2072&nbsp;mm against a
+    1895&nbsp;mm spec, and the front track drawn wider than the rear, which is false for this vehicle.</p>
+
+    <div class="rule"><span class="tag">Rule</span>
+      Measure at least two known dimensions from every reference and confirm they agree before fitting
+      anything to it. Even tier&nbsp;1.</div>
+
+    <p>Where they disagree, anchor on the ones that agree and warp the rest. This build anchored y on
+    ground and roof, x on the two axles, and stretched only the overhangs to reach the published
+    length. Shape preserved, known dimensions met.</p>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="sec-head"><span class="num">03</span><h2>Calibrate on landmarks that cannot move</h2></div>
+  <div class="body">
+    <p>This produced the single worst measurement error in the build, and it is worth stating as a rule
+    because it is so easy to get wrong.</p>
+
+    <p>Calibrating a rendered silhouette by its <strong>overall length</strong> is wrong. Bumpers,
+    cladding and trim project past the body datum &mdash; about 35&nbsp;mm here &mdash; which inflates
+    px/m by 0.75% and silently shortens <em>every</em> height by 13&nbsp;mm. More than enough to invent
+    a roof defect that does not exist. A full round went to chasing exactly that phantom.</p>
+
+    <p>Calibrate instead on landmarks that are definitionally exact:</p>
+    <ul>
+      <li>The <strong>two axle centres</strong> are the published wheelbase apart. Render a wheels-only
+        silhouette (<code>?only=wheelFL,wheelFR,wheelRL,wheelRR</code>) so they separate cleanly from
+        the body.</li>
+      <li>The <strong>tyre contact patch</strong> is the ground plane, y&nbsp;=&nbsp;0.</li>
+      <li>Never the overall bounding box, in either axis.</li>
+    </ul>
+
+    <div class="tbl">
+      <table>
+        <caption>Same geometry, two calibrations</caption>
+        <thead><tr><th>Calibrated on</th><th>Mean deviation</th><th>Worst</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Overall silhouette length</td><td class="n">19.4 mm</td><td class="n">454 mm</td><td>Fiction</td></tr>
+          <tr><td>Axle centres &amp; contact patch</td><td class="n">3.4 mm</td><td class="n">5 mm</td><td>True</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rule"><span class="tag">Rule</span>
+      Every measurement harness needs a self-test. <code>measure(front wheel &rarr; rear wheel)</code>
+      must return the published wheelbase. If it does not, the calibration is broken and every other
+      number it produces is fiction.</div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sec-head"><span class="num">04</span><h2>Turn the renderer into a measuring instrument</h2></div>
+  <div class="body">
+    <p>The renderer already knows everything; it just has to be asked in a form that returns numbers.
+    Four capabilities paid for themselves many times over and belong in the scaffolding from the first
+    commit, not bolted on at the end.</p>
+
+    <h3>a &middot; Silhouette mode</h3>
+    <p><code>?sil=1</code> renders every surface as flat black on the paper. A clean binary mask with no
+    shading, no hatching and no ink lines to threshold around. Everything else here is built on it.</p>
+
+    <h3>b &middot; Part isolation</h3>
+    <p><code>?only=a,b</code> / <code>?hide=a,b</code> is the bisection tool. When the windscreen
+    &ldquo;overhang&rdquo; appeared, four isolation captures found the surface that owned it. Before
+    that, far longer had gone into reasoning about which of eight candidate surfaces it <em>might</em>
+    be, arriving at two confident wrong answers.</p>
+    <div class="rule"><span class="tag">Rule</span>Bisect, do not deduce.</div>
+    <p>A detail that cost a round: the isolation flag has to survive the per-frame update loop. The
+    first version set <code>group.visible = false</code> at startup and the animation loop overwrote it
+    on frame one, so two &ldquo;different&rdquo; captures came back identical &mdash; nearly leading to
+    the conclusion that the surface was somewhere else entirely. Isolation must be a set the update loop
+    consults, not a one-shot write.</p>
+
+    <h3>c &middot; Deterministic capture</h3>
+    <p><code>?snap=1&amp;adv=&lt;seconds&gt;&amp;run=0&amp;nodrift=1</code> jumps the camera with no
+    tween, advances the clock synchronously, and freezes idle animation. Not optional, for two reasons:
+    without it captures are not comparable frame to frame; and <strong>the idle animation moves the
+    model</strong> &mdash; this build bobs the body &plusmn;6&nbsp;mm and the wheels &plusmn;8&nbsp;mm,
+    the same order as the errors being chased. A measurement capture that leaves the animation running
+    is measuring noise.</p>
+
+    <h3>d &middot; A hole detector</h3>
+    <p>The single highest-value check in the whole build, and about fifteen lines:</p>
+<pre><code>silhouette = fill_holes(render_with_sil_1 &lt; threshold)
+interior   = binary_erosion(silhouette, 7x7)
+holes      = (pixels matching the paper colour) &amp; interior
+# label, then report each blob's size and its world-space y range</code></pre>
+    <p>Any background-coloured pixel strictly inside the vehicle&rsquo;s own silhouette is a place you
+    can see straight through the car. This turned &ldquo;the windows have a slight seam&rdquo; &mdash;
+    which had survived three rounds of looking &mdash; into <code>12.8 mm gap, world y 1.1812 to
+    1.1919, on every door</code>, which is directly actionable. Then it tracked the repair:</p>
+
+    <div class="strip">
+      <div class="step"><span class="k">Reported</span><span class="v">1 855 px</span><span class="why">See-through pixels inside the silhouette</span></div>
+      <div class="step"><span class="k">After glass to floor</span><span class="v">1 172 px</span><span class="why">Door glazing closed</span></div>
+      <div class="step"><span class="k">After quarter ramp</span><span class="v">366 px</span><span class="why">Remainder is a 1&nbsp;px hood shut line &mdash; a real 6&nbsp;mm panel gap</span></div>
+    </div>
+
+    <p>Run it after every geometry change. It catches the entire class of defect that separate surfaces
+    produce when they are supposed to meet.</p>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="sec-head"><span class="num">05</span><h2>Reduce the round trips</h2></div>
+  <div class="body">
+    <p>Four answers, in order of payoff.</p>
+
+    <h3>Print numbers, not pictures</h3>
+    <p>A column-by-column profile of a silhouette is a handful of lines of text that says exactly where
+    a surface starts, stops and splits:</p>
+<pre><code>  x       segments (m)                 h(mm)
++0.939  1.188-1.168                    21.3     &lt;- lone rim: this is the overhang
++0.914  1.258-1.258 | 1.194-1.173      87.4     &lt;- glass and rim are 70 mm apart
++0.862  1.292-1.258 | 1.209-1.179     115.1</code></pre>
+    <p>That diagnosis is complete. No screenshot was needed to reach it, and no screenshot could have
+    produced it.</p>
+
+    <h3>Batch the captures</h3>
+    <p>Never one render, one look, one edit. Capture the whole set &mdash; six views plus every motion
+    state &mdash; in one command, then read them together. Wall-clock time is dominated by process
+    startup, not by rendering.</p>
+
+    <h3>Crop before looking</h3>
+    <p>A 3360&times;2100 sheet reviewed whole shows nothing. Crop to the region in question and upscale
+    with nearest-neighbour so pixel boundaries stay visible. Several defects here were only legible at
+    3&times; zoom, and one &mdash; a bright lip along the belt line &mdash; was invisible at 1&times;.</p>
+
+    <h3>Make the model queryable</h3>
+    <p>The biggest structural win: expose the scene graph as callable tools, so the answer to &ldquo;how
+    big is the battery pack&rdquo; is a JSON call rather than a render plus a look plus a guess.
+    Bounding boxes, centres, part lists and part-to-part distances are all exact and all free.</p>
+  </div>
+</section>
+
+<section id="s6">
+  <div class="sec-head"><span class="num">06</span><h2>Can the grid lines help?</h2></div>
+  <div class="body">
+    <p>Yes, in one specific way, and it is worth being precise about which.</p>
+
+    <p>The blueprint sheet&rsquo;s own grid is drawn <em>in device pixels in screen space</em>, so it is
+    a scale bar for the image, not for the world &mdash; useless for measurement. It is, however, an
+    excellent regression tripwire: a known, exact pattern, so any moir&eacute; or aliasing in a
+    downscaled screenshot shows up in the grid first. Twice in one session a small-viewport screenshot
+    looked catastrophically broken &mdash; dark field, dense speckle &mdash; and the grid&rsquo;s
+    behaviour identified it as a downscaling artefact rather than a rendering failure, confirmed by
+    capturing the same frame at full resolution.</p>
+
+    <p>What <em>is</em> genuinely useful is a <strong>world-space</strong> grid: a ground plane ruled at
+    exactly 1&nbsp;m via ray/plane intersection through the inverse view-projection. That gives a scale
+    reference that lives in the scene, is correct under both perspective and orthographic projection,
+    and lets a reviewer sanity-check a dimension by eye with no tooling at all. A Skill should include
+    one from the start and, for measurement captures, offer a calibration overlay: the world grid plus a
+    1&nbsp;m rule pinned to the ground plane at the vehicle centreline. Any capture carrying it is
+    self-calibrating even if the harness metadata is lost.</p>
+
+    <p>The other half of the answer is that the <em>reference</em> drawings&rsquo; rules are what
+    matter, and those are gold. Manufacturer drawings carry dimension extension lines marking the exact
+    measured points. Read the calibration off those, never off the drawing&rsquo;s bounding box.</p>
+  </div>
+</section>
+
+<section id="s7">
+  <div class="sec-head"><span class="num">07</span><h2>What makes geometry stay correct</h2></div>
+  <div class="body">
+    <p>Three findings, and they are what separates a model that converges from one that keeps
+    regressing. They are about construction, not tooling.</p>
+
+    <h3>a &middot; One surface plus shader cuts beats several surfaces made to meet</h3>
+    <p>Separate ribbons that have to be aligned will mis-register. Always. They mis-registered here at
+    the A&#8209;pillar, at the door surrounds and at the rear lamps, repeatedly, in different ways.</p>
+    <p>The fix that ended it: build <strong>one</strong> surface and remove what should not be there,
+    with the aperture defined <em>once</em> and emitted into both the beauty material and the G&#8209;buffer
+    material from the same description. The A, B, C and D pillars are then not four parts that must be
+    made to meet &mdash; they are what is left of a single skin after the windows are cut out. They
+    cannot mis-register because there is nothing to register. The same finding in a different form at
+    the rear: one band swept along the body&rsquo;s own skin, around the corner and across the tail,
+    instead of a flat panel plus two corner pieces.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      If two surfaces must meet exactly, they should be one surface.</div>
+
+    <h3>b &middot; A cut is not the same thing as its surface</h3>
+    <p>The subtlest bug class in the build, and it appeared three separate times.</p>
+    <p>Panels are offset along the section normal to sit proud of or inset into the skin: +4&nbsp;mm for
+    a window surround, &minus;2&nbsp;mm for glass. The aperture test, however, runs on the
+    fragment&rsquo;s <strong>world</strong> position. Near a fillet the normal has a large vertical
+    component, so a surface offset 4&nbsp;mm outward has its cut edge land 4&nbsp;mm <em>higher</em> than
+    the surface it is supposed to align with. Three separate 4&nbsp;mm slivers of daylight came from
+    exactly this.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      Every panel filling an aperture must overlap it on all four edges by more than the largest normal
+      offset in play. Flush is not good enough; flush is a sliver.</div>
+
+    <h3>c &middot; A constant is not a datum</h3>
+    <p><code>beltY = 1.200</code> was used as <em>the</em> belt line. But the section&rsquo;s own floor is
+    <code>ZT(x) &minus; 12&nbsp;mm</code>, and <code>ZT</code> rises to 1.225 behind the doors. So at the
+    rear quarter the aperture cut 13&nbsp;mm below the glass it was supposed to frame, and no amount of
+    adjusting the glass could close it.</p>
+    <p>The same mistake, in the same file, made the deck cut eat the foot of the windscreen: a flat
+    ceiling of 1.26&nbsp;m is under the roofline over the cabin but <em>above</em> the whole greenhouse
+    section forward of x&nbsp;&asymp;&nbsp;0.92, so it removed the glass instead of the floor beneath
+    it.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      A boundary that interacts with a swept surface must be a function of the same curve that swept it,
+      not a number that happens to be right in the middle.</div>
+    <p>Where the boundary lives in a shader, sample the curve at build time and emit it as a
+    piecewise-linear ramp &mdash; the technique already used for the hood&rsquo;s shut line, and it is
+    cheap:</p>
+<pre><code>deckCeil: linspace(0.58, 1.02, 0.02).map(x =&gt; [x, topYatZ(upperSec, x, DECK_Z) - 0.002]),</code></pre>
+    <p>Note <em>which</em> curve. The first attempt tracked the centreline roof and still opened a slot,
+    because the cut&rsquo;s outboard edge is at |z|&nbsp;=&nbsp;0.84 where the section is lower. Track
+    the curve at the boundary&rsquo;s own location.</p>
+
+    <h3>d &middot; An outward offset needs a direction, not a sign</h3>
+    <p>The rear lamp is one band swept along the body&rsquo;s own skin &mdash; the construction in (a),
+    and the right one. It offsets itself off the skin by a scalar: along the flanks as
+    <code>p.z + normal.z * off</code>, and across the tail as <code>x_cap + off</code>.</p>
+    <p>Along the flanks that is correct. Across the tail it is exactly backwards, because the
+    vehicle&rsquo;s x axis points forward, so &ldquo;outward&rdquo; at the tail is <strong>&minus;x</strong>.
+    Every band therefore sat <code>off</code> millimetres <em>inside</em> the tail skin, behind the
+    liftgate panel, and the three bands stacked in reverse &mdash; the brow, meant to be proudest, ended
+    up deepest. The user&rsquo;s word for it was &ldquo;inside out&rdquo;, which is precisely what it was.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      An offset is a vector, not a number. The moment a swept surface turns a corner, a scalar that
+      meant &ldquo;outward&rdquo; on one face means &ldquo;inward&rdquo; on the next.</div>
+
+    <h3>e &middot; A fix verified in one state can be a defect in another</h3>
+    <p>The four-millimetre slivers of (b) were closed by leaving a 22&nbsp;mm band of body uncut across
+    the belt. That closed every hole, passed the hole detector, and was invisible in every capture
+    taken &mdash; because every capture had the doors <strong>shut</strong>.</p>
+    <p>With the doors open it is a solid rail across both door openings, running the length of the
+    cabin. A car cannot have one. It shipped, and the user found it in about a minute.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      A part that moves has to be checked in every state it moves through. A hole detector is not
+      evidence about a state it never rendered.</div>
+    <p>The repair also shows the shape of the right fix: instead of the <em>body</em> keeping material
+    to back the door, the <em>door&rsquo;s</em> own upper panel now spans the whole door rather than just
+    the glazed opening &mdash; which is what a real door does, since the window frame belongs to the
+    door. Everything outside the body&rsquo;s aperture is covered by the surround anyway, so the wider
+    panel is invisible except where it should be. The aperture is then cut continuously, and there is
+    nothing left to bar the doorway.</p>
+
+    <h3>f &middot; One defect masks another</h3>
+    <p>With the lamp bands buried behind the liftgate, a second fault in them could not be seen: the
+    brow&rsquo;s height is set as <code>tailY + 0.068</code>, and the roll pulls the section&rsquo;s top
+    down to 1.178 at the tail, so the brow was asking for a height 5&nbsp;mm above the bodywork. The
+    height lookup silently clamped to the top corner and returned a crossing 60&nbsp;mm narrower at each
+    end than the strip below it &mdash; a third instance of (c), in the same file, found only because the
+    first fix made it visible.</p>
+    <p>It was not found by looking, and not by measuring the render &mdash; the render could not show it.
+    It came from an adversarial reviewer told to attack the <em>proposed fix</em> rather than the defect,
+    which recomputed the section arithmetic and predicted the symptom before it existed.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      After fixing an occlusion, re-examine what it was hiding. When a fix changes what is visible, an
+      adversarial pass is worth more than another screenshot.</div>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sec-head"><span class="num">08</span><h2>Make the model agent-legible</h2></div>
+  <div class="body">
+    <p>The model should be queryable by the agent building it, not only renderable. This build ships a
+    WebMCP surface exposing 13 tools; the ones that matter for reconstruction work:</p>
+
+    <div class="tbl">
+      <table class="tool">
+        <caption>Tools that remove a round trip</caption>
+        <thead><tr><th>Tool</th><th>Why it removes a round trip</th></tr></thead>
+        <tbody>
+          <tr><td>list_parts</td><td>Full component listing with bounding boxes in metres &mdash; the component/coordinate/tag listing that otherwise has to be inferred from screenshots</td></tr>
+          <tr><td>get_part</td><td>One component&rsquo;s box, centre, size, explode vector and engineering description</td></tr>
+          <tr><td>measure</td><td>Exact centre-to-centre distance; also the harness self-test of finding 03</td></tr>
+          <tr><td>frame_part</td><td>Points the camera at a component and fits it &mdash; replaces guessing an azimuth and re-shooting</td></tr>
+          <tr><td>set_camera</td><td>Absolute and relative poses including an orthographic toggle, so a measurement view is reproducible by value</td></tr>
+          <tr><td>get_specification</td><td>The published figures every curve is fitted to</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Two design notes learned by getting them wrong. <strong>Return structured JSON, never prose</strong>
+    &mdash; &ldquo;the battery is about 2.8 metres long&rdquo; has to be parsed and can be misparsed;
+    <code>{"size":{"x":2.84,"y":0.155,"z":1.56}}</code> cannot. And <strong>errors should carry the
+    recovery</strong>: <code>no part "flux capacitor". Call list_parts for the 42 available ids.</code>
+    costs one round trip, where <code>undefined</code> costs three.</p>
+
+    <p>A third, found while testing: <code>frame_part</code> on an internal component puts the camera
+    inside the body shell, which renders as noise. The tool now returns a hint telling the caller to
+    dissolve the shell first.</p>
+    <div class="rule"><span class="tag">Rule</span>
+      Any tool that can put the caller in an unrenderable state should say so in its own result.</div>
+  </div>
+</section>
+
+<section id="s9">
+  <div class="sec-head"><span class="num">09</span><h2>The kernel</h2></div>
+  <div class="body">
+    <p>The recurring shape of this work is that a handful of primitives, defined once, generate the
+    entire vehicle; everything else is data. Extracted from this build, the kernel is six layers in a
+    strict dependency order.</p>
+
+    <div class="stack">
+      <div class="layer"><span class="name">Curve</span><span class="what"><b>Named 1&#8209;D profiles over the long axis</b> &mdash; roof height, belt height, floor height, half-widths at three heights, corner radii, crown. Monotone-cubic through hand-placed knots, because knots are what a measurement produces and monotone interpolation will not overshoot between them. All fitting happens here; the only layer that touches reference imagery.</span></div>
+      <div class="layer"><span class="name">Section</span><span class="what"><b>One function <code>section(x)</code> returning a closed loop</b>, built from the curves, with a <em>fixed index map</em> so &ldquo;the top-right corner&rdquo; is the same index at every station. That fixed map is what makes every downstream operation composable.</span></div>
+      <div class="layer"><span class="name">Surface</span><span class="what"><b>Four operators over sections</b>, sufficient for an entire vehicle: <code>loft</code> (sweep along x), <code>colGrid</code> (a ribbon between two index bounds), <code>rowGrid</code> (a ribbon between two heights), <code>wrapBand</code> (follow the skin around a corner). Plus <code>capFromLoop</code> to close an end.</span></div>
+      <div class="layer"><span class="name">Aperture</span><span class="what"><b>One declarative description of every hole</b>, emitted as GLSL and compiled into every material that needs it. One source of truth; a door opening cannot disagree with itself.</span></div>
+      <div class="layer"><span class="name">Assembly</span><span class="what"><b>Named parts</b> with a category, rest position, explode vector, callout anchor and description. This is what the agent surface exposes, and it is nearly free once parts are named.</span></div>
+      <div class="layer"><span class="name">Instrument</span><span class="what"><b>Silhouette mode, part isolation, deterministic capture, hole detector, fit check.</b> Built at the same time as the geometry, not after it.</span></div>
+    </div>
+
+    <p>The value of the kernel is that the strict order means <strong>a measurement correction only ever
+    edits the curve layer</strong>. When the windscreen base moved 111&nbsp;mm, one knot list changed and
+    the pillars, surrounds, glass, cowl and wipers all followed &mdash; because the pillar edge is
+    <em>derived</em> from the roof curve rather than being a separately fitted number. The failures that
+    cost the most time were all places where that discipline had leaked: a constant standing in for a
+    curve, or two surfaces fitted independently.</p>
+  </div>
+</section>
+
+<section id="s10">
+  <div class="sec-head"><span class="num">10</span><h2>Proposed Skill shape</h2></div>
+  <div class="body">
+    <div class="tbl">
+      <table>
+        <caption>Phases, in order</caption>
+        <thead><tr><th>Phase</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td><strong>0 &middot; Instruments</strong></td><td>Silhouette mode, part isolation, deterministic capture, hole detector, fit check, axle-calibrated measurement with its wheelbase self-test. Refuse to start modelling until <code>measure(front axle &rarr; rear axle)</code> returns the published wheelbase.</td></tr>
+          <tr><td><strong>1 &middot; Reference triage</strong></td><td>Collect sources, rank them, and run the internal-consistency check on each. Record which are trusted for dimensions, which for topology only, and which are excluded.</td></tr>
+          <tr><td><strong>2 &middot; Curves</strong></td><td>Extract profiles from the orthographic drawings, calibrated off their own dimension extension lines. This produces the knot lists. Nothing else is modelled yet.</td></tr>
+          <tr><td><strong>3 &middot; Kernel build</strong></td><td>Sections, then surfaces, then apertures, then parts. Every component named and categorised as it is created, so the agent surface comes for free.</td></tr>
+          <tr><td><strong>4 &middot; The measured loop</strong></td><td>After every edit: fit check, then hole detector, then &mdash; only then &mdash; a batched capture set for a visual read. Escalate to part isolation the moment a defect cannot be attributed to a specific named surface with certainty.</td></tr>
+          <tr><td><strong>5 &middot; Acceptance</strong></td><td>Fit within tolerance, zero interior see-through pixels, no console errors, determinism verified by capturing the same frame twice and comparing bytes, and a responsive check at real device viewports.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rule"><span class="tag">Caveat</span>
+      Headless Chrome silently clamps <code>--window-size</code> to a 500&nbsp;px minimum, so
+      &ldquo;mobile&rdquo; captures taken that way are not mobile. Real device emulation
+      (375&times;812, 768&times;1024) is required, asserting <code>scrollWidth === innerWidth</code> and
+      zero overflowing elements.</div>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="sec-head"><span class="num">11</span><h2>Things I would do differently</h2></div>
+  <div class="body">
+    <ul>
+      <li>Build the hole detector and the fit check <strong>first</strong>. Both are around thirty lines,
+        and both would have caught their defects on the day they were introduced rather than several
+        sessions later.</li>
+      <li>Put the wheelbase self-test in the measurement harness from the beginning. A measurement tool
+        with no self-test produced a confident, precise, wrong answer &mdash; and I believed it.</li>
+      <li>Treat &ldquo;two surfaces need to meet&rdquo; as a design smell on sight, not after the third
+        mis-registration.</li>
+      <li>Never judge a fine-detail question from a downscaled screenshot. Two apparent catastrophes were
+        moir&eacute; from a small viewport, and one apparent success was hiding a 12.8&nbsp;mm hole
+        behind a bright lip.</li>
+      <li>Check every moving part in its moved state before calling a fix done. The door bar passed
+        every numeric check I had, because every check rendered the doors shut.</li>
+      <li>Distrust any measurement that contradicts a spec the model was built from. Both times that
+        happened here &mdash; roof 15&nbsp;mm low, windscreen base 111&nbsp;mm forward &mdash; the answer
+        was not the obvious one: once the measurement was wrong, once the model was, and only
+        re-deriving the calibration told me which.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="sec-head"><span class="num">12</span><h2>A measurement is only as good as the argument that the quantity moves</h2></div>
+  <div class="body">
+    <p class="lead-note">Findings 12&ndash;14 were earned on a different build &mdash; the AutoLab
+    configurator and its agent surface, which embeds this drawing. Same discipline, different
+    material. That they transfer at all is finding 13.</p>
+
+    <div class="rule"><span class="tag">Finding</span>
+      A number can be real, correctly read, and about the wrong thing. Measuring the wrong quantity
+      fails <em>silently and confidently</em>, which is worse than looking.</div>
+
+    <p>Testing whether touch drag orbits the vehicle, I asserted on the CSS variable the canvas uses
+    for its pan. It read <code>0%</code> before the drag and <code>0%</code> after, on phone and on
+    tablet. A clean, reproducible, two&#8209;platform FAIL &mdash; and I almost reported it.</p>
+
+    <p>The variable is the <em>authored still&rsquo;s</em> pan. It is deliberately frozen when the
+    live renderer owns the drag, because the 3D camera controller handles the gesture inside the
+    canvas instead. The instrument was pointed at a quantity that is inert by design in exactly the
+    state under test. Re&#8209;run against the rendered picture &mdash; difference the stage before
+    and after &mdash; it passed on both platforms and on both the WebGL and the no&#8209;WebGL path.</p>
+
+    <p>This is the failure mode that measurement introduces and looking does not. A screenshot that
+    shows nothing moving is ambiguous and you know it. A number that says <code>0% &rarr; 0%</code>
+    reads as evidence.</p>
+
+    <div class="rule"><span class="tag">Rule</span>
+      Every harness needs a positive control, not only a self&#8209;test. Before trusting a null
+      result, prove the instrument moves when the thing it measures moves &mdash; drive the change by
+      a route already known to work, and watch the number respond. A harness that has never been seen
+      to fail for the right reason has not been calibrated.</div>
+
+    <p>Finding 03 says a measurement tool with no self-test produced a confident, precise, wrong
+    answer about a dimension. This is the same law one level up: the self-test proves the instrument
+    is accurate, the positive control proves it is <em>connected</em>.</p>
+
+    <p>The same law bit again one level further out, and it is worth separating because the guard is
+    different. A touch&#8209;drag check reported &ldquo;nothing moved&rdquo; on a 390&nbsp;px phone and
+    passed on every other device. The instrument was right and the quantity was right: at that width
+    the drag origin, chosen geometrically as the centre of the stage, landed on a view button &mdash;
+    and the canvas <em>deliberately</em> ignores a drag that starts on a control. A true measurement of
+    a gesture the app is correct to refuse. The fix is not a better number but a checked
+    <em>stimulus</em>: search for a point provably clear of controls, and refuse to run if there is
+    not one.</p>
+
+    <div class="rule"><span class="tag">Rule</span>
+      Assert the preconditions of a measurement, not only its result. An instrument should fail loudly
+      when it cannot set up the conditions it is measuring under, rather than quietly measuring
+      something else.</div>
+
+    <p>The general form, and the cheapest guard: when a check can only ever return one value, it is
+    not a check. Prefer instruments that read the artefact itself &mdash; pixels, geometry, the
+    returned object &mdash; over proxies for it. A proxy is a second model of the system, and it can
+    be wrong independently.</p>
+  </div>
+</section>
+
+<section id="s13">
+  <div class="sec-head"><span class="num">13</span><h2>The law is not about geometry</h2></div>
+  <div class="body">
+    <div class="rule"><span class="tag">Finding</span>
+      &ldquo;Measure, don&rsquo;t look&rdquo; holds wherever the thing being judged is an artefact
+      rather than an argument. For code, <em>reading it is looking</em>; running it is measuring.</div>
+
+    <p>The AutoLab work had no geometry to fit. The questions were whether an agent could use a tool
+    surface, and whether a page degraded honestly. Every defect that survived review survived because
+    it was being judged by reading the source.</p>
+
+    <div class="tbl">
+      <table>
+        <caption>Defects that reading did not catch and running did</caption>
+        <thead><tr><th>Defect</th><th>Why reading missed it</th><th>What caught it</th></tr></thead>
+        <tbody>
+          <tr><td>WebGL detector stricter than the renderer it gates</td>
+              <td>Both call sites are correct in isolation; the defect is that they disagree</td>
+              <td>Blocking WebGL and reading what the page then claimed</td></tr>
+          <tr><td>The visible fallback image hidden from assistive tech</td>
+              <td>The <code>aria-hidden</code> expression reads as careful</td>
+              <td>Loading with no WebGL and querying the attribute</td></tr>
+          <tr><td>Agent told it was looking at the R2 while a different car was on screen</td>
+              <td>The publishing code is right; it is called once, too early</td>
+              <td>Asserting the published value in the no&#8209;WebGL state</td></tr>
+          <tr><td>Body shell and glazing never wireframed in blueprint mode</td>
+              <td>The loop is obviously correct &mdash; over the wrong collection</td>
+              <td>Two reviewers independently tracing what the collection held</td></tr>
+          <tr><td>Zoom unreachable on touch</td>
+              <td>A <code>wheel</code> listener looks like zoom support</td>
+              <td>Dispatching real touch events and differencing the frame</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rule"><span class="tag">Rule</span>
+      Extend phase&nbsp;0 past geometry. Before judging a surface, build the instrument that exercises
+      it in the states that matter &mdash; degraded, hostile, small, touch&#8209;only, offline &mdash;
+      and make the first call after any change a run, not a read.</div>
+
+    <p>One asymmetry worth naming, because it is the reason this is a separate finding rather than a
+    restatement of 01: in geometry the measurement is <em>cheaper</em> than the look. Here it is
+    dearer &mdash; a browser, a build, a harness &mdash; which is exactly why the temptation to read
+    the code instead is strong, and why the instrument has to exist before the question is asked.</p>
+  </div>
+</section>
+
+<section id="s14">
+  <div class="sec-head"><span class="num">14</span><h2>An instrument that does not survive the session is not phase&nbsp;0</h2></div>
+  <div class="body">
+    <div class="rule"><span class="tag">Finding</span>
+      Instruments were built first every time, and thrown away every time. Phase&nbsp;0 was satisfied
+      and its benefit was not compounding.</div>
+
+    <p>Five measurement harnesses were written in a single day on the AutoLab build, used once, and
+    deleted &mdash; several of them re&#8209;deriving the same capability from scratch hours apart.</p>
+
+    <div class="tbl">
+      <table>
+        <caption>Harnesses written, used and discarded in one session</caption>
+        <thead><tr><th>Instrument</th><th>What it answered</th><th>Fate</th></tr></thead>
+        <tbody>
+          <tr><td>Deterministic multi-view capture</td><td>Does the body read correctly from every preset</td><td>Rewritten four times</td></tr>
+          <tr><td>Part isolation by material tint</td><td>Which part is that artefact</td><td>Discarded, then needed again</td></tr>
+          <tr><td>Degradation harness</td><td>Touch, reduced motion, no WebGL, four viewports</td><td>Deleted, rewritten same day</td></tr>
+          <tr><td>Frame differencer</td><td>Did the picture change at all</td><td>Inlined, then lost</td></tr>
+          <tr><td>Social-card capture</td><td>Is the shipped preview the right vehicle</td><td>Deleted</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The cost is not the writing &mdash; each is thirty to eighty lines. The cost is that a
+    discarded instrument takes its calibration with it. The part&#8209;isolation harness had already
+    been built and thrown away once by the time it was needed to settle the wheel&#8209;arch artefact,
+    which by then had survived five rounds of looking.</p>
+
+    <div class="rule"><span class="tag">Rule</span>
+      An instrument ships in the repository beside the thing it measures, is runnable by one command,
+      and carries its own self&#8209;test and positive control. If it is worth writing to answer a
+      question once, it is worth committing &mdash; the second question is already on its way.</div>
+
+    <p>This is the practical bridge to the Skill in finding 10. Phase&nbsp;0 should not read
+    &ldquo;build the instruments&rdquo;; it should read <em>&ldquo;install the instruments, from the
+    kit, and prove each one responds&rdquo;</em>. The kit is the deliverable. Everything else in this
+    document is a conclusion the kit would have reached faster.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Rivian R2 &middot; General Arrangement</span>
+  <span>v0.12.1</span>
+  <span>Fit: mean 3.4 mm &middot; shape 1.6 mm</span>
+  <span>Units: mm unless stated</span>
+</footer>
+
+</div>

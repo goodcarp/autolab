@@ -1,0 +1,58 @@
+{
+  "name": "autolab-by-automoto",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "node scripts/sync-r2-model.mjs && tsc --noEmit && vite build",
+    "dev": "node scripts/sync-r2-model.mjs && vite --host 0.0.0.0",
+    "eyes:degrade": "node tools/eyes/degrade.mjs",
+    "eyes:isolate": "node tools/eyes/isolate.mjs",
+    "eyes:selftest": "node tools/eyes/selftest.mjs",
+    "lint": "eslint .",
+    "model:check": "node scripts/promote-garage-model.mjs --check",
+    "model:promote": "node scripts/promote-garage-model.mjs",
+    "model:sync": "node scripts/sync-r2-model.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node scripts/sync-r2-model.mjs && vitest",
+    "test:model": "vitest run tests/unit/scene/canonical-r2-model.test.ts",
+    "test:run": "node scripts/sync-r2-model.mjs && vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.7.0",
+    "@react-three/postprocessing": "3.1.1",
+    "ajv": "8.20.0",
+    "lucide-react": "1.38.0",
+    "postprocessing": "6.39.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "0.185.1",
+    "zod": "4.5.4",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.6",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@types/three": "0.185.4",
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "10.9.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.5",
+    "jsdom": "30.0.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.69.0",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  }
+}

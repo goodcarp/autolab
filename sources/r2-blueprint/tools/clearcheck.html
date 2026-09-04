@@ -1,0 +1,78 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head><body><pre id="out">running</pre>
+<script type="module">
+import * as THREE from 'three';
+import { buildVehicle, lowerSec } from '../src/vehicle.js';
+// lateral half-width of the body shell at station x, height y (max |lat| among loop points at that height)
+function shellHalfWidth(x, y) {
+  if (x < -2.41 || x > 2.31) return 99;
+  const pts = lowerSec(x, false); let w = 0;
+  for (const p of pts) if (Math.abs(p[1] - y) < 0.03) w = Math.max(w, Math.abs(p[0]));
+  return w > 0 ? w : 99;
+}
+function shellTopY(x, z) {
+  if (x < -2.41 || x > 2.31) return 99;
+  const pts = lowerSec(x, false); let t = -99;
+  for (const p of pts) if (Math.abs(Math.abs(p[0]) - Math.abs(z)) < 0.04) t = Math.max(t, p[1]);
+  return t > -99 ? t : 99;
+}
+const v = buildVehicle();
+v.root.updateMatrixWorld(true);
+const L = [];
+const XF = 1.468, TR = 0.4065, TW = 0.255, TRACK = 1.640;
+const zIn = TRACK/2 - TW/2;          // 0.6925 tyre inner face
+const groups = ['suspension','springs','steering','halfshafts','antiRoll','driveUnitF','brakes'];
+const info = {};
+for (const g of groups) {
+  const part = v.parts[g]; const items = part.meshes.slice();
+  info[g] = items.map(m => {
+    const pos = m.geometry.attributes.position; const p = new THREE.Vector3();
+    const box = new THREE.Box3(); const pts = [];
+    for (let i=0;i<pos.count;i++){ p.fromBufferAttribute(pos,i).applyMatrix4(m.matrixWorld); box.expandByPoint(p); pts.push(p.x,p.y,p.z); }
+    return { mesh: m, box, pts: new Float32Array(pts), sub: m.userData.subId };
+  });
+}
+// ---- analytic obstacle tests over all front-module vertices ----
+const obst = [
+  ['GROUND y<0', (x,y,z)=> y < 0 ],
+  ['TYRE (front)', (x,y,z)=> Math.abs(z) >= zIn-0.0005 && Math.abs(z) <= 0.9475 && Math.hypot(x-XF, y-TR) <= TR && Math.hypot(x-XF,y-TR) >= 0.268 ],
+  ['RIM barrel', (x,y,z)=> Math.abs(z) >= 0.712 && Math.abs(z) <= 0.928 && Math.hypot(x-XF, y-TR) <= 0.254 ],
+  ['FRUNK bay floor', (x,y,z)=> x>0.69&&x<2.03 && y>0.65&&y<0.67 && Math.abs(z)<0.50 ],
+  ['FRUNK tub floor', (x,y,z)=> x>1.29&&x<2.09 && y>0.71&&y<0.73 && Math.abs(z)<0.48 ],
+  ['BATTERY pack', (x,y,z)=> x>-1.05&&x<1.05 && y>0.244&&y<0.482 && Math.abs(z)<0.78 ],
+  ['SUBFRAME deck', (x,y,z)=> x>1.038&&x<1.938 && y>0.40&&y<0.48 && Math.abs(z)<0.60 ],
+  ['FRUNK tub side wall', (x,y,z)=> x>1.29&&x<2.09 && y>0.72&&y<1.02 && Math.abs(z)>0.47&&Math.abs(z)<0.49 ],
+  ['FRUNK tub end wall', (x,y,z)=> ((x>1.28&&x<1.30)||(x>2.08&&x<2.10)) && y>0.72&&y<1.02 && Math.abs(z)<0.48 ],
+  ['FRUNK PE box', (x,y,z)=> x>0.71&&x<1.01 && y>0.69&&y<0.79 && Math.abs(z)<0.30 ],
+  ['THROUGH THE FENDER', (x,y,z)=> Math.abs(z) > shellHalfWidth(x,y) + 0.005 ],
+  ['THROUGH THE BONNET', (x,y,z)=> y > shellTopY(x,z) + 0.005 ],
+];
+for (const g of groups) {
+  for (const it of info[g]) {
+    if (it.box.max.x < 0.6) continue;             // front module only
+    const hits = {};
+    for (let i=0;i<it.pts.length;i+=3){
+      const x=it.pts[i],y=it.pts[i+1],z=it.pts[i+2];
+      for (const [nm,f] of obst) if (f(x,y,z)) hits[nm]=(hits[nm]||0)+1;
+    }
+    for (const k in hits) L.push(`CLASH  ${g}#${it.sub}  vs ${k}   (${hits[k]} verts)  box=[${it.box.min.x.toFixed(3)},${it.box.min.y.toFixed(3)},${it.box.min.z.toFixed(3)}]..[${it.box.max.x.toFixed(3)},${it.box.max.y.toFixed(3)},${it.box.max.z.toFixed(3)}]`);
+  }
+}
+// ---- pairwise AABB gaps between front-module parts ----
+const gap = (a,b)=>{ let d=0; for(const k of ['x','y','z']){ const g1=b.min[k]-a.max[k], g2=a.min[k]-b.max[k]; d=Math.max(d, g1, g2);} return d; };
+const pairs = [['antiRoll','driveUnitF'],['steering','driveUnitF'],['springs','suspension'],['springs','antiRoll'],['halfshafts','steering'],['halfshafts','suspension'],['antiRoll','suspension'],['steering','suspension']];
+for (const [A,B] of pairs) {
+  let worst = 1e9, rec = '';
+  for (const a of info[A]) { if (a.box.max.x<0.6) continue;
+    for (const b of info[B]) { if (b.box.max.x<0.6) continue;
+      const d = gap(a.box,b.box);
+      if (d < worst) { worst = d; rec = `${A}#${a.sub} ${B}#${b.sub}`; } } }
+  L.push(`AABBGAP ${A} vs ${B}: ${worst.toFixed(4)} m  (${rec})`);
+}
+// ---- key coordinate report ----
+for (const g of groups) { const bb=new THREE.Box3(); for(const it of info[g]) if(it.box.max.x>0.6) bb.union(it.box);
+  L.push(`BBOX ${g}: [${bb.min.x.toFixed(3)},${bb.min.y.toFixed(3)},${bb.min.z.toFixed(3)}] .. [${bb.max.x.toFixed(3)},${bb.max.y.toFixed(3)},${bb.max.z.toFixed(3)}]`); }
+document.getElementById('out').textContent = L.join('\n');
+document.title = 'DONE';
+</script></body></html>

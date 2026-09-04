@@ -1,0 +1,793 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "uconf/0.2/catalog.schema.json",
+  "title": "uconf/0.2 catalog",
+  "type": "object",
+  "required": [
+    "format",
+    "sources",
+    "product",
+    "groups",
+    "options"
+  ],
+  "properties": {
+    "format": {
+      "const": "uconf/0.2"
+    },
+    "migration": {
+      "type": "object",
+      "required": [
+        "from",
+        "archivedSource"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "archivedSource": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "product": {
+      "type": "object",
+      "required": [
+        "id",
+        "make",
+        "model",
+        "year",
+        "market",
+        "data_as_of",
+        "sources"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "make": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "year": {
+          "type": "integer"
+        },
+        "body": {
+          "type": "string"
+        },
+        "market": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currency": {
+          "type": "string"
+        },
+        "data_as_of": {
+          "$ref": "#/$defs/date"
+        },
+        "sources": {
+          "$ref": "#/$defs/sourceIds"
+        },
+        "disclaimer": {
+          "type": "string"
+        },
+        "assembly": {
+          "type": "object"
+        },
+        "delivery_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "calibration": {
+          "type": "object"
+        },
+        "representation": {
+          "type": "string",
+          "enum": [
+            "actual",
+            "modelled"
+          ],
+          "description": "Whether this catalog describes an actual vehicle or one modelled on published figures. Under 'modelled' the sources are the basis for the numbers rather than a citation of this vehicle, and no vehicle figure may claim verified confidence. Incentive programs are unaffected."
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "select"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "select": {
+            "enum": [
+              "one",
+              "many"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "base",
+              "option"
+            ]
+          },
+          "default": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "group",
+          "label",
+          "visualStatus",
+          "orderability",
+          "price",
+          "provenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "group": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "vendor_code": {
+            "type": "string"
+          },
+          "visualStatus": {
+            "const": "visually_configurable"
+          },
+          "orderability": {
+            "enum": [
+              "orderable_now",
+              "notify",
+              "concept_only"
+            ]
+          },
+          "price": {
+            "type": "object",
+            "required": [
+              "amount",
+              "mode",
+              "confidence"
+            ],
+            "properties": {
+              "amount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "mode": {
+                "enum": [
+                  "base",
+                  "delta"
+                ]
+              },
+              "confidence": {
+                "$ref": "#/$defs/confidence"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          },
+          "effects": {
+            "$ref": "#/$defs/effects"
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "when",
+                "effects"
+              ],
+              "properties": {
+                "when": {
+                  "$ref": "#/$defs/expression"
+                },
+                "effects": {
+                  "$ref": "#/$defs/effects"
+                }
+              }
+            }
+          },
+          "availability": {
+            "$ref": "#/$defs/expression"
+          },
+          "delivery": {
+            "type": "object",
+            "required": [
+              "window",
+              "confidence"
+            ],
+            "properties": {
+              "window": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "$ref": "#/$defs/confidence"
+              }
+            }
+          },
+          "copy": {
+            "type": "object"
+          },
+          "render": {
+            "type": "object",
+            "properties": {
+              "hex": {
+                "type": "string"
+              },
+              "mesh_target": {
+                "type": "string"
+              },
+              "mesh_swap": {
+                "type": "string"
+              }
+            }
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "when",
+          "require",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when": {
+            "$ref": "#/$defs/expression"
+          },
+          "require": {
+            "$ref": "#/$defs/expression"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning"
+            ]
+          }
+        }
+      }
+    },
+    "fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "amount",
+          "confidence",
+          "provenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "confidence": {
+            "$ref": "#/$defs/confidence"
+          },
+          "note": {
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          }
+        }
+      }
+    },
+    "incentives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "type",
+          "status",
+          "eligibility",
+          "sourceIds",
+          "confidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "jurisdiction": {
+            "type": "object"
+          },
+          "type": {
+            "enum": [
+              "tax_credit",
+              "rebate",
+              "deduction",
+              "utility_rebate",
+              "vendor_incentive"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "expired",
+              "scheduled",
+              "funds_limited"
+            ]
+          },
+          "effective": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "$ref": "#/$defs/date"
+              },
+              "to": {
+                "$ref": "#/$defs/date"
+              }
+            }
+          },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "fixed": {
+                "type": "number",
+                "minimum": 0
+              },
+              "estimate_note": {
+                "type": "string"
+              }
+            }
+          },
+          "eligibility": {
+            "$ref": "#/$defs/expression"
+          },
+          "claim": {
+            "enum": [
+              "point_of_sale",
+              "tax_return",
+              "utility_portal",
+              "at_purchase"
+            ]
+          },
+          "sourceIds": {
+            "$ref": "#/$defs/sourceIds"
+          },
+          "confidence": {
+            "$ref": "#/$defs/confidence"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ownership_setup": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "amount",
+          "confidence",
+          "when",
+          "sourceIds"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "confidence": {
+            "$ref": "#/$defs/confidence"
+          },
+          "when": {
+            "$ref": "#/$defs/expression"
+          },
+          "sourceIds": {
+            "$ref": "#/$defs/sourceIds"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tco_model": {
+      "type": "object",
+      "properties": {
+        "mi_per_kwh_est": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mi_per_kwh_confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "maintenance_per_year_est": {
+          "type": "number",
+          "minimum": 0
+        },
+        "defaults": {
+          "type": "object"
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "object"
+        },
+        "parts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "mesh_swaps": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "cameras": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "pos": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "target": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "demos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "steps"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "camera": {
+                      "type": "string"
+                    },
+                    "orbit_to": {
+                      "type": "string"
+                    },
+                    "caption": {
+                      "type": "string"
+                    },
+                    "set_option": {
+                      "type": "string"
+                    },
+                    "highlight": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "export": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "confidence": {
+      "enum": [
+        "verified",
+        "estimated"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "sourceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "url",
+        "publishedAt",
+        "retrievedAt",
+        "asOf"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/date"
+        },
+        "retrievedAt": {
+          "$ref": "#/$defs/date"
+        },
+        "asOf": {
+          "$ref": "#/$defs/date"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "sourceIds",
+        "confidence"
+      ],
+      "properties": {
+        "sourceIds": {
+          "$ref": "#/$defs/sourceIds"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "spec",
+          "op",
+          "value",
+          "confidence"
+        ],
+        "properties": {
+          "spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "op": {
+            "enum": [
+              "set",
+              "add",
+              "mul"
+            ]
+          },
+          "value": {},
+          "confidence": {
+            "$ref": "#/$defs/confidence"
+          }
+        }
+      }
+    },
+    "expression": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/expression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "selected"
+          ],
+          "properties": {
+            "selected": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "var",
+            "op",
+            "value"
+          ],
+          "properties": {
+            "var": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "lte",
+                "gt",
+                "gte",
+                "in",
+                "truthy"
+              ]
+            },
+            "value": {}
+          }
+        }
+      ]
+    }
+  }
+}
