@@ -1,0 +1,217 @@
+[
+  {
+    "shot": "angle-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 23354,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x1340017d000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x1340017d000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "profile-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 21470,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "wheel-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 28519,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "interior-esker-lt21",
+    "ok": true,
+    "readout": "BLACK CRATER · TEXTILE",
+    "ms": 34499,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "blueprint-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 36128,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "open-angle-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 47763,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "open-profile-esker-lt21",
+    "ok": true,
+    "readout": "ESKER SILVER · 21 IN",
+    "ms": 58164,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-glacier-lt21",
+    "ok": true,
+    "readout": "GLACIER WHITE · 21 IN",
+    "ms": 34012,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-catalina-lt21",
+    "ok": true,
+    "readout": "CATALINA BLUE · 21 IN",
+    "ms": 29783,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-forest-lt21",
+    "ok": true,
+    "readout": "FOREST GREEN · 21 IN",
+    "ms": 48636,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-launch-lt21",
+    "ok": true,
+    "readout": "LAUNCH GREEN · 21 IN",
+    "ms": 58886,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-borealis-lt21",
+    "ok": true,
+    "readout": "BOREALIS · 21 IN",
+    "ms": 77033,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "wheel-esker-bs20at",
+    "ok": true,
+    "readout": "ESKER SILVER · 20 IN",
+    "ms": 43863,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-esker-bs20at",
+    "ok": true,
+    "readout": "ESKER SILVER · 20 IN",
+    "ms": 27625,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "wheel-esker-bc20",
+    "ok": true,
+    "readout": "ESKER SILVER · 20 IN",
+    "ms": 39816,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "wheel-esker-mg19",
+    "ok": true,
+    "readout": "ESKER SILVER · 19 IN",
+    "ms": 65116,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "garage-iso",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "shot": "garage-side-open",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "shot": "garage-q34f-explode",
+    "ok": true,
+    "errors": []
+  }
+]

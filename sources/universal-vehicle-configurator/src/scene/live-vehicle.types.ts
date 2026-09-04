@@ -5,6 +5,8 @@ export type LiveVehicleFocus = "paint" | "charge-port" | "wheels" | "utility" | 
 export type LiveVehicleRenderMode = "showroom" | "blueprint";
 
 export type LiveVehiclePaint = Readonly<{
+  /** Catalog option id, so a body can render the finish being sold, not just its hex. */
+  id?: string;
   color: string;
 }>;
 

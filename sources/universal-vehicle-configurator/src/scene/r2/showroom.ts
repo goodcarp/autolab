@@ -1,4 +1,6 @@
 import {
+  BoxGeometry,
+  type BufferGeometry,
   Color,
   DoubleSide,
   type Group,
@@ -34,12 +36,128 @@ export type RimFinish = "tungsten" | "blackSand" | "bicolor" | "graphite";
 
 export interface ShowroomOptions {
   paintColor: string;
+  /** Catalog paint id, so the coat can be the finish being sold, not just its hex. */
+  paintId?: string;
   /** Second body colour for the roof on two-tone paints; null keeps it single. */
   roofColor?: string | null;
   rimFinish: RimFinish;
   caliperColor: string;
   cabinColor: string;
   lampsOn: boolean;
+}
+
+/**
+ * A paint finish, not just a colour.
+ *
+ * The catalog carries one hex per paint, which is the swatch. A swatch is a
+ * flat sRGB value and a car is not: a silver is a metallic basecoat that takes
+ * most of its colour from what it reflects, a pearl white is a dielectric with
+ * a thin-film flop, and a deep green is a dark metallic whose flake only shows
+ * in the highlight roll-off. So each paint names its own basecoat, metallic
+ * content, roughness and flake, and the swatch hex is what an unknown paint
+ * falls back to.
+ */
+export interface PaintSpec {
+  color: string;
+  metalness: number;
+  roughness: number;
+  clearcoat: number;
+  clearcoatRoughness: number;
+  envMapIntensity: number;
+  /** Roughness jitter from a per-fragment hash: metallic flake, in the shader. */
+  flake: number;
+  /** Thin-film pearl on top of the coat; 0 for a plain metallic. */
+  iridescence: number;
+  /** Tint of the dielectric specular, so a warm silver reflects warm. */
+  specularColor: string;
+}
+
+const PAINT_DEFAULT: Omit<PaintSpec, "color"> = {
+  metalness: 0.45,
+  roughness: 0.27,
+  clearcoat: 1,
+  clearcoatRoughness: 0.03,
+  envMapIntensity: 1.7,
+  flake: 0.05,
+  iridescence: 0,
+  specularColor: "#ffffff",
+};
+
+/** Keyed by catalog id: see `src/data/catalogs/r2.catalog.json`. */
+const PAINT_SPECS: Record<string, Partial<PaintSpec> & { color: string }> = {
+  // Warm silver: high metallic, most of its colour is the studio.
+  "paint.esker_silver": {
+    color: "#c0bdb8",
+    metalness: 0.86,
+    roughness: 0.33,
+    flake: 0.09,
+    envMapIntensity: 1.75,
+    specularColor: "#fff6ea",
+  },
+  // Pearl white: a dielectric coat with a faint thin-film flop, and the env
+  // held down so a white flank never blows out under the strips.
+  "paint.glacier_white": {
+    color: "#e9ebe8",
+    metalness: 0.06,
+    roughness: 0.3,
+    clearcoatRoughness: 0.035,
+    flake: 0.03,
+    iridescence: 0.32,
+    envMapIntensity: 1.15,
+    specularColor: "#f6f8ff",
+  },
+  "paint.catalina_blue": {
+    color: "#1c3f64",
+    metalness: 0.62,
+    roughness: 0.3,
+    flake: 0.07,
+    specularColor: "#dfe9ff",
+  },
+  "paint.forest_green": {
+    color: "#1f3629",
+    metalness: 0.58,
+    roughness: 0.31,
+    flake: 0.07,
+  },
+  // Deep, saturated green: darker basecoat than the swatch, because the flake
+  // lifts it back toward the swatch value in the light.
+  "paint.launch_green": {
+    color: "#2c4d2a",
+    metalness: 0.66,
+    roughness: 0.28,
+    flake: 0.08,
+    specularColor: "#e2ffe6",
+  },
+  // Deep blue-teal with a violet flop at grazing angles.
+  "paint.borealis": {
+    color: "#1e3a52",
+    metalness: 0.64,
+    roughness: 0.29,
+    flake: 0.07,
+    iridescence: 0.18,
+    specularColor: "#d8e6ff",
+  },
+};
+
+export function paintSpecFor(paintId: string | undefined, hex: string): PaintSpec {
+  const named = paintId ? PAINT_SPECS[paintId] : undefined;
+  if (named) return { ...PAINT_DEFAULT, ...named };
+  return { ...PAINT_DEFAULT, color: hex };
+}
+
+/** The same write for the base coat and its cut twin: uniforms, no recompile. */
+function applyPaintSpec(material: MeshPhysicalMaterial, spec: PaintSpec, flakeUniform?: { value: number }) {
+  material.color.set(spec.color);
+  material.metalness = spec.metalness;
+  material.roughness = spec.roughness;
+  material.clearcoat = spec.clearcoat;
+  material.clearcoatRoughness = spec.clearcoatRoughness;
+  material.envMapIntensity = spec.envMapIntensity;
+  material.specularColor.set(spec.specularColor);
+  material.iridescence = spec.iridescence;
+  material.iridescenceIOR = 1.3;
+  material.iridescenceThicknessRange = [140, 400];
+  if (flakeUniform) flakeUniform.value = spec.flake;
 }
 
 /** Blueprint-only structure. Real, but not what a showroom is showing. */
@@ -206,11 +324,23 @@ const WHEEL_ROLE: Record<number, Role> = {
  * a mirror. Mapping them through a generic aero/sport/terrain style put the two
  * darkest wheels on the brightest material.
  */
-const RIM_FINISH: Record<RimFinish, { color: string; metalness: number; roughness: number }> = {
-  tungsten: { color: "#6e767b", metalness: 0.92, roughness: 0.33 },
-  blackSand: { color: "#2a2e30", metalness: 0.86, roughness: 0.46 },
-  bicolor: { color: "#8e979c", metalness: 0.96, roughness: 0.23 },
-  graphite: { color: "#575f63", metalness: 0.94, roughness: 0.30 },
+interface RimFinishSpec {
+  color: string;
+  metalness: number;
+  roughness: number;
+  /** Colour of the pockets between the spokes: the second tone of a bicolor. */
+  pocket: string;
+  /** Spoke section width in metres; the drawing's own is 85 mm. */
+  spokeWidth: number;
+  /** Twin every spoke with a second one a tenth-turn on: a ten-spoke face. */
+  twin: boolean;
+}
+
+const RIM_FINISH: Record<RimFinish, RimFinishSpec> = {
+  tungsten: { color: "#6e767b", metalness: 0.92, roughness: 0.33, pocket: "#26292b", spokeWidth: 0.085, twin: false },
+  blackSand: { color: "#2a2e30", metalness: 0.86, roughness: 0.46, pocket: "#1a1c1e", spokeWidth: 0.105, twin: false },
+  bicolor: { color: "#9aa3a8", metalness: 0.96, roughness: 0.21, pocket: "#141618", spokeWidth: 0.042, twin: true },
+  graphite: { color: "#5d6569", metalness: 0.94, roughness: 0.28, pocket: "#202325", spokeWidth: 0.058, twin: true },
 };
 
 /** The catalog's wheel ids, so the render matches the option by name. */
@@ -258,15 +388,41 @@ export function rimFinishFor(optionId: string | undefined, style: string): RimFi
  * loft is correctly wound, and it is the only surface you ever genuinely look
  * into — through the wheel arches.
  */
-function patchShell<T extends Material>(material: T, aperture: boolean, cavity = false): T {
+function patchShell<T extends Material>(
+  material: T,
+  aperture: boolean,
+  cavity = false,
+  flake?: { value: number },
+): T {
   material.onBeforeCompile = (shader) => {
-    if (aperture) {
+    if (aperture || flake) {
       shader.vertexShader = `varying vec3 vObjPos;\n${shader.vertexShader}`.replace(
         "#include <begin_vertex>",
         "#include <begin_vertex>\n\tvObjPos = position;",
       );
+      shader.fragmentShader = `varying vec3 vObjPos;\n${shader.fragmentShader}`;
+    }
+    if (flake) {
+      // Metallic flake as a per-fragment roughness jitter on a 1 mm lattice in
+      // the body's own frame. It is the cheapest thing that makes a metallic
+      // read as flake rather than as smooth coloured chrome, and because it is
+      // keyed to object space it stays put when the car turns.
+      shader.uniforms.uFlake = flake;
+      shader.fragmentShader = `uniform float uFlake;\n${shader.fragmentShader}`.replace(
+        "#include <roughnessmap_fragment>",
+        [
+          "#include <roughnessmap_fragment>",
+          "\t{",
+          "\t\tvec3 fp = floor(vObjPos * 900.0);",
+          "\t\tfloat fh = fract(sin(dot(fp, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
+          "\t\troughnessFactor = clamp(roughnessFactor + (fh - 0.5) * uFlake, 0.02, 1.0);",
+          "\t}",
+        ].join("\n"),
+      );
+    }
+    if (aperture) {
       shader.fragmentShader =
-        `varying vec3 vObjPos;\n${cutGLSL(CUT)}\n${shader.fragmentShader}`.replace(
+        `${cutGLSL(CUT)}\n${shader.fragmentShader}`.replace(
           "#include <clipping_planes_fragment>",
           "#include <clipping_planes_fragment>\n\tif (inAperture(vObjPos)) discard;",
         );
@@ -283,7 +439,7 @@ function patchShell<T extends Material>(material: T, aperture: boolean, cavity =
   // Each combination must have its own compiled program, or whichever compiles
   // first decides whether the apertures and the cavity exist for all of them.
   material.customProgramCacheKey = () =>
-    `r2-shell${aperture ? "-cut" : ""}${cavity ? "-cavity" : ""}`;
+    `r2-shell${aperture ? "-cut" : ""}${cavity ? "-cavity" : ""}${flake ? "-flake" : ""}`;
   return material;
 }
 
@@ -296,29 +452,28 @@ function patchShell<T extends Material>(material: T, aperture: boolean, cavity =
  * on a tyre that shows as a torn ring of the wheel's own interior.
  */
 function doubleSided<T extends Material>(materials: Record<string, T>): Record<string, T> {
-  for (const material of Object.values(materials)) {
+  for (const [role, material] of Object.entries(materials)) {
     material.side = DoubleSide;
-    patchShell(material, false);
+    // The paint already carries its flake patch; re-patching would drop it.
+    if (role !== "paint") patchShell(material, false);
   }
   return materials;
 }
 
-function buildMaterials(options: ShowroomOptions): Record<Role, Material> {
+function buildMaterials(
+  options: ShowroomOptions,
+  flake: { value: number },
+): Record<Role, Material> {
   const rim = RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten;
   const lamp = options.lampsOn ? 1 : 0;
 
   // Automotive paint is a metallic basecoat under a smooth dielectric layer.
   // The clearcoat is what separates it from coloured plastic: a second, much
-  // tighter specular lobe that survives at grazing angles.
-  const paint = new MeshPhysicalMaterial({
-    color: new Color(options.paintColor),
-    metalness: 0.42,
-    roughness: 0.26,
-    clearcoat: 1,
-    clearcoatRoughness: 0.03,
-    envMapIntensity: 1.85,
-    side: DoubleSide,
-  });
+  // tighter specular lobe that survives at grazing angles. The numbers come
+  // from the paint being sold, not from one generic coat.
+  const paint = new MeshPhysicalMaterial({ side: DoubleSide });
+  applyPaintSpec(paint, paintSpecFor(options.paintId, options.paintColor), flake);
+  patchShell(paint, false, false, flake);
 
   const roofPaint = new MeshPhysicalMaterial({
     color: new Color(options.roofColor ?? "#0e1215"),
@@ -426,21 +581,27 @@ function buildMaterials(options: ShowroomOptions): Record<Role, Material> {
     }),
     // Rubber: no reflection to speak of, and darker on the sidewall than the
     // tread. One roughness value across both is what makes tyres read as vinyl.
-    tyre: new MeshStandardMaterial({
-      color: new Color("#0c0e0f"),
+    // Fresh rubber has a low, broad sheen on the sidewall — not the dead matte
+    // that makes a tyre read as a black hole in the arch.
+    tyre: new MeshPhysicalMaterial({
+      color: new Color("#111314"),
       metalness: 0,
-      roughness: 0.95,
-      envMapIntensity: 0.3,
+      roughness: 0.74,
+      clearcoat: 0.25,
+      clearcoatRoughness: 0.55,
+      envMapIntensity: 0.55,
     }),
-    rim: new MeshStandardMaterial({
+    rim: new MeshPhysicalMaterial({
       color: new Color(rim.color),
       metalness: rim.metalness,
       roughness: rim.roughness,
+      clearcoat: 0.35,
+      clearcoatRoughness: 0.18,
       envMapIntensity: 1.5,
       side: DoubleSide,
     }),
     rimPocket: new MeshStandardMaterial({
-      color: new Color("#26292b"),
+      color: new Color(rim.pocket),
       metalness: 0.6,
       roughness: 0.55,
       envMapIntensity: 0.8,
@@ -513,6 +674,8 @@ function buildMaterials(options: ShowroomOptions): Record<Role, Material> {
 export interface ShowroomHandle {
   materials: Record<Role, Material>;
   paint: MeshPhysicalMaterial;
+  /** Repaint in place: every coat parameter, base and cut twin, no recompile. */
+  setPaint(spec: PaintSpec): void;
   caliper: MeshPhysicalMaterial;
   cabin: MeshStandardMaterial;
   /**
@@ -540,14 +703,15 @@ export interface ShowroomHandle {
  * recompile, or every click in the paint picker stutters.
  */
 export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): ShowroomHandle {
-  const base = buildMaterials(options);
+  const flake = { value: 0 };
+  const base = buildMaterials(options, flake);
   // Every material needs a cut twin, because the same paint appears on both cut
   // shells and uncut panels.
   const cutTwins = new Map<Material, Material>();
   const cutVariant = (material: Material, cavity: boolean) => {
     const existing = cutTwins.get(material);
     if (existing) return existing;
-    const twin = patchShell(material.clone(), true, cavity);
+    const twin = patchShell(material.clone(), true, cavity, cavity ? flake : undefined);
     // The twin has to keep sharing its colour with the original, not a copy of
     // it: the body shell is the cut variant of the paint, so a cloned colour
     // means changing the paint repaints the doors and leaves the shell behind.
@@ -588,9 +752,16 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
     bezel: base.gloss,
   });
 
+  const restoreWheels = styleWheels(vehicle, RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten, base.rim);
+
   return {
     materials: base,
     paint: base.paint as MeshPhysicalMaterial,
+    setPaint(spec) {
+      applyPaintSpec(base.paint as MeshPhysicalMaterial, spec, flake);
+      const twin = cutTwins.get(base.paint) as MeshPhysicalMaterial | undefined;
+      if (twin) applyPaintSpec(twin, spec);
+    },
     caliper: base.caliper as MeshPhysicalMaterial,
     cabin: base.cabin as MeshStandardMaterial,
     detail,
@@ -599,11 +770,64 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       for (const material of cutTwins.values()) fn(material);
     },
     dispose() {
+      restoreWheels();
       detail.removeFromParent();
       (detail.userData.dispose as (() => void) | undefined)?.();
       for (const material of Object.values(base)) material.dispose();
       for (const material of cutTwins.values()) material.dispose();
     },
+  };
+}
+
+/**
+ * Give each wheel option its own face.
+ *
+ * The drawing casts one wheel: five 85 mm spokes with a pocket between each
+ * pair. The catalog sells four, and they do not share a face. This keeps the
+ * drawing's spokes as the carriers — so the refit's diameter scaling, the spin
+ * and the steer all still apply — and changes their section, or twins each one
+ * with a second spoke a tenth of a turn on for the split-spoke designs. Twins
+ * are children of the spoke they double, which is what lets them ride the
+ * refit's scale and offset without knowing about it.
+ *
+ * Returns the undo, so a dispose leaves the drawing exactly as it found it.
+ */
+function styleWheels(vehicle: R2Vehicle, finish: RimFinishSpec, rim: Material): () => void {
+  const asDrawn = 0.085;
+  const section = Math.abs(finish.spokeWidth - asDrawn) > 1e-4
+    ? new BoxGeometry(0.17, finish.spokeWidth, 0.03)
+    : null;
+  const swapped: { mesh: Mesh; original: BufferGeometry }[] = [];
+  const twins: Mesh[] = [];
+  const step = Math.PI / 10;
+  for (const wheel of vehicle.wheels) {
+    for (const object of wheel.part.meshes) {
+      const mesh = object as Mesh;
+      if ((mesh.userData.subId as number) !== 4) continue;
+      if (section) {
+        swapped.push({ mesh, original: mesh.geometry });
+        mesh.geometry = section;
+      }
+      if (finish.twin) {
+        // The spoke's origin sits 155 mm out along its own +x, so the wheel
+        // centre is at (-0.155, 0) in its frame; the twin is that point's
+        // rotation by one step, expressed where the spoke can see it.
+        const twin = new Mesh(mesh.geometry, rim);
+        twin.position.set(0.155 * Math.cos(step) - 0.155, 0.155 * Math.sin(step), 0);
+        twin.rotation.z = step;
+        twin.castShadow = true;
+        twin.userData.showroomTwin = true;
+        mesh.add(twin);
+        twins.push(twin);
+      }
+    }
+  }
+  return () => {
+    for (const twin of twins) twin.removeFromParent();
+    for (const entry of swapped) {
+      if (entry.mesh.geometry === section) entry.mesh.geometry = entry.original;
+    }
+    section?.dispose();
   };
 }
 

@@ -79,24 +79,28 @@ const REFERENCE: CameraRig = {
  * x +/-1.468 and z +/-0.82, the driver's hip at x -0.14 and z -0.40, the charge
  * port on the left rear quarter at x -2.09.
  */
+// Low and close, so the rim fills the frame and the arch cladding reads over it.
 const R2_WHEEL: CameraPose = {
-  position: [2.62, 0.92, 3.30],
-  target: [1.468, 0.46, 0.82],
-  minDistance: 1.7,
+  position: [2.35, 0.62, 2.85],
+  target: [1.468, 0.42, 0.82],
+  minDistance: 1.5,
   maxDistance: 5.4,
 };
 
 const R2: CameraRig = {
   poses: {
+    // Launch-film framing: a front three-quarter from just above the belt
+    // line, so the shoulder runs the length of the car and the roof stays a
+    // sliver rather than a slab.
     angle: {
-      position: [5.35, 2.32, 6.30],
-      target: [0.05, 0.86, 0],
+      position: [5.55, 1.62, 6.05],
+      target: [0.05, 0.78, 0],
       minDistance: 5.6,
       maxDistance: 12,
     },
     profile: {
-      position: [0, 1.62, 8.45],
-      target: [-0.04, 0.90, 0],
+      position: [0, 1.28, 8.45],
+      target: [-0.04, 0.84, 0],
       minDistance: 6.6,
       maxDistance: 12.5,
     },

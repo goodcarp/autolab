@@ -1,0 +1,34 @@
+[
+  {
+    "shot": "interior-esker-lt21",
+    "ok": true,
+    "readout": "BLACK CRATER · TEXTILE",
+    "ms": 78585,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x13401ed6a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x13401ed6a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "wheel-esker-mg19",
+    "ok": true,
+    "readout": "ESKER SILVER · 19 IN",
+    "ms": 137167,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  }
+]

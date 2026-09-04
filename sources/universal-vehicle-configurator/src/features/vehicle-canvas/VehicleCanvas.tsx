@@ -636,7 +636,7 @@ export function VehicleCanvas({
             <LiveSceneBoundary onFailure={handleLiveFailure}>
               <Suspense fallback={null}>
                 <LiveVehicleViewport
-                  paint={{ color: paint.color }}
+                  paint={{ id: paint.id, color: paint.color }}
                   wheel={{
                     id: wheel.id,
                     diameterInches: wheel.diameterInches,

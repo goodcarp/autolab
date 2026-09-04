@@ -1,7 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import type { Mesh } from "three";
-import { dressForShowroom, fitWheelDiameter, rimFinishFor } from "./r2/showroom";
+import { dressForShowroom, fitWheelDiameter, paintSpecFor, rimFinishFor } from "./r2/showroom";
 import { buildVehicle, SPEC } from "./r2/vehicle.js";
 import type { VehicleModelProps } from "./vehicle-model-source";
 
@@ -54,6 +54,7 @@ export function R2VehicleModel({
   const showroom = useMemo(
     () => dressForShowroom(vehicle, {
       paintColor: paint.color,
+      paintId: paint.id,
       rimFinish: rimFinishFor(wheel.id, wheel.style),
       caliperColor: "#2b3033",
       cabinColor: interior?.color ?? "#22262a",
@@ -89,9 +90,11 @@ export function R2VehicleModel({
   }, [invalidate, showroom, vehicle]);
 
   useEffect(() => {
-    showroom.paint.color.set(paint.color);
+    // The whole coat, not just the hex: a silver and a pearl white differ in
+    // metallic content and flake, not only in colour.
+    showroom.setPaint(paintSpecFor(paint.id, paint.color));
     invalidate();
-  }, [invalidate, paint.color, showroom]);
+  }, [invalidate, paint.color, paint.id, showroom]);
 
   useEffect(() => {
     showroom.cabin.color.set(interior?.color ?? "#22262a");
