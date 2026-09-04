@@ -64,7 +64,8 @@ describe("VehicleCanvas live camera reset contract", () => {
     fireEvent.click(screen.getByTestId("signal-licensed-model-ready"));
     await waitFor(() => expect(canvas).toHaveAttribute("data-renderer", "live_3d"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Blueprint" }));
+    // The visible Blueprint button left the chrome; the "b" key is the in-page path.
+    fireEvent.keyDown(screen.getByRole("application"), { key: "b" });
     expect(liveScene).toHaveAttribute("data-render-mode", "blueprint");
     expect(canvas).toHaveAttribute("data-renderer", "live_3d");
     // Once the live body is drawing, the still is decorative and stands down.

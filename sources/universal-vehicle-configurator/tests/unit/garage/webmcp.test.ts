@@ -75,7 +75,7 @@ function setupGarage() {
     hidePanels: false,
     hoverPart: null as typeof battery | typeof body | null,
     vehicleContext: {
-      build: "Rivian R2",
+      build: "Hudian RX2",
       paint: "Not supplied",
       wheels: "Not supplied",
       interior: "Not supplied",
@@ -194,7 +194,7 @@ describe("Garage direct WebMCP surface", () => {
     });
     const context = {
       build: "Performance",
-      paint: "Esker Silver",
+      paint: "Orchard Beach Silver",
       wheels: "21 in All-Season",
       interior: "Black Crater",
       rangeMiles: 330,

@@ -1,15 +1,12 @@
 import {
-  Aperture,
   Armchair,
   CircleDot,
   Crosshair,
-  DoorOpen,
   ImageOff,
   LoaderCircle,
   Move,
   Palette,
   RotateCcw,
-  ScanLine,
 } from "lucide-react";
 import {
   Component,
@@ -278,7 +275,6 @@ export function VehicleCanvas({
   interior = DEFAULT_INTERIOR,
   modelSource,
   bodyOpen = false,
-  onBodyOpenChange,
   onRenderedBodyChange,
   accessories = DEFAULT_ACCESSORIES,
   mode,
@@ -353,7 +349,6 @@ export function VehicleCanvas({
   // not, and calling it one would be the exact provenance claim this
   // configurator exists to get right.
   const activeBody = resolveVehicleModelSource(activeModelSource);
-  const modelCredit = activeBody.credit;
   const bodyAnchors = anchorsFor(activeBody);
   const modelTitle = liveRendererActive
     ? activeBody.sceneTitle
@@ -672,33 +667,10 @@ export function VehicleCanvas({
             <strong>{modelTitle}</strong>
             <span>{modelAttribution}</span>
           </div>
-          <div className="vc-mode-switch" aria-label="Vehicle rendering mode">
-            <button
-              type="button"
-              aria-pressed={currentMode === "showroom"}
-              onClick={() => selectMode("showroom")}
-            >
-              <Aperture aria-hidden="true" /> Showroom
-            </button>
-            <button
-              type="button"
-              aria-pressed={currentMode === "blueprint"}
-              onClick={() => selectMode("blueprint")}
-            >
-              <ScanLine aria-hidden="true" /> Blueprint
-            </button>
-          </div>
-          {canOpenBody && (
-            <div className="vc-mode-switch vc-mode-switch--open">
-              <button
-                type="button"
-                aria-pressed={bodyIsOpen}
-                onClick={() => onBodyOpenChange?.(!bodyIsOpen)}
-              >
-                <DoorOpen aria-hidden="true" /> {bodyIsOpen ? "Close body" : "Open body"}
-              </button>
-            </div>
-          )}
+          {/* The Showroom/Blueprint switch and the Open body button left the
+              visible chrome for the demo. Both paths stay live for agents:
+              the `mode` / `bodyOpen` props, the WebMCP presentation tools and
+              the "b" key still drive them. */}
         </header>
 
         <div className="vc-status" aria-live="polite">
@@ -706,7 +678,7 @@ export function VehicleCanvas({
           {liveViewRequested && webglSupport !== "unsupported" && liveStatus !== "ready" && liveStatus !== "failed" && (
             <><LoaderCircle aria-hidden="true" /> Preparing real-time vehicle</>
           )}
-          {liveRendererActive && <>Live 3D · representative vehicle</>}
+          {liveRendererActive && <>Live 3D · Agent vision active</>}
           {liveViewRequested && (webglSupport === "unsupported" || liveStatus === "failed") && (
             <>Authored still of the licensed reference · controls still active</>
           )}
@@ -715,20 +687,6 @@ export function VehicleCanvas({
           {!liveViewRequested && activeAsset === "fallback" && <>Authored still of the licensed reference · controls still active</>}
         </div>
 
-        {liveRendererActive && (
-          modelCredit.href ? (
-            <a
-              className="vc-model-attribution"
-              href={modelCredit.href}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {modelCredit.text}
-            </a>
-          ) : (
-            <span className="vc-model-attribution">{modelCredit.text}</span>
-          )
-        )}
 
         <div className="vc-object" aria-live="polite">
           <div

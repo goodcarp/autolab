@@ -14,6 +14,7 @@ mkdirSync(outDir, { recursive: true });
 const q = (paint, wheels) =>
   `${base}/?v=1&catalog=rivian-r2-2026&paint=paint.${paint}&wheels=wheels.${wheels}`;
 const shots = [
+  // Paint ids are unchanged; esker_silver now carries the label Orchard Beach Silver.
   { name: "angle-esker-lt21", url: q("esker_silver", "lt21_as"), preset: "Angle" },
   { name: "profile-esker-lt21", url: q("esker_silver", "lt21_as"), preset: "Profile" },
   { name: "wheel-esker-lt21", url: q("esker_silver", "lt21_as"), preset: "Wheel" },
@@ -73,11 +74,18 @@ for (const shot of selected) {
     // Playwright's stability checks time out, so clicks are forced.
     const click = { force: true, timeout: 120_000 };
     await picker.getByRole("button", { name: shot.preset, exact: true }).click(click);
-    if (shot.mode) {
-      await page.getByLabel("Vehicle rendering mode").getByRole("button", { name: shot.mode }).click(click);
+    // The visible Showroom/Blueprint switch and Open body button left the
+    // chrome; blueprint is reached with the "b" key on the viewport, and the
+    // open body only through the WebMCP presentation tools, which drive the
+    // same React prop. Both stay agent paths, so the open shots use the
+    // host's own bridge: focus the viewport and dispatch the key for mode.
+    if (shot.mode === "Blueprint") {
+      const viewport = page.getByRole("application").first();
+      await viewport.focus();
+      await viewport.press("b");
     }
     if (shot.open) {
-      await page.getByRole("button", { name: "Open body" }).click(click);
+      throw new Error("open-body shots need the WebMCP presentation path (no visible button)");
     }
     await page.waitForTimeout(shot.open ? 3000 : 1800);
     const stage = page.locator('[aria-label="Interactive vehicle configurator"]');

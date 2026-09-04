@@ -1,7 +1,7 @@
 import type { Catalog, DomainViolation } from "../../domain/catalog.types";
 
 export function trimBuildLabel(label: string): string {
-  return label.replace(/^R2\s+/, "").replace(/\s+\(Launch Package\)$/, "");
+  return label.replace(/^RX?2\s+/, "").replace(/\s+\(Launch Package\)$/, "");
 }
 
 function optionIdsIn(text: string): string[] {

@@ -123,7 +123,9 @@ describe("VehicleCanvas", () => {
     expect(screen.getByRole("region", { name: "Interactive vehicle configurator" }))
       .toHaveAttribute("data-preset", "profile");
 
-    fireEvent.click(screen.getByRole("button", { name: "Blueprint" }));
+    // The visible Showroom/Blueprint switch left the chrome; the "b" key is the
+    // in-page path (agents use the WebMCP presentation tools / `mode` prop).
+    fireEvent.keyDown(screen.getByRole("application", { name: /Licensed compact-SUV reference/i }), { key: "b" });
     expect(onModeChange).toHaveBeenLastCalledWith("blueprint");
     expect(screen.getByRole("region", { name: "Interactive vehicle configurator" }))
       .toHaveAttribute("data-mode", "blueprint");
@@ -133,7 +135,9 @@ describe("VehicleCanvas", () => {
     const onViewPresetChange = vi.fn();
     render(<VehicleCanvas defaultViewPreset="angle" onViewPresetChange={onViewPresetChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Blueprint" }));
+    // The visible Showroom/Blueprint switch left the chrome; the "b" key is the
+    // in-page path (agents use the WebMCP presentation tools / `mode` prop).
+    fireEvent.keyDown(screen.getByRole("application", { name: /Licensed compact-SUV reference/i }), { key: "b" });
 
     expect(onViewPresetChange).toHaveBeenCalledWith("profile");
     expect(screen.getByRole("region", { name: "Interactive vehicle configurator" }))
@@ -144,7 +148,9 @@ describe("VehicleCanvas", () => {
     const onViewPresetChange = vi.fn();
     render(<VehicleCanvas defaultViewPreset="interior" onViewPresetChange={onViewPresetChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Blueprint" }));
+    // The visible Showroom/Blueprint switch left the chrome; the "b" key is the
+    // in-page path (agents use the WebMCP presentation tools / `mode` prop).
+    fireEvent.keyDown(screen.getByRole("application", { name: /Licensed compact-SUV reference/i }), { key: "b" });
 
     expect(onViewPresetChange).toHaveBeenCalledWith("profile");
     expect(screen.getByRole("region", { name: "Interactive vehicle configurator" }))
@@ -257,7 +263,7 @@ describe("VehicleCanvas", () => {
 
     expect(screen.getByText("Vehicle view unavailable")).toBeVisible();
     expect(screen.getByText("Configuration controls remain active.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Blueprint" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reset view" })).toBeEnabled();
     expect(onAssetStatusChange).toHaveBeenLastCalledWith("fallback");
   });
 });

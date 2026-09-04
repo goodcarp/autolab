@@ -55,7 +55,7 @@ describe("VehicleConfigurator", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(oneChoiceOptions.length + 3);
     expect(screen.getAllByRole("checkbox")).toHaveLength(manyChoiceOptions.length + 2);
     expect(screen.getByRole("radio", { name: /Performance/i })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /Esker Silver/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Orchard Beach Silver/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /21.*Liquid Tungsten/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Black Crater/i })).toBeChecked();
 
@@ -76,7 +76,7 @@ describe("VehicleConfigurator", () => {
     expect(forestGreenCard).not.toBeNull();
     expect(within(forestGreenCard as HTMLElement).getByText("Late 2026")).toBeVisible();
 
-    const standardRwd = screen.getByRole("radio", { name: /R2 Standard RWD, From/i });
+    const standardRwd = screen.getByRole("radio", { name: /RX2 Standard RWD, From/i });
     const standardRwdCard = standardRwd.closest("label");
     expect(standardRwdCard).not.toBeNull();
     expect(within(standardRwdCard as HTMLElement).getByText("Needs a paired change")).toBeVisible();
@@ -85,13 +85,13 @@ describe("VehicleConfigurator", () => {
   it("lets the buyer configure all five vehicle families and keeps the total coherent", () => {
     render(<ConfiguratorHarness />);
 
-    fireEvent.click(screen.getByRole("radio", { name: /R2 Premium/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Premium/i }));
     fireEvent.click(screen.getByRole("radio", { name: /Glacier White/i }));
     fireEvent.click(screen.getByRole("radio", { name: /20.*Black Sand All-Terrain/i }));
     fireEvent.click(screen.getByRole("radio", { name: /Coastal Cloud/i }));
     fireEvent.click(screen.getByRole("checkbox", { name: /hitch \+ tow software/i }));
 
-    expect(screen.getByRole("radio", { name: /R2 Premium/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Premium/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Glacier White/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /20.*Black Sand All-Terrain/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Coastal Cloud/i })).toBeChecked();
@@ -144,12 +144,12 @@ describe("VehicleConfigurator", () => {
     render(<InvalidHarness />);
     // Standard RWD is invalid with the default 21" wheels. The buyer should not
     // be sent back up the rail to make a second, different decision.
-    fireEvent.click(screen.getByRole("radio", { name: /R2 Standard RWD, From/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i }));
 
     expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
     expect(onInvalidSelection).not.toHaveBeenCalled();
 
-    expect(screen.getByRole("radio", { name: /R2 Standard RWD, From/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /19.*Machined Graphite/i })).toBeChecked();
     expect(screen.getByText("275 mi estimated range")).toBeVisible();
 
@@ -186,7 +186,7 @@ describe("VehicleConfigurator", () => {
     expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
 
     // The companion change must be computed from the agent's build.
-    fireEvent.click(screen.getByRole("radio", { name: /R2 Standard RWD, From/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i }));
     const [patch, meta] = onSelectionPatch.mock.calls.at(-1) ?? [];
     expect(patch.set.build).toEqual(["build.standard_rwd"]);
     expect(meta.candidate.valid).toBe(true);
@@ -228,7 +228,7 @@ describe("VehicleConfigurator", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Tesla Model Y/i }));
     expect(onBuyerContextChange).toHaveBeenCalledWith({ crossShopIds: ["model_y"] });
 
-    fireEvent.click(screen.getByRole("button", { name: /Review \$59,485 R2 build/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Review \$59,485 RX2 build/i }));
     expect(onReviewBuild).toHaveBeenCalledWith(expect.objectContaining({
       valid: true,
       price: expect.objectContaining({ vehicleTotal: 59_485 }),

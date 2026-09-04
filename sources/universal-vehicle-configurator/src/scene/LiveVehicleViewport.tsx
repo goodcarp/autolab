@@ -523,7 +523,7 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
         onCreated={({ gl }) => {
           gl.outputColorSpace = SRGBColorSpace;
           gl.toneMapping = ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.24;
+          gl.toneMappingExposure = 1.12;
           gl.setClearColor(0x000000, 0);
         }}
       >

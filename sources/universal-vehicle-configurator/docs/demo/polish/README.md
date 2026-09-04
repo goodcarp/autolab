@@ -20,3 +20,13 @@ tree at `5a0501e`; `after-*` is the polished branch. Same URL, same clicks.
 | `garage-iso`, `garage-side-open`, `garage-q34f-explode` | The Garage drawing, untouched by this branch |
 
 `*-log.json` records the readout text and every console warning/error per shot.
+
+## Round 2 — Hudian RX2 rebrand, decluttered chrome, exposure 1.12, wider opening pose
+
+`after-r2-*` were taken on the first cut (build cards still carried the RX2
+prefix); `final-r2-*` on the committed tree. Both under SwiftShader at
+1440×900 with `prefers-reduced-motion`, plus a 390-wide phone pass from
+`tools/polish/capture-rail.mjs` (`*-page-phone.png`, `*-rail-wheels-*.png`
+for the per-option wheel glyphs). The Blueprint shot is reached through the
+`b` key now that the Showroom/Blueprint switch has left the visible chrome;
+open-body shots need the WebMCP presentation path.

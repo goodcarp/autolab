@@ -22,7 +22,7 @@ const overlay = new Overlay(svg, rig, vehicle);
 const st = {
   view: 'iso', run: true, drive: false, lights: false, panels: true, explode: 0, open: 0, explodeOn: false, openOn: false,
   speed: 0, steer: 0, soc: 87.0, time: 0, ortho: 0, hoverId: -1, hoverPart: null, lampGlow: 0, gridOffset: 0, gridAlpha: 1, hidePanels: false,
-  vehicleContext: { build: 'Rivian R2', paint: 'Not supplied', wheels: '20 in reference', interior: 'Not supplied', rangeMiles: null, vehicleTotal: null, revision: 1 },
+  vehicleContext: { build: 'Hudian RX2', paint: 'Not supplied', wheels: '20 in reference', interior: 'Not supplied', rangeMiles: null, vehicleTotal: null, revision: 1 },
 };
 const ui = new UI(CONFIG, {
   onView: (v) => setView(v),

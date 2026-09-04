@@ -58,9 +58,9 @@ export function vehicleInterior(option: CatalogOption | null): VehicleInteriorSe
 
 export function shortBuildLabel(option: CatalogOption | null): string {
   return option?.label
-    .replace(/^R2\s+/u, "")
+    .replace(/^RX?2\s+/u, "")
     .replace(/\s+\(Launch Package\)$/u, "")
-    ?? "R2";
+    ?? "RX2";
 }
 
 export function formatCurrency(value: number): string {

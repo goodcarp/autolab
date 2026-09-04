@@ -79,7 +79,7 @@ export function RangeRealityPrototype() {
         <div className="range-stage__datum datum-b" aria-hidden="true" />
 
         <div className="range-stage__meta" aria-hidden="true">
-          <span>UVC / R2-C</span>
+          <span>UVC / RX2-C</span>
           <span>PROFILE 032°</span>
           <span>REV 001</span>
         </div>

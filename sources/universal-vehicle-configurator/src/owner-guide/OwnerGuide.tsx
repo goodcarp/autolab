@@ -88,7 +88,7 @@ export function OwnerGuide({ active, context }: OwnerGuideProps) {
           ref={frameRef}
           className="owner-guide__frame"
           src={`${import.meta.env.BASE_URL}garage/`}
-          title="R2 interactive digital twin and owner guide"
+          title="RX2 interactive digital twin and owner guide"
           tabIndex={active ? 0 : -1}
           onLoad={() => {
             // The load event only says the document arrived. It does not say

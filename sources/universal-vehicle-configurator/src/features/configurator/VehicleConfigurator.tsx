@@ -169,7 +169,7 @@ function valueAsNumber(value: unknown): number | null {
 }
 
 function groupIntro(groupId: string): string {
-  if (groupId === "build") return "Choose the balance of range, traction, pace, and timing.";
+  if (groupId === "build") return "Choose your balance of range, comfort and power.";
   if (groupId === "paint") return "Your color can change both price and delivery.";
   if (groupId === "wheels") return "Wheel choice changes the silhouette—and the real range.";
   if (groupId === "interior") return "Set the atmosphere you will live with every day.";
@@ -219,10 +219,86 @@ function PaintSwatch({ option }: { option: CatalogOption }) {
   );
 }
 
-function WheelGlyph({ selected }: { selected: boolean }) {
+/**
+ * One glyph per rim, drawn to match what the showroom's `styleWheels` puts on
+ * the car: the spoke count, the split-spoke doubling and the finish colours
+ * are the same ones `WHEEL_FINISHES` uses, so the card and the 3D wheel agree.
+ */
+type WheelGlyphSpec = {
+  spokes: number;
+  spokeWidth: number;
+  twin: boolean;
+  face: string;
+  pocket: string;
+  lip: string;
+  tyre: number;
+  machined?: boolean;
+};
+
+const WHEEL_GLYPHS: Record<string, WheelGlyphSpec> = {
+  // 21" Liquid Tungsten: five broad spokes, warm-grey satin.
+  "wheels.lt21_as": { spokes: 5, spokeWidth: 5.2, twin: false, face: "#8d969b", pocket: "#26292b", lip: "#a9b1b5", tyre: 4.6 },
+  // 20" Black Sand all-terrain: six chunky spokes on a heavier tyre.
+  "wheels.bs20_at": { spokes: 6, spokeWidth: 6.4, twin: false, face: "#3a3f42", pocket: "#151719", lip: "#4d5356", tyre: 7.2 },
+  // 20" Bicolor Carbon: five paired (ten) fine spokes, bright face over a dark pocket.
+  "wheels.bc20_as": { spokes: 5, spokeWidth: 2.4, twin: true, face: "#c3cacf", pocket: "#141618", lip: "#d6dce0", tyre: 4.6 },
+  // 19" Machined Graphite: ten-spoke, graphite with a machined bright edge.
+  "wheels.mg19_as": { spokes: 5, spokeWidth: 3.2, twin: true, face: "#6a7276", pocket: "#202325", lip: "#b7bec2", tyre: 5.2, machined: true },
+};
+
+const DEFAULT_WHEEL_GLYPH: WheelGlyphSpec = WHEEL_GLYPHS["wheels.lt21_as"];
+
+function WheelGlyph({ option, selected }: { option: CatalogOption; selected: boolean }) {
+  const spec = WHEEL_GLYPHS[option.id] ?? DEFAULT_WHEEL_GLYPH;
+  const size = 50;
+  const c = size / 2;
+  const tyreOuter = c - 1;
+  const rimR = tyreOuter - spec.tyre;
+  const hubR = 4.2;
+  const spokeLen = rimR - 1.2;
+  const angles: number[] = [];
+  const step = 360 / spec.spokes;
+  for (let i = 0; i < spec.spokes; i += 1) {
+    const base = -90 + i * step;
+    if (spec.twin) {
+      angles.push(base - step * 0.18, base + step * 0.18);
+    } else {
+      angles.push(base);
+    }
+  }
   return (
     <span className="config-option__wheel" data-selected={selected || undefined} aria-hidden="true">
-      <span className="config-option__wheel-hub" />
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" height="100%" focusable="false">
+        <circle cx={c} cy={c} r={tyreOuter} fill="#1c1f1e" />
+        <circle cx={c} cy={c} r={tyreOuter - 0.8} fill="none" stroke="#2c302e" strokeWidth={spec.tyre * 0.55} />
+        <circle cx={c} cy={c} r={rimR} fill={spec.pocket} stroke={spec.lip} strokeWidth={1.6} />
+        {angles.map((angle) => (
+          <rect
+            key={angle}
+            x={c - spec.spokeWidth / 2}
+            y={c - spokeLen}
+            width={spec.spokeWidth}
+            height={spokeLen}
+            rx={spec.spokeWidth / 2}
+            fill={spec.face}
+            transform={`rotate(${angle + 90} ${c} ${c})`}
+          />
+        ))}
+        {spec.machined && angles.map((angle) => (
+          <rect
+            key={`edge-${angle}`}
+            x={c - spec.spokeWidth / 2}
+            y={c - spokeLen}
+            width={0.9}
+            height={spokeLen}
+            fill={spec.lip}
+            opacity={0.85}
+            transform={`rotate(${angle + 90} ${c} ${c})`}
+          />
+        ))}
+        <circle cx={c} cy={c} r={hubR} fill={spec.face} stroke={spec.lip} strokeWidth={1} />
+        <circle cx={c} cy={c} r={hubR * 0.42} fill={spec.pocket} />
+      </svg>
     </span>
   );
 }
@@ -238,7 +314,7 @@ function InteriorSwatch({ option }: { option: CatalogOption }) {
 
 function OptionVisual({ groupId, option, selected }: { groupId: string; option: CatalogOption; selected: boolean }) {
   if (groupId === "paint") return <PaintSwatch option={option} />;
-  if (groupId === "wheels") return <WheelGlyph selected={selected} />;
+  if (groupId === "wheels") return <WheelGlyph option={option} selected={selected} />;
   if (groupId === "interior") return <InteriorSwatch option={option} />;
   if (groupId === "towing") {
     return (
@@ -655,7 +731,7 @@ export function VehicleConfigurator({
   const warnings = result.violations.filter((violation) => violation.severity === "warning");
 
   return (
-    <section className={joinClassNames("uvc-configurator", className)} aria-label="Configure Rivian R2">
+    <section className={joinClassNames("uvc-configurator", className)} aria-label="Configure Hudian RX2">
       <header className="configurator-head">
         <div className="configurator-head__model">
           <span>Configure</span>
@@ -742,7 +818,7 @@ export function VehicleConfigurator({
           </span>
           <button
             type="button"
-            aria-label={`Review ${usd.format(result.price.vehicleTotal)} R2 build`}
+            aria-label={`Review ${usd.format(result.price.vehicleTotal)} RX2 build`}
             onClick={() => onReviewBuild?.(result)}
           >
             Review build <ArrowRight aria-hidden="true" />

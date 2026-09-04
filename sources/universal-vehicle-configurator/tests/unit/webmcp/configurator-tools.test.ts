@@ -109,7 +109,7 @@ describe("real configurator Site Tools", () => {
       expect.objectContaining({
         ok: true,
         revision: 1,
-        catalog: expect.objectContaining({ id: "rivian-r2-2026", model: "R2" }),
+        catalog: expect.objectContaining({ id: "rivian-r2-2026", model: "RX2" }),
         configuration: expect.objectContaining({
           valid: true,
           selections: expect.objectContaining({

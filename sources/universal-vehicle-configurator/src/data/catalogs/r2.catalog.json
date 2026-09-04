@@ -2,8 +2,8 @@
   "format": "uconf/0.2",
   "product": {
     "id": "rivian-r2-2026",
-    "make": "Rivian",
-    "model": "R2",
+    "make": "Hudian",
+    "model": "RX2",
     "year": 2026,
     "body": "Midsize electric SUV",
     "market": "US",
@@ -74,7 +74,7 @@
     {
       "id": "build.performance",
       "group": "build",
-      "label": "R2 Performance (Launch Package)",
+      "label": "RX2 Performance (Launch Package)",
       "vendor_code": "BLD-PRF2",
       "price": {
         "amount": 57990,
@@ -142,7 +142,7 @@
     {
       "id": "build.premium",
       "group": "build",
-      "label": "R2 Premium",
+      "label": "RX2 Premium",
       "vendor_code": "BLD-PRM2",
       "price": {
         "amount": 53990,
@@ -184,7 +184,7 @@
     {
       "id": "build.standard_rwd",
       "group": "build",
-      "label": "R2 Standard RWD",
+      "label": "RX2 Standard RWD",
       "vendor_code": "BLD-STND2 / DTN-RWDS",
       "price": {
         "amount": 44990,
@@ -233,7 +233,7 @@
     {
       "id": "build.standard_rwd_lr",
       "group": "build",
-      "label": "R2 Standard RWD Long Range",
+      "label": "RX2 Standard RWD Long Range",
       "vendor_code": "BLD-STND2 / BAT-L02",
       "price": {
         "amount": 48490,
@@ -282,7 +282,7 @@
     {
       "id": "build.standard_awd_lr",
       "group": "build",
-      "label": "R2 Standard AWD Long Range",
+      "label": "RX2 Standard AWD Long Range",
       "vendor_code": "BLD-STND2 / DTN-AWD / BAT-L02",
       "price": {
         "amount": 51990,
@@ -330,7 +330,7 @@
     {
       "id": "paint.esker_silver",
       "group": "paint",
-      "label": "Esker Silver",
+      "label": "Orchard Beach Silver",
       "vendor_code": "EXP-ESV",
       "price": {
         "amount": 0,
@@ -382,7 +382,7 @@
     {
       "id": "paint.catalina_blue",
       "group": "paint",
-      "label": "Catalina Blue",
+      "label": "Rockaway Blue",
       "price": {
         "amount": 1000,
         "mode": "delta",
@@ -469,7 +469,7 @@
     {
       "id": "paint.borealis",
       "group": "paint",
-      "label": "Borealis",
+      "label": "Aurora",
       "price": {
         "amount": 2000,
         "mode": "delta",
@@ -817,7 +817,7 @@
         ]
       },
       "require": false,
-      "message": "Heads up: this paint choice gates your delivery date (Forest Green: late 2026; Borealis: 2027) even if your trim is available sooner.",
+      "message": "Heads up: this paint choice gates your delivery date (Forest Green: late 2026; Aurora: 2027) even if your trim is available sooner.",
       "severity": "warning"
     }
   ],

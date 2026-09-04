@@ -92,14 +92,17 @@ const R2: CameraRig = {
     // Launch-film framing: a front three-quarter from just above the belt
     // line, so the shoulder runs the length of the car and the roof stays a
     // sliver rather than a slab.
+    // Opening pose sits a quarter further out than the first cut (same
+    // bearing and elevation, offset scaled 1.25x) so the car has air around it.
     angle: {
-      position: [5.55, 1.62, 6.05],
+      position: [6.93, 1.83, 7.56],
       target: [0.05, 0.78, 0],
       minDistance: 5.6,
       maxDistance: 12,
     },
+    // Profile follows, 1.15x.
     profile: {
-      position: [0, 1.28, 8.45],
+      position: [0.01, 1.35, 9.72],
       target: [-0.04, 0.84, 0],
       minDistance: 6.6,
       maxDistance: 12.5,
