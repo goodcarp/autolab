@@ -1,7 +1,7 @@
 # AutoLab by AutoMoto — Devpost submission draft
 
-Status: DRAFT for Alexander to paste. Fill the two `TODO` fields (live URL,
-YouTube link) after publish. Everything below is written against the Devpost
+Status: Devpost-ready draft. The live site, public repository, and public
+YouTube demo are linked below. Everything is written against the Devpost
 form's required sections.
 
 ---
@@ -22,7 +22,7 @@ https://goodcarp.github.io/autolab/
 
 ## Video
 
-TODO: YouTube link (under 3 minutes, with audio)
+https://youtu.be/ZoMXWz_WNKY (1:26, public, with audio)
 
 ## Repository (public, Apache-2.0)
 
