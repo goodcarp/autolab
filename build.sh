@@ -19,6 +19,26 @@ ENGINE="$SRC/autolab-3d-creation-engine"
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 PNPM="${PNPM:-corepack pnpm}"
 
+# --refresh: re-take sources/ from the committed HEAD of each working repository
+# (tracked files only), applying the public-copy exclusions. Override a source
+# with UVC_SRC / R2_SRC / ENGINE_SRC (any checkout or worktree; its HEAD is used).
+if [ "${1:-}" = "--refresh" ]; then
+  DESKTOP="$(cd "$HERE/.." && pwd)"
+  UVC_SRC="${UVC_SRC:-$DESKTOP/Universal Vehicle Configurator}"
+  R2_SRC="${R2_SRC:-$DESKTOP/r2-blueprint}"
+  ENGINE_SRC="${ENGINE_SRC:-$DESKTOP/AutoLab 3D Creation Engine}"
+  refresh() { name="$1"; src="$2"; rm -rf "$SRC/$name"; mkdir -p "$SRC/$name"
+    git -C "$src" archive --format=tar HEAD | tar -x -C "$SRC/$name"
+    echo "$name  $(git -C "$src" rev-parse HEAD)  $(git -C "$src" log -1 --format=%ci)  [$(git -C "$src" rev-parse --abbrev-ref HEAD)]" >> "$SRC/SOURCES.txt"; }
+  : > "$SRC/SOURCES.txt"
+  refresh universal-vehicle-configurator "$UVC_SRC"
+  refresh r2-blueprint "$R2_SRC"
+  refresh autolab-3d-creation-engine "$ENGINE_SRC"
+  rm -rf "$SRC/r2-blueprint/references for 3D model"
+  rm -f "$SRC/universal-vehicle-configurator/.devpost-hackathon-state.json"
+  echo "▸ sources refreshed:"; sed 's/^/  /' "$SRC/SOURCES.txt"
+fi
+
 echo "▸ configure/  <- $UVC"
 ( cd "$UVC" && $PNPM install --frozen-lockfile --silent && $PNPM build )
 rm -rf "$HERE/configure"; mkdir -p "$HERE/configure"
