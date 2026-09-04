@@ -127,8 +127,10 @@ built during the submission period. The `sources/` copies are snapshots of the t
 
 ### Honest boundaries
 
-The vehicle geometry is an independent reconstruction fitted to published
-dimensions and photographs, not manufacturer CAD or a scan. The engine's own
+The demo vehicle is presented as the fictional **Hudian RX2** by Hudian Motors.
+Its geometry is an independent reconstruction fitted to the published
+dimensions and photographs of the Rivian R2 (named nominatively), not
+manufacturer CAD or a scan. The engine's own
 `fit` reports it: wheelbase and tracks exact, overall length 54 mm long, owned
 by the headlamps and tailgate. AutoLab and AutoMoto are independent and
 unofficial and not associated with, endorsed by, or sponsored by Rivian or any
@@ -157,7 +159,7 @@ Use the "Dope Questions" script for the voice; picture follows the tools.
 | t | Picture | Voice / on-screen |
 | --- | --- | --- |
 | 0:00 | Landing page, chip flips Manual mode → 3 agent tools | "What if agents could truly help you understand the product you're buying?" |
-| 0:15 | Configurator. Prompt: *Configure the cheapest R2 that can tow, then tell me what changed.* Build changes live, price updates, receipt panel | "Your AI agent can walk you through the build, calculate pricing, explore options…" |
+| 0:15 | Configurator. Prompt: *Configure the cheapest RX2 that can tow, then tell me what changed.* Build changes live, price updates, receipt panel | "Your AI agent can walk you through the build, calculate pricing, explore options…" |
 | 0:45 | Prompt: *I'm in Colorado, I'll finance, and I can install a home charger. What do I actually qualify for?* Incentive buckets with dated sources | "…and every claim it makes is citable." |
 | 1:05 | Click a rail control mid-transaction; interruption receipt | "The person always wins." |
 | 1:20 | Prompt: *Take me into the Garage, reveal the structural battery, and explain what I am looking at.* Surface switch, body dissolves, battery framed and highlighted | "Or help you understand the product you already own?" |

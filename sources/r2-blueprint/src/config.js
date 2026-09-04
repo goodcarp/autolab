@@ -5,12 +5,12 @@
 // harmless on a personal sheet, misleading the moment the sheet is published. The names, the drawing
 // number and the revision are Alexander's to set; nothing here should invent them for him.
 export const CONFIG = {
-  hdrLeft: { title: 'CARPENTER MOTOR ARCHIVE', sub: 'Personal Fleet · Vehicle Engineering' },
-  hdrRight: { title: 'RIVIAN R2 · MIDSIZE ELECTRIC SUV', sub: 'General arrangement, running gear & drivetrain kinematics' },
-  title: ['RIVIAN R2 · DUAL-MOTOR AWD', 'GENERAL ARRANGEMENT'],
+  hdrLeft: { title: "AGENTIC OWNER'S GUIDE", sub: 'Hudian Motors · MY CAR' },
+  hdrRight: { title: 'HUDIAN RX2 · MIDSIZE ELECTRIC WAGON', sub: 'Session ID: 16974 Knowledge Base: Online' },
+  title: ['MY HUDIAN RX2 · DUAL-MOTOR AWD', 'LAUNCH EDITION'],
   titleBlock: [
-    { lbl: 'DRAWING NO.', val: 'R2-4715-GA' }, { lbl: 'SHEET', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'REV.', val: 'C' },
-    { lbl: 'DRAWN', val: 'A. CARPENTER' }, { lbl: 'CHECKED', val: '—' }, { lbl: 'DATE', val: '01 · 09 · 26' }, { lbl: 'STATUS', val: 'WORK IN PROGRESS', red: true },
+    { lbl: 'ID NO.', val: 'RX2-4715-NY' }, { lbl: 'REF', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'CLASS', val: 'C' },
+    { lbl: 'OWNER', val: 'H. YUTANI' }, { lbl: 'CHECKED', val: '—' }, { lbl: 'BORN', val: '01 · 09 · 26' }, { lbl: 'STATUS', val: 'SYNCED', red: true },
   ],
   zonesX: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K'],
   zonesY: ['6', '5', '4', '3', '2', '1'],
