@@ -18,7 +18,7 @@ behind them.
 
 ## Live URL
 
-TODO: https://goodcarp.github.io/autolab/
+https://goodcarp.github.io/autolab/
 
 ## Video
 
