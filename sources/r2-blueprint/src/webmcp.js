@@ -196,7 +196,7 @@ export function installWebMCP(ctx) {
     },
     {
       name: 'get_specification',
-      description: 'The published Rivian R2 figures the model is built to, in metres, kilograms and seconds. Every profile curve in the geometry is fitted to these plus Rivian\'s official orthographic drawings.',
+      description: 'The published figures the RX2 model is built to, in metres, kilograms and seconds (an independent reconstruction fitted to the Rivian R2\'s published dimensions). Every profile curve in the geometry is fitted to these plus Rivian\'s official orthographic drawings.',
       inputSchema: { type: 'object', properties: {} },
       run: () => ({ ...vehicle.SPEC }),
     },

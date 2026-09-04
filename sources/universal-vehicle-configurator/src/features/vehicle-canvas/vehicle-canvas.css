@@ -1604,3 +1604,6 @@
 .vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption small {
   color: rgba(230, 241, 234, 0.78);
 }
+
+/* Focus hotspots are agent-addressable through present_vehicle; the floating rings cluttered the showroom. */
+.vc-hotspots { display: none; }

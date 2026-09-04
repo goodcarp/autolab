@@ -1444,7 +1444,7 @@ export function createConfiguratorToolDefinitions(
     name: CONFIGURATOR_TOOL_NAMES[11],
     title: "List digital twin components",
     description:
-      "List the R2 digital twin's named components. Filter by shell, chassis, running gear, or interior; request detail for measured world-space bounds in metres.",
+      "List the RX2 digital twin's named components. Filter by shell, chassis, running gear, or interior; request detail for measured world-space bounds in metres.",
     inputSchema: {
       type: "object",
       properties: {

@@ -34,8 +34,9 @@ export class UI {
       cardsBtn.setAttribute('aria-label', on ? 'Hide the drawing panels' : 'Show the drawing panels');
       if (!noPersist) try { localStorage.setItem('r2.cards', on ? '1' : '0'); } catch (e) {}
     };
-    let cardsOn = true;
-    try { cardsOn = localStorage.getItem('r2.cards') !== '0'; } catch (e) {}
+    // The sheet opens bare; the drawing panels are opt-in (H, the corner toggle, or ?cards=1).
+    let cardsOn = false;
+    try { cardsOn = localStorage.getItem('r2.cards') === '1'; } catch (e) {}
     document.body.classList.add('no-card-anim');
     this.setCards(cardsOn);
     requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('no-card-anim')));

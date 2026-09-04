@@ -395,7 +395,7 @@ export function installWebMCP(ctx) {
     {
       name: 'get_specification',
       title: 'Get vehicle specification',
-      description: 'The published Rivian R2 dimensions the model is built to. All values are lengths in metres — there are no masses or times here. Also returns the model\'s own derived coordinates (NOSE, TAIL, XF, XR: the x positions of the bumpers and axles), which is what part bounds and measurements are expressed against. The body is an independent reconstruction fitted to published dimensions and photographs, not manufacturer CAD.',
+      description: 'The published dimensions the RX2 model is built to (an independent reconstruction fitted to the Rivian R2\'s published figures). All values are lengths in metres — there are no masses or times here. Also returns the model\'s own derived coordinates (NOSE, TAIL, XF, XR: the x positions of the bumpers and axles), which is what part bounds and measurements are expressed against. The body is an independent reconstruction fitted to published dimensions and photographs, not manufacturer CAD.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: READ_ONLY,
       run: () => ({

@@ -1,0 +1,50 @@
+[
+  {
+    "shot": "angle-esker-lt21",
+    "ok": true,
+    "readout": "ORCHARD BEACH SILVER · 21 IN",
+    "ms": 82048,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c00190400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c00190400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "angle-glacier-lt21",
+    "ok": true,
+    "readout": "GLACIER WHITE · 21 IN",
+    "ms": 84310,
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "garage-iso",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "shot": "garage-side-open",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "shot": "garage-q34f-explode",
+    "ok": false,
+    "error": "Error: page.waitForTimeout: Target page, context or browser has been closed",
+    "errors": []
+  }
+]
