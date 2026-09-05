@@ -1,6 +1,6 @@
-assembled: 2026-09-05T19:41:12Z
+assembled: 2026-09-05T19:47:35Z
 sources:
-  universal-vehicle-configurator  6b18ac56d0f2ee9bd150915b70a68821dfe78de5  2026-09-05 15:36:01 -0400  [main]
+  universal-vehicle-configurator  515121c7f4242025b7cb7c1b8c5b8277416b1d41  2026-09-05 15:44:05 -0400  [main]
   r2-blueprint  ff428e73ba03b9db870e0308d4abd6c55a42869f  2026-09-05 15:39:05 -0400  [main]
   autolab-3d-creation-engine  f2f19f3b07c2085ed71b041675e5ba62cb183ddc  2026-09-05 15:34:27 -0400  [main]
 engine selftest: selftest: 57/57 passed · gate passed

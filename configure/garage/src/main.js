@@ -146,12 +146,14 @@ const q = new URLSearchParams(location.search);
 
 // Throwaway experiment: ?pbr=1 swaps the drawing pass for a lit PBR render to
 // test whether the lofted surfacing survives reflections. See src/pbr-probe.js.
-if (q.get('pbr') === '1') {
+// The probe may be absent from a production bundle, so a failed dynamic import
+// must not prevent the Garage module from finishing startup.
+if (q.get('pbr') === '1') try {
   const { enablePbrProbe } = await import('./pbr-probe.js');
   const info = enablePbrProbe(bp, vehicle, q.get('paint') || '#4A5D3A');
   console.info('[pbr probe]', info);
   document.documentElement.dataset.pbr = '1';
-}
+} catch (e) { console.warn('[pbr probe] unavailable in this build:', e.message); }
 setView(q.get('view') && CONFIG.views.some(v => v.id === q.get('view')) ? q.get('view') : 'iso'); ui.setToggle('run', true);
 if (q.get('run') === '0') motion('run');
 if (q.get('drive') === '1') motion('drive');
@@ -163,7 +165,9 @@ if (q.get('sil') === '1') st.sil = true;
 // ?hide=a,b  /  ?only=a  — isolate parts by name when tracking down a stray surface
 if (q.get('hide')) for (const n of q.get('hide').split(',')) vehicle.hidden.add(n);
 if (q.get('only')) { const keep = q.get('only').split(','); for (const p of vehicle.order) if (!keep.includes(p.name)) vehicle.hidden.add(p.name); }
-if (q.get('cards') === '0') ui.setCards(false);
+if (q.get('cards') === '0' || q.get('cards') === '1') {
+  ui.setCards(q.get('cards') === '1', true);
+}
 if (q.get('min')) for (const id of q.get('min').split(',')) { if (!/^[a-z]+$/.test(id)) continue; const el = document.getElementById(id); const b = el && el.querySelector('.panel-min'); if (b && !el.classList.contains('min')) { b.dataset.noPersist = '1'; b.click(); delete b.dataset.noPersist; } }
 if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'titleblock', 'viewtitle', 'hint', 'hdr-left', 'hdr-right']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
 if (q.get('nodrift') === '1') rig.driftOn = false;

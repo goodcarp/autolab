@@ -28,11 +28,11 @@ export class UI {
     this.key = $('#key'); this.instr = $('#instr'); this.vt = $('#viewtitle'); this.tt = $('#tooltip');
     // one control dissolves every card away so the drawing can be read on its own
     const cardsBtn = $('#cards-toggle');
-    this.setCards = (on) => {
+    this.setCards = (on, noPersist) => {
       document.body.classList.toggle('cards-off', !on);
       cardsBtn.title = on ? 'Hide panels (H)' : 'Show panels (H)';
       cardsBtn.setAttribute('aria-label', on ? 'Hide the drawing panels' : 'Show the drawing panels');
-      try { localStorage.setItem('r2.cards', on ? '1' : '0'); } catch (e) {}
+      if (!noPersist) try { localStorage.setItem('r2.cards', on ? '1' : '0'); } catch (e) {}
     };
     let cardsOn = true;
     try { cardsOn = localStorage.getItem('r2.cards') !== '0'; } catch (e) {}

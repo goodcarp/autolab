@@ -1,6 +1,6 @@
 # AutoLab build notes
 
-Updated: 2026-09-03
+Updated: 2026-09-04
 
 ## Product decision
 
@@ -10,7 +10,7 @@ owner and service surface. Both use the code-native R2 engineering body carried
 from the original drawing project, and both refer to one synchronized build
 revision.
 
-The top-level agent API is intentionally curated: 16 tools describe useful
+The top-level agent API is intentionally curated: 17 tools describe useful
 customer outcomes instead of exposing every rendering primitive. The Garage
 page still publishes 14 lower-level tools when opened directly, which makes the
 framework legible to technical judges without making the shared experience
@@ -41,7 +41,7 @@ Performance build at revision 1. `get_vehicle_twin_state` returned the same
 build, Esker Silver, 21-inch wheels, Black Crater, 330-mile range, and $59,485
 vehicle total. `inspect_vehicle_part` then switched the shared page to Garage,
 dissolved the shell, framed the structural battery bounds, and highlighted the
-part. The host exposed all 16 AutoLab tools; the direct Garage page exposed all
+part. The host exposed all 17 AutoLab tools; the direct Garage page exposed all
 14 drawing tools.
 
 ## Honest boundary
@@ -55,12 +55,31 @@ vehicle identity.
 
 ## Remaining submission work
 
-Deployment, deployed-device fallback checks, the recorded demo, and Devpost
-submission assets remain separate final-mile tasks.
+Deployed-device fallback checks, the recorded demo, and Devpost submission
+assets remain separate final-mile tasks.
+
+## Challenge release candidate — 2026-09-04
+
+- Promoted the clean, tagged `r2-blueprint` v0.14.4 procedural model into both
+  Garage and the generated Configure mirror, then verified exact parity.
+- Carried over compatible tail-light classification, deep-link card-state, and
+  optional-PBR failure-isolation fixes while preserving AutoLab's lifecycle,
+  performance, touch, and WebMCP integration work.
+- Added a root MIT license and a GitHub Pages release workflow. With explicit
+  participant approval, the single unified repository was made public and the
+  combined Configure/Garage app was deployed from `main`.
+- Re-ran ESLint, strict TypeScript, all 120 tests, model parity, and the
+  production build successfully. The calibrated visual self-test passed 8/8;
+  the reduced-motion, no-WebGL, touch, pinch, control-target, and responsive
+  layout matrix passed 26/26 against the isolated local production preview.
+- Verified the public site, the code-native R2 render, the Configure → Garage
+  bridge, all 17 host tools, and all 14 direct Garage tools. Remaining release
+  gates are the final demo recording, submission screenshots, and confirmed
+  Devpost submission.
 
 ## Final hardening — WebMCP contract
 
-- Audited all 16 host tools and all 14 direct Garage tools. Every tool now has
+- Audited all 17 host tools and all 14 direct Garage tools. Every tool now has
   a closed top-level schema, a human-readable title, and explicit read-only,
   non-destructive, idempotency, closed-world, and trusted-content hints.
 - Direct Garage calls now enforce their published schemas at runtime, report

@@ -206,7 +206,12 @@ bool inAperture(vec3 p){
       const n = C.quarterY0[i + 1], m = (n[1] - k[1]) / (n[0] - k[0]);
       return `\n             + ${f(m)} * clamp(p.x - ${f(k[0])}, 0.0, ${f(n[0] - k[0])})`;
     }).join('')};
-    bool rear = lower ? (p.x > ${f(C.rearX0)} && p.x < ${f(C.rearX1)}) : (p.x > ${f(C.rearGlassX0)} && p.x < ${f(C.rearGlassX1)});
+    // the rear door's trailing shut line rakes with height, so it is a ramp, not a constant
+    float rs = ${f(C.rearShut[0][1])}${C.rearShut.slice(0, -1).map((k, i) => {
+      const n = C.rearShut[i + 1], m = (n[1] - k[1]) / (n[0] - k[0]);
+      return `\n             + ${f(m)} * clamp(p.y - ${f(k[0])}, 0.0, ${f(n[0] - k[0])})`;
+    }).join('')};
+    bool rear = lower ? (p.x > rs && p.x < ${f(C.rearX1)}) : (p.x > ${f(C.rearFrameX0)} && p.x < ${f(C.rearGlassX1)});
     bool quarter = !lower && p.y > qf && p.x > ${f(C.quarterX0)} && p.x < ${f(C.quarterX1)};
     if (quarter) return true;
     float xg = p.y >= ${f(C.sailY)} ? (${f(C.qa)} + ${f(C.qb)} * p.y + ${f(C.qc)} * p.y * p.y) : ${f(C.frontGlassX1)} - (p.y - ${f(C.beltY)}) * ${f(C.sailSlope)};

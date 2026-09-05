@@ -48,9 +48,9 @@ float hatch(vec2 p, float ang, float period, float width){
   return 1.0 - smoothstep(width*0.5 - 0.5, width*0.5 + 0.5, f);
 }
 bool isLamp(float id){ return abs(id-uLampIds.x)<0.01 || abs(id-uLampIds.y)<0.01; }
-// Only the lit strip glows. This used to test the LIFTGATE at sub 2 (which it never emits - dead
-// code) and the lamp part at ANY sub, so LIGHTS lit the body-colour brow and the pressure vents too.
-bool isTail(float id, float sub){ return abs(id-uTailIds.x)<0.01 && sub < 0.5; }
+// Only the lit strip glows, and it lives on TWO parts: the corner stubs on the body (sub 0 of the
+// lamp part) and the bar across the tail, which the liftgate carries (sub 8 there).
+bool isTail(float id, float sub){ return (abs(id-uTailIds.x)<0.01 && sub < 0.5) || (abs(id-uTailIds.y)<0.01 && abs(sub-8.0)<0.01); }
 
 void main(){
   vec2 px = 1.0 / uRes;

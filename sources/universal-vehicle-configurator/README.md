@@ -5,6 +5,8 @@ that follows the product from configuration through ownership. A person and an
 agent share the same revisioned build, the same code-native R2 model, and two
 purpose-built lifecycle surfaces.
 
+**Live app:** [goodcarp.github.io/universal-vehicle-configurator](https://goodcarp.github.io/universal-vehicle-configurator/)
+
 **Configure** is a live 3D sales and buyer-intelligence experience. **Garage**
 is an interactive technical digital twin for owner guidance, component
 inspection, measurements, openings, exploded views, and service context. The
@@ -35,8 +37,9 @@ seconds of page load, the page picks it up on its own and the header chip
 switches from **Manual mode** to **17 agent tools** without a reload. After that
 window the page stops watching, so an API injected later needs a reload.
 
-**Option A, ChatGPT desktop.** Update to the latest version, then open this
-URL in the app's built-in browser. Ask it to read the current build.
+**Option A, ChatGPT desktop.** Update to the latest version, then open the
+[live app](https://goodcarp.github.io/universal-vehicle-configurator/) in the
+app's built-in browser. Ask it to read the current build.
 
 **Option B, Chrome.** Enable the flag, restart Chrome, then load this URL:
 
@@ -151,3 +154,10 @@ endorsed by, or sponsored by Rivian or any manufacturer. The geometry is an
 independent reconstruction, not manufacturer CAD or an official engineering
 release. Vehicle names and specifications are used nominatively to identify
 the products being discussed.
+
+## License
+
+The AutoLab application code is released under the [MIT License](LICENSE).
+Third-party and reference-asset terms are documented separately in
+[docs/asset-license.md](docs/asset-license.md) and alongside the relevant
+files under `public/models/` and `public/garage/vendor/`.

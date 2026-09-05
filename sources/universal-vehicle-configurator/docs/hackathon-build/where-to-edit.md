@@ -20,8 +20,11 @@ Edit the model in **r2-blueprint**. Nothing else. The mirror carries a
 
 The first hop is manual, and it has already bitten once: the Garage sat a
 release behind its own model, with a bar across the door opening and an
-inverted rear lamp that the origin had already fixed. Run `pnpm model:check`
-before a demo, or `pnpm model:promote` after tagging a release upstream.
+inverted rear lamp that the origin had already fixed. On a workstation that
+also has `r2-blueprint`, run `pnpm model:origin:check` before a demo, or
+`pnpm model:promote` after tagging a release upstream. The portable
+`pnpm model:check` command verifies the in-repository Garage → Configure hop
+and is the gate used by CI.
 
 ## Shared by descent, deliberately divergent — never copy these
 
