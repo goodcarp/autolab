@@ -18,13 +18,13 @@ function browser(t, doc = {}, nav = {}) {
 }
 const mirror = () => ({ tools: toolDeclarations([{ name: 'get_state', description: 'Read state.', inputSchema: { type: 'object', properties: {} } }]), registered: false, api: null });
 
-test('all 15 actual tools have closed schemas, titles and complete annotations', async t => {
+test('all 17 actual tools have closed schemas, titles and complete annotations', async t => {
   const registered = [];
   browser(t, { modelContext: { registerTool: tool => registered.push(tool) } });
   installWebMCP({ config: CONFIG, ui: {} });
   await flush();
-  assert.equal(window.r2.tools.length, 15);
-  assert.equal(registered.length, 15);
+  assert.equal(window.r2.tools.length, 17);
+  assert.equal(registered.length, 17);
   for (const tool of window.r2.tools) {
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
     assert.ok(tool.title.trim() && !tool.title.includes('_'), tool.name);

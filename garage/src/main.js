@@ -160,7 +160,7 @@ if (q.get('nodrift') === '1') rig.driftOn = false;
 if (q.get('snap') === '1' || q.get('az') || q.get('el')) { rig.goTo(st.view || 'iso', 0); rig.driftOn = false; if (q.get('az')) rig.cur.az = +q.get('az'); if (q.get('el')) rig.cur.el = +q.get('el'); rig.onSettle(st.view); }
 // WebMCP + window.r2: the sheet is operable by an agent, not only by a person with a pointer
 const api = installWebMCP({
-  st, rig, vehicle, overlay, ui, setView, motion, config: CONFIG, tourState, startTour, stopTour,
+  st, rig, vehicle, overlay, ui, bp, setView, motion, config: CONFIG, tourState, startTour, stopTour,
   select: (p) => { keyHover = p; st.hoverPart = p; ui.highlightKey(p ? p.name : null); },
 });
 

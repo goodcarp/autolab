@@ -9,7 +9,7 @@ chain and reflective floor.
 Staging the explicit changed-file list failed before a commit could be made:
 
 ```text
-fatal: Unable to create '/Users/spaceman/Desktop/Universal Vehicle Configurator/.git/worktrees/uvc-showroom-polish/index.lock': Operation not permitted
+fatal: Unable to create the shared Git index lock (sandboxed worktree)
 ```
 
 The worktree's Git index lives outside the writable sandbox roots. All edits

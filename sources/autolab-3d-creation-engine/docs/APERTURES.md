@@ -17,10 +17,10 @@ survivors on the model: `docs/aperture-results.md`. A missing animation, missing
 non-finite geometry or unsupported clipping refuses certification with exit 1.
 
 ```bash
-MODEL_PATH=/Users/spaceman/Desktop/r2-tour/src/vehicle.js node src/cli.mjs apertures
+MODEL_PATH=../r2-blueprint/src/vehicle.js node src/cli.mjs apertures
 node --test
-MODEL_PATH=/Users/spaceman/Desktop/r2-tour/src/vehicle.js npm run selftest
-APERTURE_BASE_MODEL=/Users/spaceman/Desktop/r2-tour/src/vehicle.js node --test
+MODEL_PATH=../r2-blueprint/src/vehicle.js npm run selftest
+APERTURE_BASE_MODEL=../r2-blueprint/src/vehicle.js node --test
 MODEL_PATH="$PWD/fixtures/aperture-bars.mjs" node src/cli.mjs apertures
 ```
 

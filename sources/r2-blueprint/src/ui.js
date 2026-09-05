@@ -83,6 +83,7 @@ export class UI {
       get_part: 'Inspect one component and its bounds.', frame_part: 'Centre and zoom onto one component.',
       highlight_part: 'Select a component on the drawing.', set_annotations: 'Show or hide the drawing cards.',
       get_specification: 'Read the model’s published figures.', measure: 'Measure between component box centres.',
+      list_visible_parts: 'What the camera sees, by component and coverage.', clearance: 'Nearest surface-to-surface gap between two components.',
       reset: 'Restore the opening view and motions.',
     };
     for (const tool of api.tools) {

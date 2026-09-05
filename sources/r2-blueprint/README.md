@@ -26,7 +26,7 @@ Deep links for captures and sharing: `?view=side&snap=1`, `?view=iso&explode=1`,
 
 ## Agent control (WebMCP)
 
-The sheet is operable by an agent, not only by a person with a pointer. `src/webmcp.js` exposes 15
+The sheet is operable by an agent, not only by a person with a pointer. `src/webmcp.js` exposes 17
 tools over three surfaces that all drive the same handlers:
 
 - **`navigator.modelContext`** — the W3C Web Model Context proposal, where the browser supports it.

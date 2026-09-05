@@ -1,6 +1,6 @@
 {
   "status": "FAIL",
-  "model": "/Users/spaceman/Desktop/engine-aperture/fixtures/aperture-bars.mjs",
+  "model": "fixtures/aperture-bars.mjs",
   "band_mm": 50,
   "edge_mm": 65,
   "lidArea_m2": 0.1,

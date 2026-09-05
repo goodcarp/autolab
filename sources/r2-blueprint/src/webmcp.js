@@ -20,7 +20,7 @@ const xyz = (v) => ({ x: round(v.x), y: round(v.y), z: round(v.z) });
 
 // Pure declaration projection shared by the browser registration, mirror and tests.
 export function toolDeclarations(tools) {
-  const readOnly = new Set(['get_state', 'list_parts', 'get_part', 'get_specification', 'measure']);
+  const readOnly = new Set(['get_state', 'list_parts', 'get_part', 'get_specification', 'measure', 'list_visible_parts', 'clearance']);
   const relative = new Set(['start_tour', 'set_motion', 'orbit_camera', 'frame_part']);
   return tools.map(({ name, description, inputSchema }) => ({
     name, title: name.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' '),
@@ -97,6 +97,141 @@ export function installWebMCP(ctx) {
       d.visible = p.group.visible;
     }
     return d;
+  };
+
+  // ---- spatial instruments ----------------------------------------------------------------------
+  // What the camera can actually see. The sheet renders a part-id G-buffer every frame
+  // (blueprint.js: gData = depth, part id, sub id), so read that back and sample it on a
+  // grid: exact per pixel, and it honours the dissolved shell and the shader-cut openings.
+  // Without a renderer (tests, WebGL failure) fall back to a coarse ray grid.
+  let raycaster, idPass;
+  const partById = () => new Map(vehicle.order.map((p) => [p.id, p]));
+  const visibleParts = (cols) => {
+    const hits = new Map(), byId = partById(); let empty = 0, rows;
+    const tally = (part, nx, ny, depth) => {
+      const e = hits.get(part) || { part, n: 0, sx: 0, sy: 0, nearest: Infinity };
+      e.n++; e.sx += nx; e.sy += ny; e.nearest = Math.min(e.nearest, depth); hits.set(part, e);
+    };
+    let basis;
+    const bp = ctx.bp;
+    if (bp?.renderer && bp.scene && bp.vehicleMeshes && bp.gMatProto) {
+      // An id pass at exactly the grid's resolution: one pixel per sample, into a single
+      // float attachment this three.js can read back (the sheet's own G-buffer is a
+      // half-float MRT that readRenderTargetPixels cannot address in r170).
+      const W = bp.gbuf.width, H = bp.gbuf.height;
+      rows = Math.max(2, Math.round(cols * H / W));
+      if (!idPass || idPass.target.width !== cols || idPass.target.height !== rows) {
+        idPass?.target.dispose();
+        idPass = { target: new THREE.WebGLRenderTarget(cols, rows, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true, generateMipmaps: false }), materials: idPass?.materials ?? new Map() };
+      }
+      const frag = bp.gMatProto.fragmentShader
+        .replace('layout(location = 0) out vec4 gNormal;', '').replace('layout(location = 1) out vec4 gData;', 'out vec4 gData;')
+        .replace('gNormal = vec4(n, 1.0);', '');
+      const r = bp.renderer, dis = st.shellDissolve ?? 1;
+      for (const m of bp.vehicleMeshes) {
+        let mat = idPass.materials.get(m);
+        if (!mat) { mat = bp.gMatProto.clone(); mat.fragmentShader = frag; mat.uniforms = m.userData.gMat.uniforms; idPass.materials.set(m, mat); }
+        if (m.userData.shell) m.userData.gMat.uniforms.uDissolve.value = dis;
+        m.material = mat;
+      }
+      const groundWas = bp.ground.visible, shadowWas = r.shadowMap.enabled;
+      bp.ground.visible = false; r.shadowMap.enabled = false;
+      vehicle.root.updateMatrixWorld(true);
+      rig.apply(W / H);                       // the camera as posed right now, not as of the last drawn frame
+      r.setRenderTarget(idPass.target); r.setClearColor(0x000000, 0); r.clear(true, true, true);
+      r.render(bp.scene, rig.camera);
+      const buf = new Float32Array(cols * rows * 4);
+      r.readRenderTargetPixels(idPass.target, 0, 0, cols, rows, buf);
+      r.setRenderTarget(null);
+      for (const m of bp.vehicleMeshes) m.material = m.userData.beautyMat;
+      bp.ground.visible = groundWas; r.shadowMap.enabled = shadowWas;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const k = ((rows - 1 - j) * cols + i) * 4;   // rows are bottom-up in the readback
+        if (buf[k + 3] < 0.5) { empty++; continue; }
+        const part = byId.get(Math.round(buf[k + 1]));
+        if (!part) { empty++; continue; }
+        tally(part, ((i + 0.5) / cols) * 2 - 1, 1 - ((j + 0.5) / rows) * 2, buf[k]);
+      }
+      basis = 'part-id pass rendered at the grid resolution, one pixel per sample';
+    } else {
+      raycaster ??= new THREE.Raycaster();
+      cols = Math.min(cols, 24); rows = Math.max(2, Math.round(cols / rig.aspect));
+      vehicle.root.updateMatrixWorld(true);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const nx = ((i + 0.5) / cols) * 2 - 1, ny = 1 - ((j + 0.5) / rows) * 2;
+        const ray = rig.ray(nx, ny); raycaster.set(ray.origin, ray.direction);
+        const found = raycaster.intersectObjects(vehicle.pickables, false).find((h) => h.object.visible && h.object.parent.visible);
+        if (!found) { empty++; continue; }
+        tally(found.object.userData.part, nx, ny, found.distance);
+      }
+      basis = 'ray grid against the meshes (no renderer available)';
+    }
+    const total = cols * rows;
+    const parts = [...hits.values()].sort((a, b) => b.n - a.n).map((e) => ({
+      id: e.part.name, label: e.part.label, category: e.part.category,
+      coverage_pct: round(100 * e.n / total, 1),
+      // where on the sheet its visible area sits, 0..1 from the left and from the top
+      screen_centre: { x: round((e.sx / e.n + 1) / 2, 3), y: round((1 - e.sy / e.n) / 2, 3) },
+      nearest_m: round(e.nearest, 3),
+    }));
+    return { samples: total, grid: { columns: cols, rows }, vehicle_pct: round(100 * (total - empty) / total, 1), basis, parts };
+  };
+  // Nearest surface-to-surface gap between two parts, in world space at this instant.
+  // Vertices of one part against the triangles around the nearest vertices of the other, both
+  // ways; exact on the triangles it tests, and it tests the ones that matter.
+  const surfaceOf = (p) => {
+    const verts = [], tris = [], adj = [];
+    const w = new THREE.Vector3();
+    for (const m of p.meshes) {
+      if (!m.visible || !m.parent.visible) continue;
+      m.updateWorldMatrix(true, false);
+      const pos = m.geometry.getAttribute('position'), idx = m.geometry.getIndex(); if (!pos) continue;
+      const base = verts.length;
+      for (let i = 0; i < pos.count; i++) { verts.push(w.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).clone()); adj.push([]); }
+      const n = idx ? idx.count : pos.count;
+      for (let i = 0; i < n; i += 3) {
+        const t = [0, 1, 2].map((k) => base + (idx ? idx.getX(i + k) : i + k));
+        const ti = tris.push(t) - 1; for (const v of t) adj[v].push(ti);
+      }
+    }
+    return { verts, tris, adj };
+  };
+  const gridIndex = (verts, cell) => {
+    const cells = new Map(); const key = (v) => `${Math.floor(v.x / cell)},${Math.floor(v.y / cell)},${Math.floor(v.z / cell)}`;
+    verts.forEach((v, i) => { const k = key(v); (cells.get(k) || cells.set(k, []).get(k)).push(i); });
+    return (v, reach) => {
+      const out = []; const cx = Math.floor(v.x / cell), cy = Math.floor(v.y / cell), cz = Math.floor(v.z / cell);
+      for (let dx = -reach; dx <= reach; dx++) for (let dy = -reach; dy <= reach; dy++) for (let dz = -reach; dz <= reach; dz++) {
+        const c = cells.get(`${cx + dx},${cy + dy},${cz + dz}`); if (c) out.push(...c);
+      }
+      return out;
+    };
+  };
+  let tri, cp;
+  const bounds = (verts) => { const bb = new THREE.Box3(); for (const v of verts) bb.expandByPoint(v); return bb; };
+  const nearestSurface = (a, b, cell) => {
+    tri ??= new THREE.Triangle(); cp ??= new THREE.Vector3();
+    const near = gridIndex(b.verts, cell);
+    let best = { d: Infinity };
+    // Only vertices of A near B's envelope can be nearest to B; widen until some exist.
+    const bb = bounds(b.verts); let margin = 0.15, pool = [];
+    while (pool.length < 40 && margin < 50) { const region = bb.clone().expandByScalar(margin); pool = a.verts.filter((v) => region.containsPoint(v)); margin *= 2; }
+    const step = Math.max(1, Math.floor(pool.length / 2500));
+    for (let i = 0; i < pool.length; i += step) {
+      const v = pool[i];
+      let cands = [], reach = 1;
+      while (!cands.length && reach <= 6) { cands = near(v, reach); reach++; }
+      if (!cands.length) continue;
+      let bi = -1, bd = Infinity;
+      for (const j of cands) { const d = v.distanceToSquared(b.verts[j]); if (d < bd) { bd = d; bi = j; } }
+      const seen = new Set();
+      for (const ti of b.adj[bi]) { if (seen.has(ti)) continue; seen.add(ti);
+        const [p0, p1, p2] = b.tris[ti]; tri.set(b.verts[p0], b.verts[p1], b.verts[p2]); tri.closestPointToPoint(v, cp);
+        const d = v.distanceTo(cp); if (d < best.d) best = { d, from: v.clone(), to: cp.clone() };
+      }
+      if (bd < best.d * best.d) best = { d: Math.sqrt(bd), from: v.clone(), to: b.verts[bi].clone() };
+    }
+    return best;
   };
   // Break any running tween before moving the camera by hand, then hold the new pose.
   const takeCamera = (keepTarget) => {
@@ -280,6 +415,34 @@ export function installWebMCP(ctx) {
         if (!ba || !bb) throw new Error('one of those parts has no visible geometry right now');
         const d = { x: round(bb.centre.x - ba.centre.x), y: round(bb.centre.y - ba.centre.y), z: round(bb.centre.z - ba.centre.z) };
         return { from: a.name, to: b.name, delta_m: d, distance_m: round(Math.hypot(d.x, d.y, d.z)) };
+      },
+    },
+    {
+      name: 'list_visible_parts',
+      description: 'What the camera can see right now: a grid of rays through the sheet, first surface hit per ray, tallied by component. Returns each visible component with the percentage of the sheet it covers, where its visible area sits on the sheet (0..1 from the left and from the top) and its nearest distance; plus how much of the sheet the vehicle fills. Use it to know what a person is looking at before explaining it, or to confirm a frame_part landed. Reads the sheet\'s own part-id buffer, so it honours the dissolved shell and open panels.',
+      inputSchema: { type: 'object', properties: { columns: { type: 'integer', minimum: 8, maximum: 96, description: 'Ray grid width; rows follow the sheet aspect. Default 40.' } } },
+      run: ({ columns = 40 } = {}) => {
+        if (!Number.isInteger(columns) || columns < 8 || columns > 96) throw new Error('columns must be an integer from 8 to 96');
+        return { view: st.view, camera: cameraState(), ...visibleParts(columns) };
+      },
+    },
+    {
+      name: 'clearance',
+      description: 'Nearest surface-to-surface gap in metres between two components as they are posed right now (open panels and explode change it), with the two closest points in the vehicle frame. Unlike measure, which uses bounding-box centres, this is the real gap: use it for packaging questions such as how close the battery pack sits to the floor or a tyre to its arch. Zero means the surfaces touch or intersect.',
+      inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string' }, to: { type: 'string' } } },
+      run: ({ from, to }) => {
+        const a = findPart(from), b = findPart(to);
+        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (a === b) throw new Error('clearance needs two different components');
+        vehicle.root.updateMatrixWorld(true);
+        const sa = surfaceOf(a), sb = surfaceOf(b);
+        if (!sa.verts.length || !sb.verts.length) throw new Error('one of those parts has no visible geometry right now');
+        const cell = 0.05;
+        const ab = nearestSurface(sa, sb, cell), ba = nearestSurface(sb, sa, cell);
+        const best = ab.d <= ba.d ? ab : { d: ba.d, from: ba.to, to: ba.from };
+        if (!Number.isFinite(best.d)) throw new Error('the parts are too far apart to index; use measure for their centre separation');
+        return { from: a.name, to: b.name, clearance_m: round(best.d), at_from_m: xyz(best.from), at_to_m: xyz(best.to),
+          basis: 'nearest of: each sampled vertex of one part against the triangles around the closest vertex of the other, both directions, in world space at this instant' };
       },
     },
     {

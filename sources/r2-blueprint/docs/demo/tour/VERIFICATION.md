@@ -28,7 +28,7 @@ All 13 existing tool schemas were compared against the pre-tour revision by load
 the two dispatcher modules with stub constructors: unchanged; 15 tools total.
 
 Commit was attempted on branch `tour`, but Git could not create
-`/Users/spaceman/Desktop/r2-blueprint/.git/worktrees/r2-tour/index.lock`
+the shared Git index of the main checkout
 (`Operation not permitted`). The sandbox allows source writes in this worktree but
 not the shared Git metadata. No files were staged and no commit was made. Fable can
 commit from this worktree after review:

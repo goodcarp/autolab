@@ -21,9 +21,9 @@
       title: "Agentic Owner's Guide",
       role: "ownership",
       url: url("garage/"),
-      tools: 15,
+      tools: 17,
       summary:
-        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, and a guided tour an agent can start, narrate and interrupt.",
+        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, a guided tour an agent can start, narrate and interrupt, what is visible on the sheet by component, and surface-to-surface clearance.",
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint",
     },
     {

@@ -98,7 +98,7 @@ drive the page exactly as an agent would.
   The embedded Garage publishes 14 lower-level drawing tools of its own, including
   the `set_vehicle_context` bridge, connected over a validated same-origin
   `postMessage` channel with request ids, bounded timeouts and revision checks.
-- Owner's Guide: 15 tools over three surfaces (`navigator.modelContext`,
+- Owner's Guide: 17 tools over three surfaces (`navigator.modelContext`,
   `window.r2`, `postMessage`) that all drive the same handlers and return
   structured JSON in metres.
 - Landing page and engine page: 6 small tools so the umbrella site itself is
