@@ -1,0 +1,344 @@
+[
+  {
+    "shot": "angle",
+    "device": "desktop",
+    "path": "scan-desktop-angle.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "angle"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "angle-extent",
+    "device": "desktop",
+    "width": 969,
+    "height": 804,
+    "alphaThreshold": 16,
+    "count": 114880,
+    "bbox": {
+      "x": 194,
+      "y": 277,
+      "width": 615,
+      "height": 270
+    },
+    "widthFraction": 0.6346749226006192,
+    "clearAir": true,
+    "ok": true,
+    "targetMet": true
+  },
+  {
+    "shot": "profile",
+    "device": "desktop",
+    "path": "scan-desktop-profile.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "blueprint-mid",
+    "device": "desktop",
+    "path": "scan-desktop-blueprint-mid.png",
+    "ok": true,
+    "trigger": "b key",
+    "elapsedMs": 500,
+    "state": {
+      "progress": 0.47454545454545455,
+      "active": true,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "blueprint-settled",
+    "device": "desktop",
+    "path": "scan-desktop-blueprint-settled.png",
+    "ok": true,
+    "state": {
+      "progress": 1,
+      "active": false,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "showroom-mid",
+    "device": "desktop",
+    "path": "scan-desktop-showroom-mid.png",
+    "ok": true,
+    "trigger": "presentation tool",
+    "elapsedMs": 500,
+    "state": {
+      "progress": 0.5290909090909091,
+      "active": true,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "showroom-settled",
+    "device": "desktop",
+    "path": "scan-desktop-showroom-settled.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "demand-idle",
+    "device": "desktop",
+    "extraFrames": 55,
+    "ok": false
+  },
+  {
+    "shot": "reduced-motion",
+    "device": "desktop",
+    "ok": true,
+    "state": {
+      "progress": 1,
+      "active": false,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    }
+  },
+  {
+    "shot": "open-angle",
+    "device": "desktop",
+    "path": "scan-desktop-open-angle.png",
+    "ok": true,
+    "trigger": "presentation tool bodyOpen:true",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 1,
+      "mode": "showroom",
+      "preset": "angle"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "open-profile",
+    "device": "desktop",
+    "path": "scan-desktop-open-profile.png",
+    "ok": true,
+    "trigger": "presentation tool bodyOpen:true",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 1,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "interior",
+    "device": "desktop",
+    "path": "scan-desktop-interior.png",
+    "ok": true,
+    "purpose": "plain-render interior regression",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "interior"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x12c0018da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "shot": "angle",
+    "device": "phone",
+    "path": "scan-phone-angle.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "angle"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "angle-extent",
+    "device": "phone",
+    "width": 370,
+    "height": 385,
+    "alphaThreshold": 16,
+    "count": 16852,
+    "bbox": {
+      "x": 72,
+      "y": 143,
+      "width": 235,
+      "height": 103
+    },
+    "widthFraction": 0.6351351351351351,
+    "clearAir": true,
+    "ok": true,
+    "targetMet": true
+  },
+  {
+    "shot": "profile",
+    "device": "phone",
+    "path": "scan-phone-profile.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  }
+]

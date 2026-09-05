@@ -14,6 +14,7 @@ import {
 import { buildDetailGroup } from "./detail";
 import { cutGLSL } from "./geom.js";
 import { CUT, SPEC, type R2Vehicle } from "./vehicle.js";
+import { createPresentationScan, type PresentationScan } from "./presentation-scan";
 
 /**
  * Showroom dressing for the engineering body.
@@ -90,8 +91,9 @@ const PAINT_SPECS: Record<string, Partial<PaintSpec> & { color: string }> = {
     color: "#c0bdb8",
     metalness: 0.86,
     roughness: 0.33,
+    clearcoatRoughness: 0.09,
     flake: 0.09,
-    envMapIntensity: 1.75,
+    envMapIntensity: 1.55,
     specularColor: "#fff6ea",
   },
   // Pearl white: a dielectric coat with a faint thin-film flop, and the env
@@ -672,6 +674,7 @@ function buildMaterials(
 }
 
 export interface ShowroomHandle {
+  scan: PresentationScan;
   materials: Record<Role, Material>;
   paint: MeshPhysicalMaterial;
   /** Repaint in place: every coat parameter, base and cut twin, no recompile. */
@@ -753,8 +756,10 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
   });
 
   const restoreWheels = styleWheels(vehicle, RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten, base.rim);
+  const scan = createPresentationScan([vehicle.root, detail], [...Object.values(base), ...cutTwins.values()]);
 
   return {
+    scan,
     materials: base,
     paint: base.paint as MeshPhysicalMaterial,
     setPaint(spec) {
@@ -770,6 +775,7 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       for (const material of cutTwins.values()) fn(material);
     },
     dispose() {
+      scan.dispose();
       restoreWheels();
       detail.removeFromParent();
       (detail.userData.dispose as (() => void) | undefined)?.();

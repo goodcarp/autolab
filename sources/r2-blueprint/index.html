@@ -28,7 +28,8 @@
 
   <button id="cards-toggle" type="button" aria-label="Hide the drawing panels" title="Hide panels (H)"><span></span></button>
   <div id="stage">
-    <canvas id="gl"></canvas>
+    <canvas id="gl" tabindex="0" role="img" aria-label="Interactive Hudian RX2 drawing" aria-describedby="drawing-description"></canvas>
+    <p id="drawing-description" class="sr-only">Three-dimensional vehicle drawing showing body panels, chassis and named components. Use arrow keys to orbit and brackets to zoom.</p>
     <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
     <div id="hint">DRAG TO ORBIT · SCROLL TO ZOOM</div>
     <div id="viewtitle"><div class="vt-rule"></div><div class="vt-name"></div><div class="vt-sub"></div></div>
@@ -40,12 +41,21 @@
     <div>
       <div class="hdr-title" id="hdr-left-title"></div>
       <div class="hdr-sub" id="hdr-left-sub"></div>
+      <nav class="header-tools" aria-label="Guide tools and home">
+        <button id="agent-chip" type="button" aria-expanded="false" aria-controls="agent-tools">MANUAL MODE</button>
+        <a href="../" title="AutoLab home">AUTOLAB</a>
+      </nav>
     </div>
   </header>
   <header id="hdr-right">
     <div class="hdr-title" id="hdr-right-title"></div>
     <div class="hdr-sub" id="hdr-right-sub"></div>
   </header>
+
+  <section class="panel" id="agent-tools" aria-labelledby="agent-tools-title" hidden>
+    <div class="panel-h"><span id="agent-tools-title">AGENT TOOLS</span><button id="agent-tools-close" class="panel-min" type="button" aria-label="Close agent tools">×</button></div>
+    <dl id="agent-tools-list"></dl>
+  </section>
 
   <section class="panel" id="key">
     <div class="panel-h"><span>KEY FEATURES</span><button class="panel-min" type="button" aria-label="Minimize key" title="Minimize">−</button></div>

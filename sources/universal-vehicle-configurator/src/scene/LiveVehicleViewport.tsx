@@ -23,7 +23,7 @@ import {
   BackSide,
   SRGBColorSpace,
 } from "three";
-import { getCameraPose, type CameraRigId } from "./camera-presets";
+import { fitCameraToAspect, getCameraPose, type CameraRigId } from "./camera-presets";
 import { createCycloramaTexture, createFloorFalloffTexture } from "./studio-backdrop";
 import { CabinInterior } from "./CabinInterior";
 import { resolveVehicleModelSource } from "./vehicle-model-source";
@@ -75,9 +75,14 @@ function CameraDirector({
 > & Readonly<{ cameraRig: CameraRigId; turntable: boolean }>) {
   const controls = useRef<CameraControls>(null);
   const invalidate = useThree((state) => state.invalidate);
+  const aspect = useThree((state) => state.size.width / state.size.height);
   const pose = useMemo(
-    () => getCameraPose(viewPreset, focus, keyboardOrbit, cameraRig),
-    [cameraRig, focus, keyboardOrbit, viewPreset],
+    () => {
+      const authored = getCameraPose(viewPreset, focus, keyboardOrbit, cameraRig);
+      return cameraRig === "r2" && !focus && (viewPreset === "angle" || viewPreset === "profile")
+        ? fitCameraToAspect(authored, aspect) : authored;
+    },
+    [aspect, cameraRig, focus, keyboardOrbit, viewPreset],
   );
 
   // A slow turn while nobody is touching it, the way a launch film opens.
@@ -248,6 +253,9 @@ function Studio({
         distance={16}
         color={blueprint ? "#9eeeff" : "#eef9f3"}
       />
+      {!blueprint && grounded && (
+        <directionalLight position={[-3.5, 4, -5]} intensity={0.65} color="#dcecff" />
+      )}
       {/*
         A car is almost entirely reflection, so what it stands in matters more
         than what shines on it. This is the rig a studio would actually build:
@@ -385,12 +393,25 @@ function Studio({
         frames={1}
         position={[0, 0.025, 0]}
         scale={8.5}
-        opacity={blueprint ? 0.2 : 0.47}
-        blur={1.75}
+        opacity={blueprint ? 0.2 : 0.56}
+        blur={blueprint ? 1.75 : 1.45}
         far={2.8}
         resolution={256}
         color="#1b2620"
       />
+      )}
+      {grounded && !blueprint && (
+        <ContactShadows
+          key={`tyre-${shadowKey}`}
+          frames={1}
+          position={[0, 0.028, 0]}
+          scale={6}
+          opacity={0.62}
+          blur={0.6}
+          far={0.32}
+          resolution={256}
+          color="#111915"
+        />
       )}
     </>
   );
@@ -473,6 +494,7 @@ function VehicleScene(props: LiveVehicleViewportProps) {
               interior={props.interior}
               focus={props.focus}
               mode={props.mode}
+              reducedMotion={props.reducedMotion}
               bodyOpen={props.bodyOpen}
               onReady={props.onReady}
             />
@@ -533,7 +555,7 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
       </Canvas>
       <div className="live-vehicle-blueprint-overlay">
         <span className="live-vehicle-blueprint-overlay__reticle" />
-        <span className="live-vehicle-blueprint-overlay__scan" />
+        {props.modelSource === "licensed-glb" && <span className="live-vehicle-blueprint-overlay__scan" />}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ npm run fit               # measured against published dimensions
 | `node src/cli.mjs section <x> --svg out/s.svg` | A cross-section, drawn to scale on a millimetre grid, for laying over a drawing. |
 | `node src/cli.mjs clearance <a> <b>` | Nearest surface-to-surface distance, not centre-to-centre. |
 | `node src/cli.mjs overlaps` | Which parts' envelopes intersect. |
+| `node src/cli.mjs apertures [--band 50] [--edge 65]` | Does any fixed geometry sit at the skin, well inside a door, hood or liftgate opening, at four open fractions? Names the part, how far inside and how deep; exits non-zero on any survivor. See [APERTURES](docs/APERTURES.md) and the [current findings](docs/aperture-results.md). |
 | `node src/cli.mjs symmetry` | Shape symmetry about the centreline, section by section. |
 | `node src/cli.mjs reference` | What the drawing's calibration actually supports, checked against the spec. |
 | `node src/cli.mjs knots top --tol 3` | A knot list fitted to the reference, as pasteable `interp([...])` source. |
@@ -169,6 +170,7 @@ ruler.mjs     envelopes, key dimensions, extremes, the part table
 section.mjs   plane slicing, section chaining, shape symmetry
 svg.mjs       a section drawn to scale on a millimetre grid
 clearance.mjs nearest surfaces, exact axis gaps, the overlap matrix
+apertures.mjs closed panel footprints, surviving intrusions at four open fractions
 reference.mjs a calibrated drawing, with its landmarks re-checked on load
 knots.mjs     fewest knots that reproduce a profile, in the model's own interp
 silhouette.mjs the model's outline, and deviation from the reference by region

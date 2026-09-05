@@ -40,6 +40,7 @@ export function R2VehicleModel({
   accessories,
   focus,
   mode,
+  reducedMotion = false,
   bodyOpen = 0,
   onReady,
 }: VehicleModelProps) {
@@ -83,6 +84,7 @@ export function R2VehicleModel({
   // leaves a group hanging off the drawing for every render React discards.
   useEffect(() => {
     vehicle.body.add(showroom.detail);
+    showroom.scan.attach();
     invalidate();
     return () => {
       showroom.detail.removeFromParent();
@@ -101,15 +103,14 @@ export function R2VehicleModel({
     invalidate();
   }, [interior?.color, invalidate, showroom]);
 
+  const previousShowroom = useRef<typeof showroom | null>(null);
   useEffect(() => {
-    // Through the handle, so the cut clones on the body shell, greenhouse and
-    // pillars switch too. Iterating the base materials alone leaves the four
-    // largest surfaces on the car shaded solid inside a wireframe.
-    showroom.forEachMaterial((material) => {
-      (material as { wireframe?: boolean }).wireframe = blueprint;
-    });
+    // A newly mounted body starts at the requested endpoint. Later requests,
+    // from either B or WebMCP, share the same interruptible sweep.
+    showroom.scan.setBlueprint(blueprint, reducedMotion || previousShowroom.current !== showroom, performance.now());
+    previousShowroom.current = showroom;
     invalidate();
-  }, [blueprint, invalidate, showroom]);
+  }, [blueprint, invalidate, reducedMotion, showroom]);
 
   useEffect(() => {
     const restore = fitWheelDiameter(vehicle, wheel.diameterInches);
@@ -129,6 +130,7 @@ export function R2VehicleModel({
   // the loop only runs while it is still moving — the viewport draws on demand.
   const openRef = useRef(0);
   useFrame((_, delta) => {
+    if (showroom.scan.advance(performance.now())) invalidate();
     const target = blueprint ? 0 : bodyOpen;
     const current = openRef.current;
     if (Math.abs(target - current) < 0.001) {

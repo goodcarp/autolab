@@ -21,9 +21,9 @@
       title: "Agentic Owner's Guide",
       role: "ownership",
       url: url("garage/"),
-      tools: 13,
+      tools: 15,
       summary:
-        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly.",
+        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, and a guided tour an agent can start, narrate and interrupt.",
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint",
     },
     {
@@ -31,9 +31,9 @@
       title: "AutoLab 3D Creation Engine",
       role: "framework",
       url: url("engine/"),
-      tools: 2,
+      tools: 3,
       summary:
-        "Node.js instruments that measure a code-native three.js model directly against published dimensions: fit, extremes, sections, clearances, symmetry, silhouette deviation, curve proposals. The page publishes the latest measured report.",
+        "Node.js instruments that measure a code-native three.js model directly against published dimensions: fit, extremes, sections, clearances, symmetry, silhouette deviation, curve proposals, and the aperture gate. The page publishes the latest measured reports.",
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine",
     },
   ];

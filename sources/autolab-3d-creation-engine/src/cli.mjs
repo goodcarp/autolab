@@ -19,6 +19,7 @@ import { extremes, keyDimensions, partTable } from "./ruler.mjs";
 import { sectionSymmetry, sliceAt } from "./section.mjs";
 import { sectionSvg } from "./svg.mjs";
 import { clearance, overlapMatrix } from "./clearance.mjs";
+import { apertures } from "./apertures.mjs";
 import { alignToAxles, loadFrontProfile, loadSideProfile, resample } from "./reference.mjs";
 import { asSource, fitKnots } from "./knots.mjs";
 import { deviation, deviationByRegion, sideSilhouette, WHEELS } from "./silhouette.mjs";
@@ -58,6 +59,7 @@ if (command === "selftest") {
   propose <CURVE> --write        apply it — refuses if the curve moved since measuring
   clearance <partA> <partB>      nearest surface-to-surface distance
   overlaps                       which parts' envelopes intersect
+  apertures [--band 50] [--edge 65]  fixed geometry inside a panel's opening (mm behind the skin, mm inside the outline)
   fit [--spec path]              measured against published dimensions
   symmetry                       shape symmetry about the centreline
 
@@ -101,6 +103,10 @@ MODEL_PATH=<file exporting buildVehicle()>   defaults to ~/Desktop/r2-blueprint/
     print(clearance(model, a, b, { stride: Number.parseInt(flag("stride", "1"), 10) }));
   } else if (command === "overlaps") {
     print(overlapMatrix(model));
+  } else if (command === "apertures") {
+    const report = apertures(model, { depth: Number.parseFloat(flag("band", "50")) / 1000, edge: Number.parseFloat(flag("edge", "65")) / 1000 });
+    print(report);
+    if (report.status === "FAIL") process.exitCode = 1;
   } else if (command === "reference") {
     const spec = model.spec;
     const side = await loadSideProfile(flag("side", "reference/ortho_side.json"), spec);

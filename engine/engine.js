@@ -1,6 +1,7 @@
 /* AutoLab 3D Creation Engine — page agent surface.
- * Two read-only WebMCP tools exposing the latest measured report for the model
- * both AutoLab experiences render. The numbers are a snapshot of `npm run fit`
+ * Three read-only WebMCP tools exposing the latest measured reports for the model
+ * both AutoLab experiences render (the aperture report is read from out/apertures.json,
+ * written by build.sh from the engine on every assembly). The numbers are a snapshot of `npm run fit`
  * and `npm run selftest`; the commit and date are carried in the payload. */
 (() => {
   const REPORT = {
@@ -52,6 +53,26 @@
       execute: async () => ({ instruments: INSTRUMENTS, repository: "https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" }),
     },
   ];
+  TOOLS.push({
+    name: "get_aperture_report",
+    title: "Read the aperture gate report",
+    description: "Return the engine's aperture gate for the model: for each door, hood, liftgate and lid opening, whether any fixed geometry sits at the skin and well inside the opening at four open fractions, naming the part, how far inside the opening (mm) and how deep behind the skin (mm), plus the parts that merely touch the opening's edge. Read out/apertures.json as assembled by build.sh; PASS, FAIL or INFO per opening.",
+    inputSchema: noArgs, annotations: readOnly,
+    execute: async () => {
+      const response = await fetch(new URL("out/apertures.json", location.href));
+      if (!response.ok) throw new Error(`aperture report unavailable (${response.status}). Run node src/cli.mjs apertures in the engine.`);
+      const report = await response.json();
+      return {
+        status: report.status, gate: report.gate, band_mm: report.band_mm, edge_mm: report.edge_mm, openFractions: report.openFractions,
+        openings: report.apertures.map((a) => ({
+          aperture: a.aperture, status: a.status, gated: a.gated, footprintArea_m2: a.footprintArea_m2,
+          survivors: Object.values(a.poses.flatMap((p) => p.offenders).reduce((m, o) => { const k = o.part; if (!m[k] || (o.inset_mm ?? 0) > (m[k].inset_mm ?? 0)) m[k] = { part: o.part, inset_mm: o.inset_mm, depth_mm: o.intrusionDepth_mm, at_m: o.at_m }; return m; }, {})),
+          edgeContacts: [...new Set(a.poses.flatMap((p) => p.edgeContacts))].sort(),
+        })),
+        model: report.model, basis: REPORT.basis,
+      };
+    },
+  });
   window.autolabEngine = Object.fromEntries(TOOLS.map((t) => [t.name, (a) => t.execute(a ?? {})]));
 
   const chip = document.getElementById("chip"), chipLabel = document.getElementById("chip-label");

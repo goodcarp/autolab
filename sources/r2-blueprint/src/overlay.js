@@ -86,7 +86,7 @@ export class Overlay {
     this._rectT = (this._rectT || 0) + dt;
     if (!this._rects || this._rectT > 0.25) {
       this._rectT = 0; const stage = this.svg.getBoundingClientRect(); this._rects = [];
-      for (const id of ['key', 'instr', 'controls', 'titleblock']) { const el = document.getElementById(id); if (!el) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || getComputedStyle(el).opacity === '0') continue; this._rects.push([r.left - stage.left - 16, r.top - stage.top - 16, r.right - stage.left + 16, r.bottom - stage.top + 16]); }
+      for (const id of ['key', 'instr', 'controls', 'titleblock', 'tour-card']) { const el = document.getElementById(id); if (!el) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || getComputedStyle(el).opacity === '0') continue; this._rects.push([r.left - stage.left - 16, r.top - stage.top - 16, r.right - stage.left + 16, r.bottom - stage.top + 16]); }
     }
     // screen-space bounding box of the vehicle (spec box), used to keep callout badges on clear paper
     let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9;

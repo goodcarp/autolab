@@ -1,3 +1,5 @@
+import { trackToolExecution } from "../webmcp/tool-activity";
+
 export type AutoLabWorkspace = "configure" | "garage";
 
 export type VehicleTwinTool =
@@ -31,6 +33,8 @@ export type VehicleTwinCallOptions = {
   reveal?: boolean;
   /** Cancels frame loading and an in-flight request without waiting for timeout. */
   signal?: AbortSignal;
+  /** False when the enclosing configurator tool owns the activity entry. */
+  trackActivity?: boolean;
 };
 
 export interface OwnerGuideBridge {
@@ -48,7 +52,7 @@ export interface OwnerGuideBridge {
   ): Promise<T>;
   syncContext(
     context: VehicleTwinContext,
-    options?: Pick<VehicleTwinCallOptions, "signal">,
+    options?: Pick<VehicleTwinCallOptions, "signal" | "trackActivity">,
   ): Promise<unknown>;
 }
 
@@ -238,13 +242,15 @@ export function createOwnerGuideBridge(
       callOptions: VehicleTwinCallOptions = {},
     ) {
       if (callOptions.reveal) bridge.setWorkspace("garage");
-      return callTwin<T>(tool, args, callOptions.signal);
+      const execute = () => callTwin<T>(tool, args, callOptions.signal);
+      return callOptions.trackActivity === false ? execute() : trackToolExecution(tool, args, execute);
     },
     async syncContext(
       context: VehicleTwinContext,
-      syncOptions: Pick<VehicleTwinCallOptions, "signal"> = {},
+      syncOptions: Pick<VehicleTwinCallOptions, "signal" | "trackActivity"> = {},
     ) {
-      return callTwin("set_vehicle_context", context, syncOptions.signal);
+      const execute = () => callTwin("set_vehicle_context", context, syncOptions.signal);
+      return syncOptions.trackActivity === false ? execute() : trackToolExecution("set_vehicle_context", context, execute);
     },
   };
 

@@ -72,7 +72,7 @@
     <article class="card" id="card-garage">
       <div class="card-top">
         <span class="tag">Ownership</span>
-        <span class="count">13 WebMCP tools</span>
+        <span class="count">15 WebMCP tools</span>
       </div>
       <h3>Agentic Owner's Guide</h3>
       <p>Know your vehicle like never before. A real-time digital twin 3D model synced to your vehicle, with a visual and agentic library of components: what they do and where they go.</p>
@@ -83,6 +83,7 @@
       </ul>
       <div class="card-actions">
         <a class="btn primary" href="garage/">Open</a>
+        <a class="btn" href="garage/?tour=1">Take the guided tour</a>
         <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint" rel="noopener">Source</a>
       </div>
     </article>
@@ -90,12 +91,12 @@
     <article class="card" id="card-engine">
       <div class="card-top">
         <span class="tag">Framework</span>
-        <span class="count">15 instruments</span>
+        <span class="count">16 instruments</span>
       </div>
       <h3>AutoLab 3D Creation Engine</h3>
       <p>An agent-native spatial-reasoning tool and framework for code-native 3D model creation by large language models. A ruler that measures the model directly, instead of measuring a picture of it. It is how the vehicle above got built.</p>
       <ul class="feats">
-        <li>Includes tolerance and component verifier</li>
+        <li>Includes tolerance and component verifier, and an aperture gate that names fixed geometry inside any door, hood or liftgate opening</li>
         <li>Maps sections, clearances, symmetry and silhouette deviation; camera-less loop</li>
         <li>Geometry solver w/ curve prover</li>
       </ul>
@@ -134,11 +135,12 @@
       <h3>Chrome 149+</h3>
       <p>Enable the flag, restart Chrome, load the page:</p>
       <pre><code>chrome://flags/#enable-webmcp-testing</code></pre>
-      <p>Any other browser gets the same experiences by hand. In the Owner's Guide, <code>window.r2</code> exposes the identical tool API for devtools and automation.</p>
+      <p>Any other browser gets the same experiences by hand. The Configurator exposes the identical tool API on <code>window.autolab</code> and the Owner's Guide on <code>window.r2</code>, for devtools and automation.</p>
     </div>
     <div>
       <h3>Starter prompts</h3>
       <ul class="prompts">
+        <li><button type="button" data-copy>Open the Owner's Guide and start the guided tour. Explain each stop, then stop the tour when I take control.</button></li>
         <li><button type="button" data-copy>Configure the cheapest RX2 that can tow, then tell me what changed.</button></li>
         <li><button type="button" data-copy>I'm in Colorado, I'll finance, and I can install a home charger. What do I actually qualify for?</button></li>
         <li><button type="button" data-copy>Switch to the all-terrain wheels and show me the wheel close-up.</button></li>
@@ -158,9 +160,9 @@
     <thead><tr><th>Page</th><th>Tools</th><th>What an agent can do</th></tr></thead>
     <tbody>
       <tr><td><a href="configure/">Configure</a></td><td>17</td><td>Read the build, price, incentives and revision; list valid options; simulate; apply an interruptible multi-stage transaction; interrupt; undo; present showroom, camera, Blueprint and focus; capture buyer context; estimate payment, energy and ownership cost; compare up to three builds; read the twin; list 42 parts; reveal, frame and highlight; authored views; lights, motion, dissolve, openings, explode; measure; switch surfaces.</td></tr>
-      <tr><td><a href="configure/garage/">Configure → Garage</a></td><td>14</td><td>The embedded twin's own drawing tools, plus <code>set_vehicle_context</code> so the configured paint, wheels, interior, range and price arrive with the vehicle.</td></tr>
-      <tr><td><a href="garage/">Owner's Guide</a></td><td>13</td><td>State, view, motion, camera, orbit, frame, list and get parts, measure, highlight, annotations, published specification, reset.</td></tr>
-      <tr><td><a href="engine/">Engine</a></td><td>2</td><td>Read the measured fit report and the instrument list for the model that both experiences render.</td></tr>
+      <tr><td><a href="configure/garage/">Configure → Garage</a></td><td>14</td><td>The embedded twin's own drawing tools, including <code>set_vehicle_context</code>, so the configured paint, wheels, interior, range and price arrive with the vehicle.</td></tr>
+      <tr><td><a href="garage/">Owner's Guide</a></td><td>15</td><td>State, view, motion, camera, orbit, frame, list and get parts, measure, highlight, annotations, published specification, reset; start and stop the guided tour.</td></tr>
+      <tr><td><a href="engine/">Engine</a></td><td>3</td><td>Read the measured fit report, the aperture gate report and the instrument list for the model that both experiences render.</td></tr>
       <tr><td>This page</td><td>3</td><td>List the experiences, open one, read the overview and how to run it with an agent.</td></tr>
     </tbody>
   </table>

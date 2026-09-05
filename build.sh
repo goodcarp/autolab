@@ -67,13 +67,17 @@ OUT="$HERE/engine/out"; rm -f "$OUT"/*.svg
   node src/cli.mjs section 0.6   --svg "$OUT/section-cowl.svg"    >/dev/null
   node src/cli.mjs section -1.2  --svg "$OUT/section-xneg1p2.svg" >/dev/null
   node src/cli.mjs deviate       --svg "$OUT/profile-overlay.svg" >/dev/null
+  # The aperture gate exits 1 when it names a survivor; that is a finding, not a build failure.
+  node src/cli.mjs apertures     > "$OUT/apertures.json" || true
 )
+APERTURES="$(node -e 'const r=require(process.argv[1]);const f=r.apertures.filter(a=>a.status==="FAIL").map(a=>a.aperture);console.log(`${r.status} (${f.length} of ${r.apertures.filter(a=>a.gated).length} gated openings carry a survivor${f.length?": "+f.join(", "):""})`)' "$OUT/apertures.json" 2>/dev/null || echo unavailable)"
 SELFTEST="$(cd "$ENGINE" && node src/cli.mjs selftest 2>&1 | tail -1)"
 
 {
   echo "assembled: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "sources:"; sed 's/^/  /' "$SRC/SOURCES.txt"
   echo "engine selftest: $SELFTEST"
+  echo "engine apertures: $APERTURES"
 } > "$HERE/ASSEMBLED.txt"
 touch "$HERE/.nojekyll"
 cat "$HERE/ASSEMBLED.txt"

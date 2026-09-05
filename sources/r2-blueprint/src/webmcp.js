@@ -1,8 +1,8 @@
 // WebMCP: expose the drawing to an agent as callable tools.
 //
 // Three surfaces, all driving the same handlers, because the ecosystem has not settled:
-//   1. navigator.modelContext  - the W3C Web Model Context proposal (Chrome origin trial). Both the
-//      provideContext({tools}) and registerTool(tool) shapes are tried; whichever exists is used.
+//   1. document.modelContext (then navigator.modelContext) — registerTool per tool,
+//      with provideContext as a legacy fallback and a 12-second late-injection watch.
 //   2. window.r2               - a plain promise-returning API. Works in any browser, in devtools,
 //      in Playwright/Puppeteer, and is what the capture harness in tools/ drives.
 //   3. postMessage             - same API across an iframe boundary, so the sheet can be embedded
@@ -17,6 +17,59 @@ const v3 = new THREE.Vector3();
 
 const round = (n, d = 4) => Math.round(n * 10 ** d) / 10 ** d;
 const xyz = (v) => ({ x: round(v.x), y: round(v.y), z: round(v.z) });
+
+// Pure declaration projection shared by the browser registration, mirror and tests.
+export function toolDeclarations(tools) {
+  const readOnly = new Set(['get_state', 'list_parts', 'get_part', 'get_specification', 'measure']);
+  const relative = new Set(['start_tour', 'set_motion', 'orbit_camera', 'frame_part']);
+  return tools.map(({ name, description, inputSchema }) => ({
+    name, title: name.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' '),
+    description, inputSchema: { ...inputSchema, additionalProperties: false },
+    annotations: {
+      readOnlyHint: readOnly.has(name), destructiveHint: false,
+      idempotentHint: !relative.has(name), openWorldHint: false,
+    },
+  }));
+}
+
+// Retry missing/failed registrations without duplicating tools that already succeeded.
+export function watchWebMCP(api, call, onChange = () => {}) {
+  const completed = new WeakMap();
+  let busy = false, ended = false;
+  const finish = () => { ended = true; clearInterval(watch); clearTimeout(deadline); };
+  const attempt = async () => {
+    if (busy || ended) return;
+    const mc = document.modelContext ?? navigator.modelContext;
+    const surface = document.modelContext ? 'document.modelContext' : 'navigator.modelContext';
+    const method = typeof mc?.registerTool === 'function' ? 'registerTool'
+      : typeof mc?.provideContext === 'function' ? 'provideContext' : null;
+    if (!method) return;
+    busy = true;
+    const declarations = api.tools.map(t => ({ ...t, async execute(args) {
+      try { return { content: [{ type: 'text', text: JSON.stringify(await call(t.name, args), null, 1) }] }; }
+      catch (err) { return { content: [{ type: 'text', text: `error: ${err.message || err}` }], isError: true }; }
+    } }));
+    try {
+      if (method === 'registerTool') {
+        let done = completed.get(mc);
+        if (!done) { done = new Set(); completed.set(mc, done); }
+        // Invoke every registration immediately; await asynchronous hosts before reporting success.
+        const results = await Promise.allSettled(declarations.map(async t => {
+          if (!done.has(t.name)) { await mc.registerTool(t); done.add(t.name); }
+        }));
+        const failure = results.find(result => result.status === 'rejected');
+        if (failure) throw failure.reason;
+      } else await mc.provideContext({ tools: declarations });
+      api.registered = true; api.api = `${surface}.${method}`;
+      finish(); onChange(api);
+    } catch (err) { console.warn('[r2] WebMCP registration failed:', err); }
+    finally { busy = false; }
+  };
+  const watch = setInterval(attempt, 250);
+  const deadline = setTimeout(finish, 12000);
+  void attempt();
+  return finish;
+}
 
 export function installWebMCP(ctx) {
   const { st, rig, vehicle, overlay, ui, setView, motion, config } = ctx;
@@ -60,10 +113,26 @@ export function installWebMCP(ctx) {
 
   const TOOLS = [
     {
+      name: 'start_tour',
+      description: 'Start the 54-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly.',
+      inputSchema: { type: 'object', properties: { from: { type: 'integer', minimum: 1, maximum: config.tour.length } } },
+      run: ({ from = 1 }) => {
+        if (!Number.isInteger(from) || from < 1 || from > config.tour.length) throw new Error(`from must be an integer from 1 to ${config.tour.length}`);
+        return ctx.startTour(from - 1);
+      },
+    },
+    {
+      name: 'stop_tour',
+      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, battery, drive unit, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it.',
+      inputSchema: { type: 'object', properties: {} },
+      run: () => ctx.stopTour('tool'),
+    },
+    {
       name: 'get_state',
       description: 'Current view preset, camera pose, which motions are running, and what is selected. Call this first to orient.',
       inputSchema: { type: 'object', properties: {} },
       run: () => ({
+        tour: ctx.tourState(),
         camera: cameraState(),
         view: st.view,
         // `panels` reads the same way as the button and as set_motion: on = shell dissolved
@@ -100,7 +169,7 @@ export function installWebMCP(ctx) {
     },
     {
       name: 'set_camera',
-      description: 'Place the camera by absolute pose. azimuth 0 looks at the driver side in profile and increases clockwise seen from above; elevation 0 is eye level, 90 is directly overhead. Any field may be omitted to leave it unchanged.',
+      description: 'Set the given pose fields (azimuth; elevation clamped 2–86; distance clamped 1.2–22 m; orthographic), cancelling any preset and re-centring the target on the vehicle. To keep orbiting a framed component use orbit_camera instead.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -152,7 +221,7 @@ export function installWebMCP(ctx) {
     },
     {
       name: 'frame_part',
-      description: 'Point the camera at one component and zoom so it fills the sheet. The best way to inspect a specific piece of the vehicle.',
+      description: 'Frame one component from list_parts so it fills the sheet, keeping the current viewing angle unless azimuth/elevation are given. Internal parts are hidden by the shell: call set_motion {motion:\'panels\', on:true} first.',
       inputSchema: {
         type: 'object', required: ['part'],
         properties: { part: { type: 'string' }, azimuth_deg: { type: 'number' }, elevation_deg: { type: 'number' }, margin: { type: 'number', description: 'Fraction of slack around the part, default 0.6.' } },
@@ -192,7 +261,7 @@ export function installWebMCP(ctx) {
       name: 'set_annotations',
       description: 'Show or hide the callout cards, dimension lines and title block, leaving the vehicle alone. Hide them for a clean look at the geometry.',
       inputSchema: { type: 'object', required: ['visible'], properties: { visible: { type: 'boolean' } } },
-      run: ({ visible }) => { ui.setCards(visible); return { annotations_visible: visible }; },
+      run: ({ visible }) => { ui.setCards(visible, ctx.tourState().running); return { annotations_visible: visible }; },
     },
     {
       name: 'get_specification',
@@ -202,7 +271,7 @@ export function installWebMCP(ctx) {
     },
     {
       name: 'measure',
-      description: 'Distance in metres between the centres of two components, plus the per-axis separation. Use it to check clearances and packaging.',
+      description: 'Return the separation in metres between the current world-space bounding-box centres of two components, so animation, open panels and explode change it; it is not a surface clearance. For a wheelbase check use settled, unexploded, same-side wheels.',
       inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string' }, to: { type: 'string' } } },
       run: ({ from, to }) => {
         const a = findPart(from), b = findPart(to);
@@ -224,21 +293,25 @@ export function installWebMCP(ctx) {
           if (cur !== want) motion(m);
         }
         if (!st.panels) motion('panels');
-        ui.setCards(true); setView('iso');
+        ui.setCards(true, ctx.tourState().running); setView('iso');
         return { ok: true };
       },
     },
   ];
 
   // ---- dispatch -------------------------------------------------------------------------------
-  const call = async (name, args = {}) => {
+  // A private identity marks only calls made by the sequencer. All surfaces still
+  // use this dispatcher; an external call during an awaited action must interrupt.
+  const tourSource = Symbol('tour');
+  const call = async (name, args = {}, source) => {
+    if (source !== tourSource && !['get_state', 'start_tour', 'stop_tour'].includes(name)) ctx.stopTour('tool');
     const t = TOOLS.find((x) => x.name === name);
     if (!t) throw new Error(`unknown tool "${name}". Available: ${TOOLS.map((x) => x.name).join(', ')}`);
     return t.run(args || {});
   };
 
   // 1. window.r2 — always present, so automation never depends on an origin trial being enabled
-  const api = { tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })), call };
+  const api = { tools: toolDeclarations(TOOLS), call, registered: false, api: null };
   for (const t of TOOLS) api[t.name] = (args) => call(t.name, args);
   window.r2 = api;
 
@@ -255,23 +328,8 @@ export function installWebMCP(ctx) {
     catch (err) { reply({ ok: false, error: String(err.message || err) }); }
   });
 
-  // 3. navigator.modelContext — the actual WebMCP surface where the browser supports it
-  const mc = navigator.modelContext;
-  if (mc) {
-    const decl = TOOLS.map((t) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: t.inputSchema,
-      async execute(args) {
-        try { return { content: [{ type: 'text', text: JSON.stringify(await call(t.name, args), null, 1) }] }; }
-        catch (err) { return { content: [{ type: 'text', text: `error: ${err.message || err}` }], isError: true }; }
-      },
-    }));
-    try {
-      if (typeof mc.provideContext === 'function') mc.provideContext({ tools: decl });
-      else if (typeof mc.registerTool === 'function') decl.forEach((t) => mc.registerTool(t));
-      api.registered = true;
-    } catch (err) { console.warn('[r2] WebMCP registration failed:', err); }
-  }
-  return api;
+  // 3. Browser registration and header status share the live mirror.
+  ui.setAgentTools?.(api);
+  watchWebMCP(api, call, status => ui.setAgentTools?.(status));
+  return { ...api, callTour: (name, args) => call(name, args, tourSource) };
 }

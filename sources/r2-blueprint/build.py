@@ -3,7 +3,7 @@
 Internal ES modules are concatenated into a single module script; three.js still comes from the CDN import map."""
 import re, os, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
-ORDER = ['geom.js', 'config.js', 'camera.js', 'vehicle.js', 'blueprint.js', 'overlay.js', 'ui.js', 'webmcp.js', 'main.js']
+ORDER = ['geom.js', 'config.js', 'camera.js', 'vehicle.js', 'blueprint.js', 'overlay.js', 'ui.js', 'tour.js', 'webmcp.js', 'main.js']
 ext_imports = []
 body = []
 for name in ORDER:

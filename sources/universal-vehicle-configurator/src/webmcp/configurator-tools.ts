@@ -1,3 +1,4 @@
+import { getToolActivity, resetToolActivityForTests, trackToolExecution } from "./tool-activity";
 import type {
   BuyerContext,
   BuyerContextInput,
@@ -198,14 +199,64 @@ let registrationController: AbortController | undefined;
  * Hosts differ on where they expose the API, and some inject it after first
  * paint. Look on both surfaces every time rather than caching a miss.
  */
-function findModelContext(): ModelContextApi | undefined {
-  if (typeof document !== "undefined" && document.modelContext) {
-    return document.modelContext;
+type ModelContextSurface = {
+  context: ModelContextApi;
+  api: "document.modelContext" | "navigator.modelContext";
+};
+
+function findModelContext(): ModelContextSurface | undefined {
+  if (typeof document !== "undefined" && typeof document.modelContext?.registerTool === "function") {
+    return { context: document.modelContext, api: "document.modelContext" };
   }
-  if (typeof navigator !== "undefined" && navigator.modelContext) {
-    return navigator.modelContext;
+  if (typeof navigator !== "undefined" && typeof navigator.modelContext?.registerTool === "function") {
+    return { context: navigator.modelContext, api: "navigator.modelContext" };
   }
   return undefined;
+}
+
+type MirrorCall = (args?: Record<string, unknown>) => unknown;
+export type ConfiguratorMirror = {
+  tools: Omit<ToolDefinition, "execute">[];
+  call(name: string, args?: Record<string, unknown>): unknown;
+  readonly registered: boolean;
+  readonly api: ModelContextSurface["api"] | null;
+  activity: typeof getToolActivity;
+} & Record<ConfiguratorToolName, MirrorCall>;
+
+declare global {
+  interface Window { autolab?: ConfiguratorMirror }
+}
+
+let activeTools: readonly ToolDefinition[] | undefined;
+let mirror: ConfiguratorMirror | undefined;
+let registeredApi: ModelContextSurface["api"] | null = null;
+let cancelWatch: (() => void) | undefined;
+let lifecycle = 0;
+
+function installMirror(dependencies: ConfiguratorToolsDependencies) {
+  activeTools ??= createConfiguratorToolDefinitions(dependencies);
+  if (!mirror) {
+    const tools = activeTools;
+    const byName = new Map(tools.map((tool) => [tool.name, tool]));
+    const call = (name: string, args: Record<string, unknown> = {}) => {
+      const tool = byName.get(name);
+      if (!tool) return trackToolExecution(name, args, () => {
+        throw new Error(`Unknown tool "${name}". Available: ${tools.map((entry) => entry.name).join(", ")}`);
+      });
+      return tool.execute(args);
+    };
+    mirror = {
+      tools: tools.map(({ name, title, description, inputSchema, annotations }) => (
+        { name, title, description, inputSchema, annotations }
+      )),
+      call,
+      get registered() { return registeredApi !== null; },
+      get api() { return registeredApi; },
+      activity: getToolActivity,
+      ...Object.fromEntries(tools.map((tool) => [tool.name, (args?: Record<string, unknown>) => call(tool.name, args)])),
+    } as ConfiguratorMirror;
+  }
+  window.autolab = mirror;
 }
 
 const LATE_INJECTION_POLL_MS = 400;
@@ -729,11 +780,11 @@ export function createConfiguratorToolDefinitions(
   const synchronizeTwin = async (toolName: ConfiguratorToolName, signal?: AbortSignal) => {
     const state = store.getState();
     const context = vehicleTwinContext(state);
-    await bridge.syncContext(context, { signal });
+    await bridge.syncContext(context, { signal, trackActivity: false });
     throwIfAborted(signal);
     const latest = store.getState();
     if (latest.domain.revision !== state.domain.revision) {
-      await bridge.syncContext(vehicleTwinContext(latest), { signal });
+      await bridge.syncContext(vehicleTwinContext(latest), { signal, trackActivity: false });
       throw new Error(
         `${toolName} stopped because the configuration moved from revision ${state.domain.revision} to ${latest.domain.revision} while Garage was loading. Retry against the current build.`,
       );
@@ -1433,7 +1484,7 @@ export function createConfiguratorToolDefinitions(
       const twin = await bridge.call<Record<string, unknown>>(
         "get_state",
         {},
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, CONFIGURATOR_TOOL_NAMES[10]);
       return { ok: true, revision: state.domain.revision, context, twin };
@@ -1473,7 +1524,7 @@ export function createConfiguratorToolDefinitions(
           ...(record.category === undefined ? {} : { category: record.category }),
           detail: record.detail ?? false,
         },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       return { ok: true, revision: state.domain.revision, ...result };
@@ -1526,14 +1577,14 @@ export function createConfiguratorToolDefinitions(
       const part = await bridge.call<{ id: string; label: string; category: string }>(
         "get_part",
         { part: partName },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       if (part.category !== "shell" && record.revealUnderBody !== false) {
         await bridge.call(
           "set_motion",
           { motion: "panels", on: true },
-          { signal: options?.signal },
+          { signal: options?.signal, trackActivity: false },
         );
         assertTwinRevision(state.domain.revision, toolName);
       }
@@ -1545,13 +1596,13 @@ export function createConfiguratorToolDefinitions(
           ...(elevationDeg === undefined ? {} : { elevation_deg: elevationDeg }),
           ...(margin === undefined ? {} : { margin }),
         },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       await bridge.call(
         "highlight_part",
         { part: partName },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       return {
@@ -1595,14 +1646,14 @@ export function createConfiguratorToolDefinitions(
       const view = await bridge.call<Record<string, unknown>>(
         "set_view",
         { view: record.view },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       if (record.annotationsVisible !== undefined) {
         await bridge.call(
           "set_annotations",
           { visible: record.annotationsVisible },
-          { signal: options?.signal },
+          { signal: options?.signal, trackActivity: false },
         );
         assertTwinRevision(state.domain.revision, toolName);
       }
@@ -1644,7 +1695,7 @@ export function createConfiguratorToolDefinitions(
           motion: record.motion,
           ...(record.on === undefined ? {} : { on: record.on }),
         },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       return { ok: true, revision: state.domain.revision, workspace: bridge.getWorkspace(), ...result };
@@ -1717,7 +1768,7 @@ export function createConfiguratorToolDefinitions(
       const result = await bridge.call<Record<string, unknown>>(
         "measure",
         { from, to },
-        { signal: options?.signal },
+        { signal: options?.signal, trackActivity: false },
       );
       assertTwinRevision(state.domain.revision, toolName);
       return { ok: true, revision: state.domain.revision, ...result };
@@ -1743,12 +1794,15 @@ export function createConfiguratorToolDefinitions(
     setVehicleTwinMotion,
     measureVehicleParts,
     setAutolabWorkspace,
-  ];
+  ].map((tool) => ({
+    ...tool,
+    execute: (input, options) => trackToolExecution(tool.name, input, () => tool.execute(input, options)),
+  }));
 }
 
 async function registerTools(
-  dependencies: ConfiguratorToolsDependencies,
-  modelContext: ModelContextApi,
+  tools: readonly ToolDefinition[],
+  surface: ModelContextSurface,
 ): Promise<ConfiguratorSiteToolsStatus> {
   publishStatus({ state: "registering", toolNames: [] });
   const controller = new AbortController();
@@ -1756,10 +1810,16 @@ async function registerTools(
   const registeredToolNames: ConfiguratorToolName[] = [];
 
   try {
-    for (const tool of createConfiguratorToolDefinitions(dependencies)) {
-      await modelContext.registerTool(tool, { signal: controller.signal });
+    for (const tool of tools) {
+      controller.signal.throwIfAborted();
+      await surface.context.registerTool(tool, { signal: controller.signal });
+      controller.signal.throwIfAborted();
       registeredToolNames.push(tool.name as ConfiguratorToolName);
     }
+    if (controller.signal.aborted || registrationController !== controller) {
+      return { state: "unsupported", toolNames: [] };
+    }
+    registeredApi = surface.api;
     const status = {
       state: "ready",
       toolNames: [...registeredToolNames],
@@ -1768,7 +1828,9 @@ async function registerTools(
     return status;
   } catch (error) {
     controller.abort();
-    if (registrationController === controller) registrationController = undefined;
+    if (registrationController !== controller) return { state: "unsupported", toolNames: [] };
+    registrationController = undefined;
+    registeredApi = null;
     const status = {
       state: "degraded",
       toolNames: [...registeredToolNames],
@@ -1783,12 +1845,13 @@ async function registerTools(
  * Wait for a host that injects the API after first paint. Resolves as soon as
  * the API appears, or gives up after LATE_INJECTION_WINDOW_MS.
  */
-function waitForModelContext(): Promise<ModelContextApi | undefined> {
+function waitForModelContext(): Promise<ModelContextSurface | undefined> {
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (api: ModelContextApi | undefined) => {
+    const finish = (api: ModelContextSurface | undefined) => {
       if (settled) return;
       settled = true;
+      cancelWatch = undefined;
       window.clearInterval(poll);
       window.clearTimeout(deadline);
       for (const event of MODEL_CONTEXT_EVENTS) {
@@ -1797,6 +1860,7 @@ function waitForModelContext(): Promise<ModelContextApi | undefined> {
       }
       resolve(api);
     };
+    cancelWatch = () => finish(undefined);
     const onEvent = () => {
       const api = findModelContext();
       if (api) finish(api);
@@ -1814,7 +1878,7 @@ function waitForModelContext(): Promise<ModelContextApi | undefined> {
 }
 
 async function register(
-  dependencies: ConfiguratorToolsDependencies,
+  tools: readonly ToolDefinition[],
 ): Promise<ConfiguratorSiteToolsStatus> {
   if (window.top !== window) {
     const status = { state: "unsupported", toolNames: [] } as const;
@@ -1823,16 +1887,18 @@ async function register(
   }
 
   const immediate = findModelContext();
-  if (immediate) return registerTools(dependencies, immediate);
+  if (immediate) return registerTools(tools, immediate);
 
   // No API yet. Resolve as manual mode now so the UI paints, but keep watching
   // and upgrade in place through observeConfiguratorSiteTools if a host
   // injects the API after first paint.
   const status = { state: "unsupported", toolNames: [] } as const;
   publishStatus(status);
+  const generation = lifecycle;
   void waitForModelContext().then((late) => {
+    if (generation !== lifecycle) return;
     if (late) {
-      registration = registerTools(dependencies, late);
+      registration = registerTools(tools, late);
       return;
     }
     // Give up watching, but clear the memo so a later caller can retry.
@@ -1844,11 +1910,18 @@ async function register(
 export function registerConfiguratorSiteTools(
   dependencies: ConfiguratorToolsDependencies = defaultDependencies,
 ): Promise<ConfiguratorSiteToolsStatus> {
-  registration ??= register(dependencies);
+  installMirror(dependencies);
+  registration ??= register(activeTools!);
   return registration;
 }
 
 export function unregisterConfiguratorSiteTools() {
+  lifecycle += 1;
+  cancelWatch?.();
+  registeredApi = null;
+  if (window.autolab === mirror) delete window.autolab;
+  mirror = undefined;
+  activeTools = undefined;
   registrationController?.abort();
   registrationController = undefined;
   registration = undefined;
@@ -1857,6 +1930,7 @@ export function unregisterConfiguratorSiteTools() {
 
 export function resetConfiguratorSiteToolsForTests() {
   unregisterConfiguratorSiteTools();
+  resetToolActivityForTests();
 }
 
 if (import.meta.hot) {

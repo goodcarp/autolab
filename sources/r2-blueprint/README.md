@@ -14,6 +14,7 @@ then open <http://127.0.0.1:8765/>. three.js (r170) is loaded from jsdelivr, and
 
 ## Controls
 
+- **TOUR** — a 54-second sequence of tool calls with captions; click TOUR or press T to start. Any key, canvas press, sheet click or other tool call interrupts it. See [docs/TOUR.md](docs/TOUR.md) for tools and held capture links.
 - **VIEW** — ISO · 3/4 F · 3/4 R · SIDE · FRONT · TOP. Elevations are true orthographic projections; the camera blends projection matrices during the eased transition. Dimension lines and the view title fade in once the camera settles. ISO auto-orbits slowly until you drag.
 - Drag to orbit, scroll to zoom (dragging out of an elevation blends back to perspective).
 - Hover a part (or a KEY TO ITEMS row) for the orange highlight and tooltip.
@@ -25,7 +26,7 @@ Deep links for captures and sharing: `?view=side&snap=1`, `?view=iso&explode=1`,
 
 ## Agent control (WebMCP)
 
-The sheet is operable by an agent, not only by a person with a pointer. `src/webmcp.js` exposes 13
+The sheet is operable by an agent, not only by a person with a pointer. `src/webmcp.js` exposes 15
 tools over three surfaces that all drive the same handlers:
 
 - **`navigator.modelContext`** — the W3C Web Model Context proposal, where the browser supports it.
@@ -37,7 +38,9 @@ tools over three surfaces that all drive the same handlers:
 
 | Tool | What it does |
 | --- | --- |
-| `get_state` | View, camera pose, which motions are running, what is selected |
+| `get_state` | View, camera pose, which motions are running, what is selected, tour status |
+| `start_tour` | Start the tour, optionally from a 1-based step |
+| `stop_tour` | Stop in place without restoring the scene |
 | `set_view` | One of the six standard views |
 | `set_motion` | `run` / `drive` / `lights` / `panels` / `explode` / `open`, on, off or toggle |
 | `set_camera` | Absolute azimuth, elevation, distance and an orthographic toggle |

@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOwnerGuideBridge } from "../../../src/owner-guide/owner-guide-bridge";
+import { getToolActivity, resetToolActivityForTests } from "../../../src/webmcp/tool-activity";
 
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  resetToolActivityForTests();
 });
 
 describe("owner guide cross-frame bridge", () => {
@@ -46,6 +48,7 @@ describe("owner guide cross-frame bridge", () => {
     }));
 
     await expect(request).resolves.toEqual({ view: "iso" });
+    expect(getToolActivity()).toEqual([expect.objectContaining({ tool: "get_state", ok: true })]);
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({ source: "r2-blueprint", tool: "get_state", args: {} }),
       window.location.origin,
@@ -78,5 +81,9 @@ describe("owner guide cross-frame bridge", () => {
     const reason = new Error("agent cancelled");
     controller.abort(reason);
     await expect(request).rejects.toBe(reason);
+    expect(getToolActivity()).toEqual([
+      expect.objectContaining({ tool: "get_state", ok: false, error: "stop waiting" }),
+      expect.objectContaining({ tool: "get_state", ok: false, error: "agent cancelled" }),
+    ]);
   });
 });

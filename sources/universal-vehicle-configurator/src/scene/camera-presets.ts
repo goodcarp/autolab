@@ -92,13 +92,13 @@ const R2: CameraRig = {
     // Launch-film framing: a front three-quarter from just above the belt
     // line, so the shoulder runs the length of the car and the roof stays a
     // sliver rather than a slab.
-    // Opening pose sits a quarter further out than the first cut (same
-    // bearing and elevation, offset scaled 1.25x) so the car has air around it.
+    // A further 4% beyond the 1.25x cut, preserving bearing and elevation.
+    // Narrow canvases preserve this horizontal framing in fitCameraToAspect.
     angle: {
-      position: [6.93, 1.83, 7.56],
+      position: [7.2052, 1.872, 7.8624],
       target: [0.05, 0.78, 0],
-      minDistance: 5.6,
-      maxDistance: 12,
+      minDistance: 5.824,
+      maxDistance: 12.48,
     },
     // Profile follows, 1.15x.
     profile: {
@@ -144,6 +144,18 @@ const R2: CameraRig = {
 };
 
 const RIGS: Record<CameraRigId, CameraRig> = { reference: REFERENCE, r2: R2 };
+
+/** Preserve exterior horizontal framing below the 1440×900 stage's aspect. */
+export function fitCameraToAspect(pose: CameraPose, aspect: number): CameraPose {
+  const scale = Math.max(1, 1.205 / Math.max(aspect, 0.1));
+  if (scale === 1) return pose;
+  return {
+    ...pose,
+    position: pose.position.map((v, i) => pose.target[i] + (v - pose.target[i]) * scale) as [number, number, number],
+    minDistance: pose.minDistance * scale,
+    maxDistance: pose.maxDistance * scale,
+  };
+}
 
 export function getCameraPose(
   preset: LiveVehicleViewPreset,

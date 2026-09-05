@@ -1,6 +1,7 @@
-assembled: 2026-09-04T07:18:20Z
+assembled: 2026-09-05T19:27:27Z
 sources:
-  universal-vehicle-configurator  e5b3c635ce3154272635d1ca55a31a516a664d73  2026-09-04 03:17:52 -0400  [main]
-  r2-blueprint  840772b90eec789a4be1183df8173a1669f1004b  2026-09-04 03:17:51 -0400  [main]
-  autolab-3d-creation-engine  5abc0a5155980c9a7f1db0865beda84185c3593f  2026-09-03 20:20:25 -0400  [main]
+  universal-vehicle-configurator  e7f874f53a2f170df0d033b5f45446c3adf431b7  2026-09-05 15:23:14 -0400  [main]
+  r2-blueprint  1703ded02810f1e8a648466035e9348587c5e1a2  2026-09-05 14:48:01 -0400  [main]
+  autolab-3d-creation-engine  52517de374db0a28f9f84b3f8e06342fafee4d48  2026-09-05 15:22:43 -0400  [main]
 engine selftest: selftest: 57/57 passed · gate passed
+engine apertures: FAIL (4 of 6 gated openings carry a survivor: hood, doorRL, doorRR, tailgate)

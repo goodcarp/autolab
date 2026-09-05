@@ -6,7 +6,13 @@ import { Rig } from './camera.js';
 import { Overlay } from './overlay.js';
 import { UI } from './ui.js';
 import { installWebMCP } from './webmcp.js';
+import { createTour } from './tour.js';
 import { easeInOut, clamp } from './geom.js';
+
+const q = new URLSearchParams(location.search);
+let tour;
+const tourState = () => tour?.state() ?? { running: false, step: 0, of: CONFIG.tour.length, id: null, title: null };
+const stopTour = (reason) => tour?.stop(reason) ?? tourState();
 
 const canvas = document.getElementById('gl');
 const svg = document.getElementById('overlay');
@@ -24,17 +30,20 @@ const st = {
   speed: 0, steer: 0, soc: 87.0, time: 0, ortho: 0, hoverId: -1, hoverPart: null, lampGlow: 0, gridOffset: 0, gridAlpha: 1, hidePanels: false,
 };
 const ui = new UI(CONFIG, {
-  onView: (v) => setView(v),
-  onMotion: (m) => motion(m),
-  onKeyHover: (part) => { keyHover = part ? vehicle.parts[part] : null; },
+  onView: (v) => { stopTour('view'); setView(v); },
+  onTour: () => tourState().running ? stopTour('button') : startTour(),
+  onMotion: (m) => { stopTour('motion'); motion(m); },
+  onKeyHover: (part) => { if (tourState().running) return; keyHover = part ? vehicle.parts[part] : null; },
 });
 let keyHover = null;
 
 function setView(v) {
-  st.view = v; ui.setView(v); rig.goTo(v); overlay.setView(v);
+  st.view = v; ui.setView(v); rig.goTo(v, tourState().running && q.get('snap') === '1' ? 0 : 1.15); overlay.setView(v);
+  if (tourState().running && q.get('nodrift') === '1') rig.driftOn = false;
   const ortho = (v === 'side' || v === 'front' || v === 'top');
   ui.showPanels(!ortho); st.hidePanels = ortho;
   ui.showViewTitle(null);
+  if (rig.settled) rig.onSettle?.(v);
 }
 rig.onSettle = (v) => { overlay.settled(v); ui.showViewTitle(v); };
 
@@ -50,7 +59,7 @@ let flashT = 99;
 
 // ---- pointer interaction ----
 let dragging = false, lastX = 0, lastY = 0, moved = 0, pointerX = -1, pointerY = -1;
-canvas.addEventListener('pointerdown', (e) => { if (e.button !== 0 || !e.isPrimary) return; dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
+canvas.addEventListener('pointerdown', (e) => { stopTour('pointer'); if (e.button !== 0 || !e.isPrimary) return; dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
 canvas.addEventListener('pointermove', (e) => {
   const r = stage.getBoundingClientRect(); pointerX = e.clientX - r.left; pointerY = e.clientY - r.top;
   if (!dragging) return;
@@ -61,7 +70,7 @@ canvas.addEventListener('pointermove', (e) => {
 const endDrag = (e) => { if (!e.isPrimary) return; dragging = false; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('pointerleave', () => { pointerX = pointerY = -1; });
-canvas.addEventListener('wheel', (e) => { e.preventDefault(); rig.zoom(Math.exp(e.deltaY * 0.0012)); rig.idle = 0; }, { passive: false });
+canvas.addEventListener('wheel', (e) => { stopTour('wheel'); e.preventDefault(); rig.zoom(Math.exp(e.deltaY * 0.0012)); rig.idle = 0; }, { passive: false });
 // arrows orbit and [ ] dolly, so the camera is reachable without a pointer (and from a screen reader
 // or an agent driving the page by keystroke rather than through window.r2)
 function camKey(k, shift) {
@@ -71,7 +80,31 @@ function camKey(k, shift) {
   else if (k === 'ArrowUp') rig.cur.el = Math.min(86, rig.cur.el + step); else if (k === 'ArrowDown') rig.cur.el = Math.max(2, rig.cur.el - step);
   else if (k === '[') rig.zoom(shift ? 1.25 : 1.08); else if (k === ']') rig.zoom(shift ? 0.8 : 0.93);
 }
-window.addEventListener('keydown', (e) => { if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || e.target.tagName === 'INPUT') return; const map = { 1: 'iso', 2: 'q34f', 3: 'q34r', 4: 'side', 5: 'front', 6: 'top' }; if (map[e.key]) setView(map[e.key]); if (/^(Arrow(Left|Right|Up|Down)|\[|\])$/.test(e.key)) { e.preventDefault(); camKey(e.key, e.shiftKey); } if (e.key === ' ') { e.preventDefault(); motion('drive'); } if (e.key === 'e') motion('explode'); if (e.key === 'l' || e.key === 'f') motion('lights'); if (e.key === 'h') ui.setCards(document.body.classList.contains('cards-off')); if (e.key === 'p') motion('panels'); if (e.key === 'o') motion('open'); if (e.key === 'd') motion('drive'); if (e.key === 'r') motion('run'); });
+window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (e.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+  // Space belongs to the focused control; only the sheet/canvas shortcut drives.
+  if (e.key === ' ' && e.target !== document.body && e.target !== document.documentElement && e.target !== canvas) return;
+  const wasRunning = tourState().running;
+  stopTour('key');
+  // Enter on the focused launcher must stop, not immediately synthesize a restart click.
+  if (wasRunning && e.key === 'Enter' && e.target.closest('#tour-btn')) e.preventDefault();
+  if (e.key.toLowerCase() === 't') { e.preventDefault(); if (!wasRunning) void startTour(); return; }
+  const map = { 1: 'iso', 2: 'q34f', 3: 'q34r', 4: 'side', 5: 'front', 6: 'top' };
+  if (map[e.key]) setView(map[e.key]);
+  if (/^(Arrow(Left|Right|Up|Down)|\[|\])$/.test(e.key)) { e.preventDefault(); camKey(e.key, e.shiftKey); }
+  if (e.key === ' ') { e.preventDefault(); motion('drive'); }
+  if (e.key === 'e') motion('explode');
+  if (e.key === 'l' || e.key === 'f') motion('lights');
+  if (e.key === 'h') ui.setCards(document.body.classList.contains('cards-off'));
+  if (e.key === 'p') motion('panels');
+  if (e.key === 'o') motion('open');
+  if (e.key === 'd') motion('drive');
+  if (e.key === 'r') motion('run');
+});
+
+// Sheet clicks also stop the caption when they land on a card instead of the canvas.
+window.addEventListener('click', (e) => { if (!e.target.closest('#tour-btn')) stopTour('click'); });
 
 // ---- resize ----
 let W = 1, H = 1;
@@ -94,8 +127,6 @@ function pick() {
 
 // ---- main loop ----
 // URL parameters for deep links / automated captures: ?view=side&explode=1&panels=0&open=1&drive=1&nodrift=1&snap=1
-const q = new URLSearchParams(location.search);
-
 // Throwaway experiment: ?pbr=1 swaps the drawing pass for a lit PBR render to
 // test whether the lofted surfacing survives reflections. See src/pbr-probe.js.
 // pbr-probe.js is deliberately NOT in build.py's ORDER, but this dynamic import survives into the
@@ -128,10 +159,30 @@ if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 
 if (q.get('nodrift') === '1') rig.driftOn = false;
 if (q.get('snap') === '1' || q.get('az') || q.get('el')) { rig.goTo(st.view || 'iso', 0); rig.driftOn = false; if (q.get('az')) rig.cur.az = +q.get('az'); if (q.get('el')) rig.cur.el = +q.get('el'); rig.onSettle(st.view); }
 // WebMCP + window.r2: the sheet is operable by an agent, not only by a person with a pointer
-installWebMCP({
-  st, rig, vehicle, overlay, ui, setView, motion, config: CONFIG,
-  select: (p) => { keyHover = p; ui.highlightKey(p ? p.name : null); },
+const api = installWebMCP({
+  st, rig, vehicle, overlay, ui, setView, motion, config: CONFIG, tourState, startTour, stopTour,
+  select: (p) => { keyHover = p; st.hoverPart = p; ui.highlightKey(p ? p.name : null); },
 });
+
+function startTour(fromIndex = 0, hold = false) {
+  stopTour('restart');
+  tour = createTour({
+    steps: hold ? CONFIG.tour.map(step => ({ ...step, dwell: Infinity })) : CONFIG.tour,
+    call: api.callTour,
+    onStep: (step, state) => ui.showTour(step, state),
+    onStop: (state, reason) => ui.stopTour(state, reason),
+    now: () => performance.now(),
+  });
+  return tour.start(fromIndex);
+}
+// Complete the tool calls before ?adv pre-roll, so held captures render the requested step.
+if (q.get('tour') === '1') {
+  const requested = Number(q.get('step') || 1);
+  const from = Number.isInteger(requested) && requested >= 1 && requested <= CONFIG.tour.length ? requested - 1 : 0;
+  await startTour(from, q.get('hold') === '1');
+  // Capture preferences override the reset/set_annotations actions without persisting them.
+  if (q.has('cards')) ui.setCards(q.get('cards') !== '0', true);
+}
 
 let last = performance.now(), fpsAcc = 0, fpsN = 0, fpsShown = 60, uiT = 0, pickT = 0;
 function step(dt, render = true) {

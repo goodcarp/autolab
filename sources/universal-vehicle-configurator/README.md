@@ -57,7 +57,24 @@ While a multi-stage agent transaction is running, **click any control in the
 right-hand rail**. The agent is interrupted after its last committed stage, and
 the receipt panel shows exactly which stages landed and which were killed.
 
-Without a WebMCP-capable browser the configurator remains fully usable by hand.
+Every page mirrors its tools on a plain JavaScript object: `window.autolab` on
+the landing page, `window.autolab` on the configurator, and `window.r2` in the
+Owner's Guide and embedded Garage. These work without WebMCP in an ordinary
+browser, devtools session, or Playwright script.
+
+For example, in the configurator's devtools console:
+
+```js
+await window.autolab.call("present_vehicle_configuration", { bodyOpen: true });
+window.autolab.activity(); // Last 20 completed calls, including errors
+```
+
+The configurator mirror exposes all 17 tool declarations in `tools`, a `call`
+dispatcher, and a method named after each tool. `registered` is true only after
+WebMCP registration succeeds; `api` names `document.modelContext` or
+`navigator.modelContext`, or is `null`. A brief strip below the header shows
+each completed call. Buyer context and other personal argument values are
+omitted from activity summaries.
 
 ## Local development
 

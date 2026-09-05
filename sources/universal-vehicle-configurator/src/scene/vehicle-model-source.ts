@@ -31,6 +31,7 @@ export interface VehicleModelProps {
   interior?: LiveVehicleInterior;
   focus: LiveVehicleFocus;
   mode: LiveVehicleRenderMode;
+  reducedMotion?: boolean;
   /**
    * 0 shut, 1 fully open. Only bodies that declare `hasOpenableBody` respond;
    * the rest ignore it, so the viewport can pass it unconditionally.

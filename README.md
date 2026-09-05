@@ -8,15 +8,18 @@ houses the three AutoLab experiences for
 | --- | --- | --- | --- |
 | `/` | Landing page | `index.html`, `assets/` | 3 |
 | `/configure/` | Web 4.0-enabled Vehicle Configurator (with the embedded **Garage** digital twin) | [`sources/universal-vehicle-configurator`](sources/universal-vehicle-configurator) | 17 (+14 inside Garage) |
-| `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 13 |
-| `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 2 |
+| `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 15 |
+| `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 3 |
 
 Live: **https://goodcarp.github.io/autolab/**
 
 Every page publishes its tools on `document.modelContext` (falling back to
 `navigator.modelContext`) with `registerTool`, and mirrors the same functions on a
-`window.*` object so any browser, devtools session or Playwright script can drive
-the page the way an agent would.
+window object so any browser, devtools session or Playwright script can drive the
+page the way an agent would: `window.autolab` on the landing page and in the
+Configurator, `window.r2` in the Owner's Guide and the embedded Garage. Each
+mirror has `tools`, `call(name, args)` and one method per tool; the Configurator's
+also has `activity()`, the last twenty calls from any path.
 
 ## Running it with an agent
 
@@ -26,6 +29,22 @@ the page the way an agent would.
 
 The header chip on each page reports how many tools registered. **Manual mode**
 means the API was not found; the experiences remain fully usable by hand.
+
+## Changes after the submission deadline
+
+The site was published on 2026-09-04 before the WebMCP Challenge deadline. Work
+since then is recorded here so the state at the deadline is not misrepresented:
+
+- Owner's Guide: a guided, interruptible tour (`start_tour` / `stop_tour`, 15
+  tools), a header chip that reports registration, a home link, registration
+  parity with the other pages (`document.modelContext` first, titles,
+  annotations, closed schemas, a late-injection watch), sharper descriptions for
+  `measure`, `frame_part` and `set_camera`, and keyboard access.
+- Configurator: the `window.autolab` mirror of all 17 tools with an on-page
+  agent-activity strip; the opening camera further back; a blueprint scan sweep;
+  firmer contact shadows and a rim light. Geometry unchanged.
+- Engine: the `apertures` gate and its report on this page, with three named
+  survivors on the current model for the author to judge.
 
 ## How this site is assembled
 

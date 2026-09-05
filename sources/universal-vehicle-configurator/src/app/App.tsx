@@ -18,6 +18,7 @@ import {
 import { AgentActivity } from "./AgentActivity";
 import { IncentiveSummary } from "./IncentiveSummary";
 import { ToolStatus } from "./ToolStatus";
+import { ToolActivityStrip } from "./ToolActivityStrip";
 import {
   applyShareStateToHistory,
   bindShareStatePopstate,
@@ -354,6 +355,8 @@ export function App() {
           <ToolStatus status={siteTools} />
         </div>
       </header>
+
+      <ToolActivityStrip />
 
       <div className="autolab-surfaces">
         <section

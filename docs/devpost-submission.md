@@ -95,15 +95,15 @@ drive the page exactly as an agent would.
 - Configurator: 17 curated tools describing customer outcomes (configure,
   simulate, apply, interrupt, undo, price, incentives, ownership math, compare,
   present, twin state, parts, reveal, views, motion, measure, switch surface).
-  The embedded Garage publishes 14 lower-level drawing tools of its own plus a
-  `set_vehicle_context` bridge, connected over a validated same-origin
+  The embedded Garage publishes 14 lower-level drawing tools of its own, including
+  the `set_vehicle_context` bridge, connected over a validated same-origin
   `postMessage` channel with request ids, bounded timeouts and revision checks.
-- Owner's Guide: 13 tools over three surfaces (`navigator.modelContext`,
+- Owner's Guide: 15 tools over three surfaces (`navigator.modelContext`,
   `window.r2`, `postMessage`) that all drive the same handlers and return
   structured JSON in metres.
-- Landing page and engine page: 5 small tools so the umbrella site itself is
+- Landing page and engine page: 6 small tools so the umbrella site itself is
   agent-operable (list experiences, open one, read the overview, read the
-  measured fit report, list instruments).
+  measured fit report, read the aperture gate report, list instruments).
 - Contract: closed top-level schemas, human-readable titles, explicit
   read-only, non-destructive and idempotency hints, and errors that carry the
   recovery, such as `no part "flux capacitor". Call list_parts for the 42
