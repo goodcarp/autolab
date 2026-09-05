@@ -70,6 +70,8 @@ OUT="$HERE/engine/out"; rm -f "$OUT"/*.svg
   # The aperture gate exits 1 when it names a survivor; that is a finding, not a build failure.
   node src/cli.mjs apertures     > "$OUT/apertures.json" || true
 )
+# The report names the model by absolute path; the public copy names it by repository path.
+node -e 'const fs=require("fs");const p=process.argv[1];const r=JSON.parse(fs.readFileSync(p,"utf8"));r.model="sources/r2-blueprint/src/vehicle.js";fs.writeFileSync(p,JSON.stringify(r,null,2)+"\n")' "$OUT/apertures.json"
 APERTURES="$(node -e 'const r=require(process.argv[1]);const f=r.apertures.filter(a=>a.status==="FAIL").map(a=>a.aperture);console.log(`${r.status} (${f.length} of ${r.apertures.filter(a=>a.gated).length} gated openings carry a survivor${f.length?": "+f.join(", "):""})`)' "$OUT/apertures.json" 2>/dev/null || echo unavailable)"
 SELFTEST="$(cd "$ENGINE" && node src/cli.mjs selftest 2>&1 | tail -1)"
 

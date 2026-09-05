@@ -1,6 +1,6 @@
 {
   "status": "FAIL",
-  "model": "/Users/spaceman/Desktop/autolab/sources/r2-blueprint/src/vehicle.js",
+  "model": "sources/r2-blueprint/src/vehicle.js",
   "band_mm": 50,
   "edge_mm": 65,
   "lidArea_m2": 0.1,
