@@ -14,12 +14,18 @@ const S = SPEC;
 S.XF = S.wheelbase / 2; S.XR = -S.wheelbase / 2;
 S.NOSE = S.XF + S.frontOverhang; S.TAIL = S.XR - S.rearOverhang;
 const T = (xt) => S.NOSE - xt; // spec x (0 at bumper, rearward) → our x
+// Published overhangs end at the outer trim, not at the skin behind it.
+// The lamp lens adds 28 + 6 mm; the rear plate adds 14 + 6 mm.
+const BODY_NOSE = S.NOSE - 0.034, BODY_TAIL = S.TAIL + 0.020;
 
 // ---------- profile curves (metres) ----------
-const ZB = interp([[S.TAIL, 0.55], [T(4.66), 0.45], [T(4.56), 0.39], [T(4.43), 0.33], [T(4.22), 0.30], [T(3.34), 0.285], [T(2.60), 0.27], [T(1.30), 0.27], [T(0.40), 0.29], [T(0.22), 0.30], [T(0.10), 0.36], [T(0.04), 0.42], [S.NOSE, 0.50]]);
-const ZT = interp([[S.TAIL, 1.19], [-2.30, 1.215], [-2.00, 1.225], [-1.35, 1.225], [-1.10, 1.20], [0.60, 1.20], [1.00, 1.196], [1.10, 1.193], [1.20, 1.189], [1.30, 1.185], [1.45, 1.178], [1.60, 1.170], [1.75, 1.161], [1.90, 1.149], [2.00, 1.136], [2.10, 1.112], [2.20, 1.083], [2.27, 1.050], [S.NOSE, 1.000]]);
-const HWB = interp([[S.TAIL, 0.78], [T(4.715), 0.85], [T(4.69), 0.895], [T(4.64), 0.915], [T(4.40), 0.92], [T(1.45), 0.92], [T(0.25), 0.915], [T(0.13), 0.905], [T(0.05), 0.87], [T(0.02), 0.82], [S.NOSE, 0.74]]);
-const HWT = interp([[S.TAIL, 0.79], [T(4.715), 0.86], [T(4.69), 0.90], [T(4.64), 0.92], [-2.00, 0.92], [-1.00, 0.92], [0.60, 0.92], [1.00, 0.90], [1.30, 0.875], [2.00, 0.87], [2.15, 0.87], [2.22, 0.86], [2.27, 0.83], [S.NOSE, 0.75]]);
+// End knots below are inset with the skin, preserving their height/width values
+// and order. Roof, cabin, axle datums, and the broad corner-radius curve stay in
+// their original frame; only the nose/tail profile ends need room for the trim.
+const ZB = interp([[S.TAIL + 0.020, 0.55], [T(4.651273), 0.45], [T(4.56), 0.39], [T(4.43), 0.33], [T(4.22), 0.30], [T(3.34), 0.285], [T(2.60), 0.27], [T(1.30), 0.27], [T(0.40), 0.29], [T(0.22), 0.30], [T(0.11275), 0.36], [T(0.0655), 0.42], [S.NOSE - 0.034, 0.50]]);
+const ZT = interp([[S.TAIL + 0.020, 1.19], [-2.30, 1.215], [-2.00, 1.225], [-1.35, 1.225], [-1.10, 1.20], [0.60, 1.20], [1.00, 1.196], [1.10, 1.193], [1.20, 1.189], [1.30, 1.185], [1.45, 1.178], [1.60, 1.170], [1.75, 1.161], [1.90, 1.149], [2.00, 1.136], [2.10, 1.112], [2.189375, 1.083], [2.2445, 1.050], [S.NOSE - 0.034, 1.000]]);
+const HWB = interp([[S.TAIL + 0.020, 0.78], [T(4.696273), 0.85], [T(4.675818), 0.895], [T(4.634909), 0.915], [T(4.40), 0.92], [T(1.45), 0.92], [T(0.25), 0.915], [T(0.136375), 0.905], [T(0.073375), 0.87], [T(0.04975), 0.82], [S.NOSE - 0.034, 0.74]]);
+const HWT = interp([[S.TAIL + 0.020, 0.79], [T(4.696273), 0.86], [T(4.675818), 0.90], [T(4.634909), 0.92], [-2.00, 0.92], [-1.00, 0.92], [0.60, 0.92], [1.00, 0.90], [1.30, 0.875], [2.00, 0.87], [2.15, 0.87], [2.205125, 0.86], [2.2445, 0.83], [S.NOSE - 0.034, 0.75]]);
 const RT = interp([[S.TAIL, 0.06], [T(3.5), 0.09], [T(1.7), 0.09], [T(1.2), 0.12], [S.NOSE, 0.07]]);
 // greenhouse top: long raked windscreen (≈38°) flattening into the roof, flat roof, spoiler lip, rear glass 27° from vertical
 // The last knot is 1.245, not the belt: at 1.20 the greenhouse ring collapses to 6 mm at x = -2.339
@@ -47,8 +53,8 @@ function archZ(x) {
 }
 const ROLL_N = 0.11, ROLL_T = 0.10;
 function rollOff(x) {
-  if (x > S.NOSE - ROLL_N) { const f = clamp((x - (S.NOSE - ROLL_N)) / ROLL_N, 0, 1); return [1 - Math.sqrt(Math.max(0, 1 - f * f)), ROLL_N]; }
-  if (x < S.TAIL + ROLL_T) { const f = clamp(((S.TAIL + ROLL_T) - x) / ROLL_T, 0, 1); return [1 - Math.sqrt(Math.max(0, 1 - f * f)), ROLL_T]; }
+  if (x > BODY_NOSE - ROLL_N) { const f = clamp((x - (BODY_NOSE - ROLL_N)) / ROLL_N, 0, 1); return [1 - Math.sqrt(Math.max(0, 1 - f * f)), ROLL_N]; }
+  if (x < BODY_TAIL + ROLL_T) { const f = clamp(((BODY_TAIL + ROLL_T) - x) / ROLL_T, 0, 1); return [1 - Math.sqrt(Math.max(0, 1 - f * f)), ROLL_T]; }
   return [0, 0];
 }
 export function lowerSec(x, notch = true) {
@@ -294,12 +300,12 @@ export const CUT = {
   // greenhouse loft's own rear end at T(4.49) = -2.129, where the liftgate takes over.
   quarterX0: -2.12, quarterX1: -1.40,   // fixed quarter window behind the rear door
   qa: DOOR_Q[0], qb: DOOR_Q[1], qc: DOOR_Q[2], sailY: SAIL_Y, sailSlope: (BELT_X - SAIL_X) / (SAIL_Y - BELT_Y),
-  hoodX0: 1.11, hoodX1: S.NOSE - 0.08, hoodEdge: HOOD_EDGE, hoodZ: 0.93, // shut line on the fender shoulder
-  // deckX0 reaches PAST the body's own tail (S.TAIL = -2.412). It used to stop at -2.36, which left a
+  hoodX0: 1.11, hoodX1: BODY_NOSE - 0.08, hoodEdge: HOOD_EDGE, hoodZ: 0.93, // shut line on the fender shoulder
+  // deckX0 reaches PAST the body's own tail (BODY_TAIL = -2.392). It used to stop at -2.36, which left a
   // 52 mm band of top deck uncut across the very back -- invisible with the liftgate shut, and a bar
   // straight across the cargo opening the moment it was raised. Same class as the door rail: a cut
   // boundary set as a constant that stops short of the surface it is cutting.
-  deckX0: S.TAIL - 0.01, deckX1: 0.985, deckZ: DECK_Z, deckY0: 1.13, deckY1: 1.26,
+  deckX0: BODY_TAIL - 0.01, deckX1: 0.985, deckZ: DECK_Z, deckY0: 1.13, deckY1: 1.26,
   // Ceiling of the deck cut. A flat 1.26 was fine down the cabin but forward of x ~ 0.92 the whole
   // greenhouse ring sits below it, so the cut ate the FOOT of the windscreen: the glass surface
   // stopped ~70 mm above its own bottom rim and that rim was left sticking forward over the cowl as
@@ -402,9 +408,9 @@ export function buildVehicle() {
   // ===== lower body shell (door and frunk apertures are cut in the shader) =====
   const bodyP = P('body', 'BODY SHELL', 'Slab-sided unibody, belt line at 1 220 mm, flat shoulder', 'shell');
   {
-    const xs = [...rollStations(S.TAIL, ROLL_T, -1), ...stations(S.TAIL + ROLL_T, S.NOSE - ROLL_N, 0.035), ...rollStations(S.NOSE, ROLL_N, +1).reverse()].sort((a, b) => a - b);
+    const xs = [...rollStations(BODY_TAIL, ROLL_T, -1), ...stations(BODY_TAIL + ROLL_T, BODY_NOSE - ROLL_N, 0.035), ...rollStations(BODY_NOSE, ROLL_N, +1).reverse()].sort((a, b) => a - b);
     bodyP.add(loft(xs.map(x => ({ x, pts: lowerSec(x) }))), { cut: true });
-    bodyP.add(capFromLoop(lowerSec(S.NOSE - 0.002), S.NOSE - 0.002, +1), { sub: 1 });
+    bodyP.add(capFromLoop(lowerSec(BODY_NOSE - 0.002), BODY_NOSE - 0.002, +1), { sub: 1 });
     // crease on the rear quarters (the front crease is the clamshell hood edge, the door creases ride the doors)
     // this ribbon is NOT cut by the apertures, so it has to end ON the rear door's shut line: any of
     // it left inside the opening is a bar across the doorway once the door swings (the v0.12.0 bug).
@@ -417,14 +423,14 @@ export function buildVehicle() {
   // clamshell hood (frunk lid): wraps 0.09 down over the fender tops; hinged at the cowl
   const hoodP = P('hood', 'FRONT TRUNK LID', 'Power clamshell hood over a 147 L frunk, hinged at the cowl', 'shell');
   {
-    const xs = [...stations(1.11, S.NOSE - ROLL_N, 0.035), ...rollStations(S.NOSE, ROLL_N, +1).slice(0, 7).reverse()].sort((a, b) => a - b);
+    const xs = [...stations(1.11, BODY_NOSE - ROLL_N, 0.035), ...rollStations(BODY_NOSE, ROLL_N, +1).slice(0, 7).reverse()].sort((a, b) => a - b);
     hoodP.hinge = new THREE.Vector3(1.11, ZT(1.11) + HOOD_OFF, 0);
     hoodP.group.position.copy(hoodP.hinge);
     // edges follow hoodJ, so the rear corner starts on the cowl tray and wraps down into the shut line
     hoodP.add(rebase(colGrid(x => lowerSec(x, false), xs, (x, pts) => hoodJ(x, pts), (x, pts) => 104 - hoodJ(x, pts), 33, HOOD_OFF), hoodP.hinge));
     // power-dome creases and the compass badge
-    for (const k of [4.8, 15.2]) hoodP.add(rebase(patchX(x => lowerSec(x, false), [J.top + k - 0.12, J.top + k + 0.12], stations(1.005, S.NOSE - 0.30, 0.04), 0.009), hoodP.hinge), { sub: 1 });
-    hoodP.add(new THREE.CylinderGeometry(0.026, 0.026, 0.006, 20), { pos: [S.NOSE - 0.06 - hoodP.hinge.x, ZT(S.NOSE - 0.06) + 0.011 - hoodP.hinge.y, 0], sub: 2 });
+    for (const k of [4.8, 15.2]) hoodP.add(rebase(patchX(x => lowerSec(x, false), [J.top + k - 0.12, J.top + k + 0.12], stations(1.005, BODY_NOSE - 0.30, 0.04), 0.009), hoodP.hinge), { sub: 1 });
+    hoodP.add(new THREE.CylinderGeometry(0.026, 0.026, 0.006, 20), { pos: [BODY_NOSE - 0.06 - hoodP.hinge.x, ZT(BODY_NOSE - 0.06) + 0.011 - hoodP.hinge.y, 0], sub: 2 });
     hoodP.anchor = new THREE.Vector3(1.60, ZT(1.60) + 0.01, 0.0); hoodP.anchorN = new THREE.Vector3(0.15, 1, 0);
   }
   // frunk tub and engine-bay structure under the hood
@@ -463,7 +469,30 @@ export function buildVehicle() {
     roofP.add(patchX(upperSec, [J.top + 20, J.sideL], stations(GLASS_FRONT_X, GLASS_REAR_X, 0.04), 0.003));
     roofP.add(patchSection(upperSec, GLASS_FRONT_X, 0.006, J.cTR, J.sideL, 0.003));   // front edge cap
     roofP.add(patchSection(upperSec, GLASS_REAR_X, 0.006, J.cTR, J.sideL, 0.003));    // rear edge cap
-    for (const xt of [2.80, 4.10]) for (const sgn of [1, -1]) roofP.add(rbox(0.06, 0.008, 0.06, 0.012, 2), { pos: [T(xt), ZROOF(T(xt)) + 0.006, sgn * 0.66], sub: 1 });
+    // The accessory covers sit on the crowned shoulder, below the centreline.
+    // Drape their vertices over the same section as the roof so the whole cover
+    // stays seated as the roof curves, with its top 1 mm above the 3 mm roof skin.
+    const roofY = (x, z) => {
+      const sec = upperSec(x);
+      for (let j = J.cTR; j < J.sideL; j++) {
+        const a = sec[j], b = sec[j + 1];
+        if (a[0] >= z && z >= b[0] && a[0] !== b[0]) {
+          return a[1] + (b[1] - a[1]) * (z - a[0]) / (b[0] - a[0]);
+        }
+      }
+      throw new Error('Roof accessory cover lies outside the roof section');
+    };
+    for (const xt of [2.80, 4.10]) for (const sgn of [1, -1]) {
+      const cover = rbox(0.06, 0.008, 0.06, 0.012, 2);
+      const vertices = cover.getAttribute('position');
+      for (let i = 0; i < vertices.count; i++) {
+        const x = T(xt) + vertices.getX(i), z = sgn * 0.66 + vertices.getZ(i);
+        vertices.setXYZ(i, x, roofY(x, z) + vertices.getY(i), z);
+      }
+      vertices.needsUpdate = true;
+      cover.computeVertexNormals();
+      roofP.add(cover, { sub: 1 });
+    }
     roofP.add(rbox(0.02, 0.014, 0.08, 0.005, 2), { pos: [T(4.495), ZROOF(T(4.495)) - 0.02, 0], sub: 2 });   // CHMSL
     roofP.add(rbox(0.12, 0.03, 1.46, 0.012, 2), { pos: [T(4.44), ZROOF(T(4.44)) - 0.030, 0], sub: 3 });     // spoiler lip (under the roofline)
     roofP.anchor = new THREE.Vector3(T(3.2), ZROOF(T(3.2)) + 0.006, -0.35); roofP.anchorN = new THREE.Vector3(0, 1, -0.2);
@@ -618,24 +647,24 @@ export function buildVehicle() {
   const lampP = P('headlamps', 'STADIUM HEADLAMPS', 'Vertical LED “stadium” rings, 190 × 330 mm, three matrix modules', 'shell');
   {
     for (const sgn of [1, -1]) {
-      lampP.add(rbox(0.035, 0.33, 0.19, 0.095, 4), { pos: [S.NOSE + 0.010, 0.875, sgn * 0.595] });
-      lampP.add(rbox(0.012, 0.27, 0.13, 0.065, 4), { pos: [S.NOSE + 0.028, 0.875, sgn * 0.595], sub: 1 });
+      lampP.add(rbox(0.035, 0.33, 0.19, 0.095, 4), { pos: [BODY_NOSE + 0.010, 0.875, sgn * 0.595] });
+      lampP.add(rbox(0.012, 0.27, 0.13, 0.065, 4), { pos: [BODY_NOSE + 0.028, 0.875, sgn * 0.595], sub: 1 });
     }
-    lampP.anchor = new THREE.Vector3(S.NOSE + 0.04, 0.875, -0.595); lampP.anchorN = new THREE.Vector3(1, 0, -0.3);
+    lampP.anchor = new THREE.Vector3(BODY_NOSE + 0.04, 0.875, -0.595); lampP.anchorN = new THREE.Vector3(1, 0, -0.3);
   }
   const barP = P('lightBar', 'FRONT LIGHT BAR', 'Edge-lit bar under the hood lip, wraps the corners', 'shell');
   {
-    barP.add(rbox(0.03, 0.05, 1.72, 0.015, 2), { pos: [S.NOSE + 0.008, 0.995, 0] });
-    for (const sgn of [1, -1]) barP.add(rbox(0.11, 0.05, 0.03, 0.012, 2), { pos: [S.NOSE - 0.06, 1.002, sgn * (HWT(S.NOSE - 0.06) + 0.004)], sub: 1 });
-    barP.anchor = new THREE.Vector3(S.NOSE + 0.03, 1.005, 0.2); barP.anchorN = new THREE.Vector3(1, 0.2, 0);
+    barP.add(rbox(0.03, 0.05, 1.72, 0.015, 2), { pos: [BODY_NOSE + 0.008, 0.995, 0] });
+    for (const sgn of [1, -1]) barP.add(rbox(0.11, 0.05, 0.03, 0.012, 2), { pos: [BODY_NOSE - 0.06, 1.002, sgn * (HWT(BODY_NOSE - 0.06) + 0.004)], sub: 1 });
+    barP.anchor = new THREE.Vector3(BODY_NOSE + 0.03, 1.005, 0.2); barP.anchorN = new THREE.Vector3(1, 0.2, 0);
   }
   const fasciaP = P('fasciaFront', 'FRONT FASCIA', 'Deep black bumper, intake slot, grey skid lip, tow-hook covers, radar', 'shell');
   {
-    fasciaP.add(rbox(0.06, 0.34, 1.62, 0.04, 3), { pos: [S.NOSE - 0.012, 0.535, 0] });
-    fasciaP.add(rbox(0.05, 0.07, 1.00, 0.015, 2), { pos: [S.NOSE + 0.005, 0.42, 0], sub: 1 });   // intake slot
-    fasciaP.add(rbox(0.16, 0.06, 1.24, 0.015, 2), { pos: [S.NOSE - 0.17, 0.315, 0], sub: 2 });  // skid lip
-    for (const sgn of [1, -1]) fasciaP.add(new THREE.BoxGeometry(0.008, 0.045, 0.11), { pos: [S.NOSE + 0.02, 0.60, sgn * 0.59], sub: 3 });
-    fasciaP.add(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 16), { pos: [S.NOSE + 0.022, 0.56, 0], rot: [0, 0, Math.PI / 2], sub: 4 });
+    fasciaP.add(rbox(0.06, 0.34, 1.62, 0.04, 3), { pos: [BODY_NOSE - 0.012, 0.535, 0] });
+    fasciaP.add(rbox(0.05, 0.07, 1.00, 0.015, 2), { pos: [BODY_NOSE + 0.005, 0.42, 0], sub: 1 });   // intake slot
+    fasciaP.add(rbox(0.16, 0.06, 1.24, 0.015, 2), { pos: [BODY_NOSE - 0.17, 0.315, 0], sub: 2 });  // skid lip
+    for (const sgn of [1, -1]) fasciaP.add(new THREE.BoxGeometry(0.008, 0.045, 0.11), { pos: [BODY_NOSE + 0.02, 0.60, sgn * 0.59], sub: 3 });
+    fasciaP.add(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 16), { pos: [BODY_NOSE + 0.022, 0.56, 0], rot: [0, 0, Math.PI / 2], sub: 4 });
   }
   // ===== rear: quarter pills on the body, liftgate carries the bar, glass, plate and lettering =====
   const pillsP = P('tailPills', 'REAR CORNER LAMPS', 'Horizontal stadium pills in a recess, body-colour brow above, vent below', 'shell');
@@ -643,13 +672,13 @@ export function buildVehicle() {
     const tailX = T(4.58), tailY = 1.115;
     // ONE bar: up each quarter, around both corners and across the tail, with the lit strip inside it
     // and a body-colour brow above. The corner "pills" are simply its ends.
-    pillsP.add(wrapBand(T(4.46), S.TAIL, tailY, 0.090, 0.005, J.cTR + 8, 'ends'), { sub: 1 });  // recess
-    pillsP.add(wrapBand(T(4.46), S.TAIL, tailY, 0.052, 0.011, J.cTR + 8, 'ends'));               // lit strip
+    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY, 0.090, 0.005, J.cTR + 8, 'ends'), { sub: 1 });  // recess
+    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY, 0.052, 0.011, J.cTR + 8, 'ends'));               // lit strip
     // brow height is keyed UNDER the section's own top at the tail, not set by a constant: the roll
     // pulls zt down to 1.178 there, and a brow at tailY + 0.068 = 1.183 sits above the bodywork, so
     // jAtHeight finds no such height, clamps to the top corner and returns a crossing 60 mm narrower
     // at each end than the lit strip below it. Invisible while the bands were buried; not any more.
-    pillsP.add(wrapBand(T(4.46), S.TAIL, tailY + 0.050, 0.024, 0.014, J.cTR + 8, 'ends'), { sub: 2 });  // brow above
+    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY + 0.050, 0.024, 0.014, J.cTR + 8, 'ends'), { sub: 2 });  // brow above
     for (const sgn of [1, -1]) {
       const vp = onSkin(tailX + 0.12, 0.62, sgn, 0.006);
       pillsP.add(rbox(0.16, 0.075, 0.010, 0.018, 2), { pos: vp, sub: 3 });                      // pressure-relief vent
@@ -657,29 +686,29 @@ export function buildVehicle() {
   }
   const fasciaRP = P('fasciaRear', 'REAR FASCIA', 'Black bumper band, grey skid, reflectors, hitch cover', 'shell');
   {
-    fasciaRP.add(wrapBand(T(4.44), S.TAIL, 0.560, 0.235, 0.004, J.sideR + 17));                 // bumper band, wraps the corners
-    fasciaRP.add(wrapBand(T(4.41), S.TAIL, 0.432, 0.070, 0.011, J.sideR + 17), { sub: 1 });     // grey skid under it
-    for (const sgn of [1, -1]) fasciaRP.add(new THREE.BoxGeometry(0.008, 0.08, 0.03), { pos: [S.TAIL + 0.03, 0.62, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 3 });
+    fasciaRP.add(wrapBand(T(4.44), BODY_TAIL, 0.560, 0.235, 0.004, J.sideR + 17));                 // bumper band, wraps the corners
+    fasciaRP.add(wrapBand(T(4.41), BODY_TAIL, 0.432, 0.070, 0.011, J.sideR + 17), { sub: 1 });     // grey skid under it
+    for (const sgn of [1, -1]) fasciaRP.add(new THREE.BoxGeometry(0.008, 0.08, 0.03), { pos: [BODY_TAIL + 0.03, 0.62, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 3 });
   }
   const gateP = P('tailgate', 'LIFTGATE & DROP GLASS', 'One-piece liftgate, top-hinged; powered rear window lowers into it', 'shell');
   {
     gateP.hinge = new THREE.Vector3(T(4.50), 1.665, 0);
     gateP.group.position.copy(gateP.hinge);
-    gateP.add(rebase(capFromLoop(lowerSec(S.TAIL + 0.002), S.TAIL + 0.002, -1), gateP.hinge));
+    gateP.add(rebase(capFromLoop(lowerSec(BODY_TAIL + 0.002), BODY_TAIL + 0.002, -1), gateP.hinge));
     const xs = stations(T(4.49), T(4.70), 0.015);
     gateP.add(rebase(loft(xs.map(x => ({ x, pts: upperSec(x) }))), gateP.hinge), { sub: 1 });
     gateP.add(rebase(capFromLoop(upperSec(T(4.70) - 0.001), T(4.70) - 0.001, -1), gateP.hinge), { sub: 1 });
-    gateP.add(new THREE.BoxGeometry(0.012, 0.20, 0.36), { pos: [S.TAIL - 0.014 - gateP.hinge.x, 0.82 - gateP.hinge.y, 0], sub: 3 });   // licence plate
-    gateP.add(new THREE.BoxGeometry(0.006, 0.06, 0.75), { pos: [S.TAIL - 0.013 - gateP.hinge.x, 0.96 - gateP.hinge.y, 0], sub: 4 });   // RIVIAN lettering plate
-    gateP.add(rbox(0.008, 0.025, 0.065, 0.006, 2), { pos: [S.TAIL - 0.014 - gateP.hinge.x, 0.84 - gateP.hinge.y, -0.72], sub: 5 });    // R2 badge
+    gateP.add(new THREE.BoxGeometry(0.012, 0.20, 0.36), { pos: [BODY_TAIL - 0.014 - gateP.hinge.x, 0.82 - gateP.hinge.y, 0], sub: 3 });   // licence plate
+    gateP.add(new THREE.BoxGeometry(0.006, 0.06, 0.75), { pos: [BODY_TAIL - 0.013 - gateP.hinge.x, 0.96 - gateP.hinge.y, 0], sub: 4 });   // RIVIAN lettering plate
+    gateP.add(rbox(0.008, 0.025, 0.065, 0.006, 2), { pos: [BODY_TAIL - 0.014 - gateP.hinge.x, 0.84 - gateP.hinge.y, -0.72], sub: 5 });    // R2 badge
     // the lamp bar across the tail belongs to the gate and swings with it. Subs 8-10 are free on this
     // part, so the glow test can pick out the lit strip without lighting the rest of the liftgate.
     const TY = 1.115;
-    gateP.add(rebase(wrapBand(T(4.46), S.TAIL, TY, 0.090, 0.005, J.cTR + 8, 'cross'), gateP.hinge), { sub: 9 });
-    gateP.add(rebase(wrapBand(T(4.46), S.TAIL, TY, 0.052, 0.011, J.cTR + 8, 'cross'), gateP.hinge), { sub: 8 });
-    gateP.add(rebase(wrapBand(T(4.46), S.TAIL, TY + 0.050, 0.024, 0.014, J.cTR + 8, 'cross'), gateP.hinge), { sub: 10 });
-    gateP.add(rbox(0.05, 0.40, 1.30, 0.03, 2), { pos: [S.TAIL + 0.05 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0], sub: 6 });            // inner trim panel
-    for (const sgn of [1, -1]) gateP.add(new THREE.BoxGeometry(0.004, 0.42, 0.05), { pos: [S.TAIL + 0.03 - gateP.hinge.x, 0.93 - gateP.hinge.y, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 7 });
+    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY, 0.090, 0.005, J.cTR + 8, 'cross'), gateP.hinge), { sub: 9 });
+    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY, 0.052, 0.011, J.cTR + 8, 'cross'), gateP.hinge), { sub: 8 });
+    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY + 0.050, 0.024, 0.014, J.cTR + 8, 'cross'), gateP.hinge), { sub: 10 });
+    gateP.add(rbox(0.05, 0.40, 1.30, 0.03, 2), { pos: [BODY_TAIL + 0.05 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0], sub: 6 });            // inner trim panel
+    for (const sgn of [1, -1]) gateP.add(new THREE.BoxGeometry(0.004, 0.42, 0.05), { pos: [BODY_TAIL + 0.03 - gateP.hinge.x, 0.93 - gateP.hinge.y, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 7 });
     gateP.anchor = new THREE.Vector3(T(4.58), ZROOF(T(4.58)) + 0.008, 0.05); gateP.anchorN = new THREE.Vector3(-0.75, 0.65, 0);
     gateP.explode.set(-0.95, 0.50, 0);
   }
@@ -974,11 +1003,11 @@ export function buildVehicle() {
     explodeT: 0, openT: 0, panelsT: 1, spinAngle: 0, steer: 0, bob: 0, ride: 0,
     guideAnchors: {
       roofGlass: [-1.15, ZROOF(-1.15) + 0.006, 0.34], greenhouse: [-0.55, 1.42, 0.82],
-      hood: [1.7 - hoodP.hinge.x, ZT(1.7) + 0.01 - hoodP.hinge.y, 0], tailgate: [S.TAIL + 0.02 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0],
+      hood: [1.7 - hoodP.hinge.x, ZT(1.7) + 0.01 - hoodP.hinge.y, 0], tailgate: [BODY_TAIL + 0.02 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0],
       body: [0.0, 0.7, 0.93], battery: [0.4, 0.32, 0.0], wheelFL: [0, 0, 0], wheelRL: [0, 0, 0], wheelFR: [0, 0, 0], wheelRR: [0, 0, 0],
       doorFL: [-0.55, 0.9, 0], doorFR: [-0.55, 0.9, 0], doorRL: [-0.35, 0.9, 0], doorRR: [-0.35, 0.9, 0],
-      headlamps: [S.NOSE, 0.875, 0.595], lightBar: [S.NOSE + 0.008, 0.995, -0.55], fasciaFront: [S.NOSE - 0.02, 0.535, 0.55],
-      fasciaRear: [S.TAIL, 0.52, -0.50], seats: [T(2.45), 0.8, 0.4], frunk: [1.69, 1.00, -0.45],
+      headlamps: [BODY_NOSE, 0.875, 0.595], lightBar: [BODY_NOSE + 0.008, 0.995, -0.55], fasciaFront: [BODY_NOSE - 0.02, 0.535, 0.55],
+      fasciaRear: [BODY_TAIL, 0.52, -0.50], seats: [T(2.45), 0.8, 0.4], frunk: [1.69, 1.00, -0.45],
       subframeF: [S.XF + 0.02, 0.44, 0.50], subframeR: [S.XR - 0.02, 0.44, -0.50],
     },
     update(dt, st) {

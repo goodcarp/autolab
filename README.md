@@ -49,6 +49,19 @@ since then is recorded here so the state at the deadline is not misrepresented:
 
 ## How this site is assembled
 
+### September 5 model and showroom integration
+
+The current build includes the corrected body envelope and roof covers, all nine
+saved dimensional checks within tolerance, and the engine's numeric anchor-offset
+support (59/59 self-tests). The configurator combines the latest camera, paint,
+wheel, blueprint-scan and agent-tool work with projector optics, procedural surface
+detail, live contact shadows, and deferred material attachment (149 tests passing).
+The showroom uses the plain rendering pass to avoid a postprocessing/contact-shadow
+artifact; Blueprint retains its glow pass. Source revisions are in `ASSEMBLED.txt`.
+
+These are post-deadline changes. The model remains a procedural reconstruction,
+and the separately reported aperture findings are not a dimensional-fit failure.
+
 The landing page (`index.html`, `assets/`) and the engine page (`engine/index.html`,
 `engine/engine.js`) are authored here. `configure/`, `garage/` and the engine's
 generated outputs are produced from `sources/` by one script:

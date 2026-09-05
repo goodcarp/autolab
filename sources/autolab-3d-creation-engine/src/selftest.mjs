@@ -365,6 +365,14 @@ const f = fixture();
 // --- anchors and extrapolation -----------------------------------------------
 {
   const spec = { NOSE: 2.31, TAIL: -2.412, XF: 1.468, XR: -1.468 };
+  check("anchors: skin datums retain their offset when the outer envelope moves",
+    Math.abs(evaluateX("S.NOSE - 0.034", spec) - 2.276) < 1e-9
+      && Math.abs(evaluateX("S.TAIL + 0.020", spec) + 2.392) < 1e-9
+      && Math.abs(evaluateX("S.TAIL + 0.020", { ...spec, TAIL: -2.5 }) + 2.48) < 1e-9);
+  check("anchors: offset syntax refuses expressions and missing datums",
+    ["S.NOSE - other", "S.NOSE - 0.034 + 1", "S.UNKNOWN + 0.020", "S.NOSE - 0.034; sideEffect()"]
+      .every((src) => evaluateX(src, spec) === null)
+      && evaluateX("S.NOSE - 0.034", {}) === null);
   check("anchors: an exact nose hit is written as S.NOSE", anchorFor(2.31, spec).source === "S.NOSE");
   check("anchors: an exact tail hit is written as S.TAIL", anchorFor(-2.412, spec).source === "S.TAIL");
   // Negative control: near is not the same as on. An anchor asserts identity.
@@ -399,10 +407,10 @@ const f = fixture();
     // knot to follow — including the ones anchored to the TAIL and the axles,
     // which have no reason to. The control caught the expectation, not the code.
     const dependents = [
-      { field: "NOSE", matches: (src) => src === "S.NOSE" || /^T\(/.test(src) },
-      { field: "TAIL", matches: (src) => src === "S.TAIL" },
-      { field: "XF", matches: (src) => src === "S.XF" },
-      { field: "XR", matches: (src) => src === "S.XR" },
+      { field: "NOSE", matches: (src) => /^S\.NOSE(?:$|\s*[+-])/.test(src) || /^T\(/.test(src) },
+      { field: "TAIL", matches: (src) => /^S\.TAIL(?:$|\s*[+-])/.test(src) },
+      { field: "XF", matches: (src) => /^S\.XF(?:$|\s*[+-])/.test(src) },
+      { field: "XR", matches: (src) => /^S\.XR(?:$|\s*[+-])/.test(src) },
     ];
 
     let moved = 0;

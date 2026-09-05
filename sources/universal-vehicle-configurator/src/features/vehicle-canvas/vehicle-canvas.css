@@ -1605,5 +1605,11 @@
   color: rgba(230, 241, 234, 0.78);
 }
 
+/* A photographic backdrop for the live studio; guides belong to Blueprint. */
+.vehicle-canvas[data-renderer="live_3d"][data-mode="showroom"] .vc-environment__grid,
+.vehicle-canvas[data-renderer="live_3d"][data-mode="showroom"] .vc-environment__orbit,
+.vehicle-canvas[data-renderer="live_3d"][data-mode="showroom"] .vc-environment__ground {
+  opacity: 0;
+}
 /* Focus hotspots are agent-addressable through present_vehicle; the floating rings cluttered the showroom. */
 .vc-hotspots { display: none; }

@@ -107,6 +107,14 @@ export function evaluateX(expression, spec) {
   if (text === "S.TAIL") return spec.TAIL;
   if (text === "S.XF") return spec.XF;
   if (text === "S.XR") return spec.XR;
+  // Skin datums can sit a fixed distance inside a published outer envelope.
+  // Accept one literal offset from a known anchor, never arbitrary JavaScript.
+  const offset = /^S\.(NOSE|TAIL|XF|XR)\s*([+-])\s*(\d+(?:\.\d+)?)$/.exec(text);
+  if (offset) {
+    const base = spec[offset[1]];
+    const value = base + (offset[2] === "+" ? 1 : -1) * Number(offset[3]);
+    return Number.isFinite(base) && Number.isFinite(value) ? value : null;
+  }
   const call = /^T\(\s*(-?\d+(?:\.\d+)?)\s*\)$/.exec(text);
   if (call) return spec.NOSE - Number.parseFloat(call[1]);
   return null;

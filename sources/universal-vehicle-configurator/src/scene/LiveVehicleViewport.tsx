@@ -4,7 +4,6 @@ import {
   Environment,
   Grid,
   Lightformer,
-  MeshReflectorMaterial,
 } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, ToneMapping, Vignette } from "@react-three/postprocessing";
@@ -24,7 +23,7 @@ import {
   SRGBColorSpace,
 } from "three";
 import { fitCameraToAspect, getCameraPose, type CameraRigId } from "./camera-presets";
-import { createCycloramaTexture, createFloorFalloffTexture } from "./studio-backdrop";
+import { createCycloramaTexture } from "./studio-backdrop";
 import { CabinInterior } from "./CabinInterior";
 import { resolveVehicleModelSource } from "./vehicle-model-source";
 import type {
@@ -150,7 +149,7 @@ function CameraDirector({
 /**
  * Whether this device gets the full post chain.
  *
- * Bloom, the reflective floor and the vignette are two extra passes over the
+ * Bloom and the vignette add finishing passes over the
  * frame; on a phone that is the difference between a smooth orbit and a
  * stutter, so a coarse pointer or a narrow viewport gets the plain render.
  */
@@ -216,12 +215,10 @@ function Studio({
   mode,
   grounded = true,
   shadowKey,
-  reflectiveFloor,
 }: Readonly<{
   mode: LiveVehicleRenderMode;
   grounded?: boolean;
   shadowKey: string;
-  reflectiveFloor: boolean;
 }>) {
   // Nothing here casts shadows, so the exterior rig shines straight through the
   // cabin's headliner and flattens it. Inside, drop it to a rim contribution
@@ -230,24 +227,33 @@ function Studio({
   const blueprint = mode === "blueprint";
   const cyclorama = useMemo(() => createCycloramaTexture(), []);
   useEffect(() => () => cyclorama.dispose(), [cyclorama]);
-  const falloff = useMemo(() => createFloorFalloffTexture(), []);
-  useEffect(() => () => falloff.dispose(), [falloff]);
   return (
     <>
-      <ambientLight intensity={(blueprint ? 0.48 : 0.34) * rig} color={blueprint ? "#a7efff" : "#eef4ef"} />
+      <ambientLight intensity={(blueprint ? 0.48 : 0.12) * rig} color={blueprint ? "#a7efff" : "#eef4ef"} />
       <directionalLight
         position={[4.5, 7.5, 5.5]}
-        intensity={(blueprint ? 0.72 : 1.5) * rig}
+        intensity={(blueprint ? 0.72 : 2.4) * rig}
+        castShadow={!blueprint && grounded}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+        shadow-camera-near={0.5}
+        shadow-camera-far={18}
+        shadow-bias={-0.00015}
+        shadow-normalBias={0.018}
+        shadow-radius={3}
         color={blueprint ? "#b8f4ff" : "#fff4dd"}
       />
       <directionalLight
         position={[-5.5, 3.2, -3.8]}
-        intensity={(blueprint ? 1.05 : 0.82) * rig}
+        intensity={(blueprint ? 1.05 : 0.45) * rig}
         color={blueprint ? "#43bed9" : "#b9dfd8"}
       />
       <spotLight
         position={[0, 7, -2.5]}
-        intensity={(blueprint ? 8 : 18) * rig}
+        intensity={(blueprint ? 8 : 10) * rig}
         angle={0.62}
         penumbra={0.9}
         distance={16}
@@ -265,7 +271,7 @@ function Studio({
         produce the streak that runs the whole shoulder line and reads as
         polished paint rather than coloured plastic.
       */}
-      <Environment resolution={256} background={false}>
+      <Environment resolution={512} background={false}>
         <mesh scale={38}>
           <sphereGeometry args={[1, 32, 20]} />
           {blueprint ? (
@@ -279,34 +285,34 @@ function Studio({
           <Lightformer
             key={`strip-${z}`}
             form="rect"
-            intensity={z === 0 ? 5.2 : 3.4}
+            intensity={z === 0 ? 3.2 : 2.0}
             color="#fff6e6"
             position={[0, 6.4, z * 1.9]}
             rotation-x={Math.PI / 2}
-            scale={[9.5, 0.55, 1]}
+            scale={[8, z === 0 ? 1.7 : 0.65, 1]}
           />
         ))}
         {/* Side boxes: the vertical gradient that gives the flanks their form. */}
         <Lightformer
           form="rect"
-          intensity={2.5}
+          intensity={1.8}
           color="#f2f7ff"
           position={[0.4, 3.1, 6.6]}
           target={[0, 1, 0]}
-          scale={[8, 3.4, 1]}
+          scale={[7, 2.2, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={1.5}
+          intensity={0.85}
           color="#cfe2e0"
           position={[-0.6, 2.9, -6.6]}
           target={[0, 1, 0]}
-          scale={[8, 3.2, 1]}
+          scale={[6, 1.8, 1]}
         />
         {/* Kickers: separate the nose and tail from the ground plane. */}
         <Lightformer
           form="rect"
-          intensity={2.9}
+          intensity={1.6}
           color="#fff2dd"
           position={[7.6, 2.2, 1.6]}
           target={[0, 0.9, 0]}
@@ -314,7 +320,7 @@ function Studio({
         />
         <Lightformer
           form="rect"
-          intensity={2.1}
+          intensity={1.1}
           color="#e6f2ff"
           position={[-7.4, 2.0, -1.4]}
           target={[0, 0.9, 0]}
@@ -345,73 +351,28 @@ function Studio({
           infiniteGrid={false}
         />
       )}
-      {grounded && (
-      <mesh rotation-x={-Math.PI / 2} position-y={0.015} receiveShadow>
-        <circleGeometry args={[7.5, 64]} />
-        {reflectiveFloor && !blueprint ? (
-          /*
-            A polished studio floor: a blurred, depth-faded reflection of the
-            sills and the wheels, low enough that the car still sits on the
-            page rather than floating over a mirror.
-          */
-          <MeshReflectorMaterial
-            color="#e3e0d6"
-            roughness={0.7}
-            metalness={0.04}
-            mirror={0.42}
-            mixBlur={1}
-            mixStrength={1.2}
-            blur={[420, 140]}
-            resolution={512}
-            depthScale={0.9}
-            minDepthThreshold={0.8}
-            maxDepthThreshold={1.3}
-            alphaMap={falloff}
-            transparent
-            opacity={0.62}
-          />
-        ) : (
-          <meshStandardMaterial
-            color={blueprint ? "#0c4053" : "#d8d5ca"}
-            roughness={0.82}
-            metalness={0.02}
-            transparent
-            opacity={blueprint ? 0.18 : 0.3}
-          />
-        )}
-      </mesh>
+      {grounded && !blueprint && (
+        <mesh rotation-x={-Math.PI / 2} position-y={-0.012} receiveShadow>
+          <planeGeometry args={[160, 160]} />
+          <meshStandardMaterial color="#c5c6c3" metalness={0.12} roughness={0.78} />
+        </mesh>
       )}
       {/*
-        Captured once per silhouette rather than every frame. Redrawing it
-        continuously costs a second pass over the whole body for a shadow that
-        only changes when the body does — but it does change when a door swings,
-        so the key carries whatever alters the outline.
+        Refresh with demand frames so shadows follow the animated panels.
+        The canvas stays idle once the camera and doors settle.
       */}
       {grounded && (
       <ContactShadows
         key={shadowKey}
-        frames={1}
-        position={[0, 0.025, 0]}
+        frames={Infinity}
+        position={[0, -0.008, 0]}
         scale={8.5}
-        opacity={blueprint ? 0.2 : 0.56}
-        blur={blueprint ? 1.75 : 1.45}
+        opacity={blueprint ? 0.2 : 0.65}
+        blur={2.4}
         far={2.8}
-        resolution={256}
-        color="#1b2620"
+        resolution={512}
+        color="#202426"
       />
-      )}
-      {grounded && !blueprint && (
-        <ContactShadows
-          key={`tyre-${shadowKey}`}
-          frames={1}
-          position={[0, 0.028, 0]}
-          scale={6}
-          opacity={0.62}
-          blur={0.6}
-          far={0.32}
-          resolution={256}
-          color="#111915"
-        />
       )}
     </>
   );
@@ -427,21 +388,23 @@ function VehicleScene(props: LiveVehicleViewportProps) {
   // A body that models its own cabin stays on screen for the interior view; the
   // stand-in cabin only exists for bodies that are exterior shells.
   const insideCabin = props.viewPreset === "interior" && props.mode === "showroom" && !hasCabin;
-  // The cabin view gets the plain render: with the composer and the
-  // reflector in the chain the cabin came out black under its fill lights,
-  // and there is nothing for bloom or a floor reflection to do from inside.
+  // The cabin uses the plain render so its dedicated fill lights remain legible.
   const fullQuality = useFullQuality() && props.viewPreset !== "interior";
   const turntable = props.viewPreset === "angle" && props.focus === null && props.mode === "showroom";
 
   return (
     <>
+      {props.mode === "showroom" && !insideCabin && <>
+        <color attach="background" args={["#dddedb"]} />
+        <fog attach="fog" args={["#dddedb", 12, 35]} />
+      </>}
       <Studio
         mode={props.mode}
         grounded={!insideCabin}
         shadowKey={`${props.modelSource ?? "default"}:${props.bodyOpen ?? 0}`}
-        reflectiveFloor={fullQuality}
       />
-      {fullQuality && <Post blueprint={props.mode === "blueprint"} />}
+      {/* The composer interferes with the showroom contact-shadow pass. Keep its glow for Blueprint. */}
+      {fullQuality && props.mode === "blueprint" && <Post blueprint />}
       {/*
         A body that models its own cabin is a closed box once the camera is
         inside it: the studio rig lights the outside of the shell and nothing
@@ -533,7 +496,8 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
           near: 0.1,
           far: 60,
         }}
-        dpr={[1, 1.5]}
+        dpr={[1, 2]}
+        shadows="soft"
         frameloop="demand"
         gl={{
           alpha: true,
@@ -545,7 +509,7 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
         onCreated={({ gl }) => {
           gl.outputColorSpace = SRGBColorSpace;
           gl.toneMapping = ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.12;
+          gl.toneMappingExposure = 0.95;
           gl.setClearColor(0x000000, 0);
         }}
       >

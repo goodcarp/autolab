@@ -7,10 +7,13 @@ import {
   LatheGeometry,
   type Material,
   Mesh,
+  MeshDepthMaterial,
+  RGBADepthPacking,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   Vector2,
 } from "three";
+import { surfaceFinish } from "./surface-finish";
 import { buildDetailGroup } from "./detail";
 import { cutGLSL } from "./geom.js";
 import { CUT, SPEC, type R2Vehicle } from "./vehicle.js";
@@ -224,6 +227,9 @@ const ROLE_BY_MESH: Record<string, Role> = {
   "tailgate#5": "chrome",
   "tailgate#6": "trim",
   "tailgate#7": "reflector",
+  "tailgate#8": "tailEmitter",
+  "tailgate#9": "gloss",
+  "tailgate#10": "paint",
   // Each door carries its own glazing and trim, so a door is not one material.
   // Sub 1 is the window panel: leaving it on paint puts a body-coloured
   // rectangle over every window, sitting proud of the greenhouse behind it.
@@ -244,11 +250,13 @@ const ROLE_BY_MESH: Record<string, Role> = {
   "doorRL#3": "cabin",
   "doorRL#4": "cabinDark",
   "doorRL#5": "paint",
+  "doorRL#7": "gloss",
   doorRR: "paint",
   "doorRR#1": "glass",
   "doorRR#3": "cabin",
   "doorRR#4": "cabinDark",
   "doorRR#5": "paint",
+  "doorRR#7": "gloss",
   chargePort: "paint",
 
   // glasshouse
@@ -390,13 +398,19 @@ export function rimFinishFor(optionId: string | undefined, style: string): RimFi
  * loft is correctly wound, and it is the only surface you ever genuinely look
  * into — through the wheel arches.
  */
-function patchShell<T extends Material>(
-  material: T,
-  aperture: boolean,
-  cavity = false,
-  flake?: { value: number },
-): T {
+function patchShell<T extends Material>(material: T, aperture: boolean, cavity = false, flake?: { value: number }): T {
+  const finish = surfaceFinish(String(material.userData.finishRole ?? ""));
   material.onBeforeCompile = (shader) => {
+    if (finish) {
+      shader.vertexShader = `varying vec3 vFinishPosition;\n${shader.vertexShader}`.replace(
+        "#include <begin_vertex>", "#include <begin_vertex>\nvFinishPosition = position;",
+      );
+      shader.fragmentShader = finish.library + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <normal_fragment_maps>",
+        `#include <normal_fragment_maps>\n${flake ? finish.body.replace("0.09*visibility", "uFlake*visibility") : finish.body}\nnormal = r2Bump(-vViewPosition, normal, finishHeight, faceDirection);`,
+      );
+    }
     if (aperture || flake) {
       shader.vertexShader = `varying vec3 vObjPos;\n${shader.vertexShader}`.replace(
         "#include <begin_vertex>",
@@ -405,22 +419,8 @@ function patchShell<T extends Material>(
       shader.fragmentShader = `varying vec3 vObjPos;\n${shader.fragmentShader}`;
     }
     if (flake) {
-      // Metallic flake as a per-fragment roughness jitter on a 1 mm lattice in
-      // the body's own frame. It is the cheapest thing that makes a metallic
-      // read as flake rather than as smooth coloured chrome, and because it is
-      // keyed to object space it stays put when the car turns.
       shader.uniforms.uFlake = flake;
-      shader.fragmentShader = `uniform float uFlake;\n${shader.fragmentShader}`.replace(
-        "#include <roughnessmap_fragment>",
-        [
-          "#include <roughnessmap_fragment>",
-          "\t{",
-          "\t\tvec3 fp = floor(vObjPos * 900.0);",
-          "\t\tfloat fh = fract(sin(dot(fp, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-          "\t\troughnessFactor = clamp(roughnessFactor + (fh - 0.5) * uFlake, 0.02, 1.0);",
-          "\t}",
-        ].join("\n"),
-      );
+      shader.fragmentShader = `uniform float uFlake;\n${shader.fragmentShader}`;
     }
     if (aperture) {
       shader.fragmentShader =
@@ -434,14 +434,22 @@ function patchShell<T extends Material>(
       // than a multiply against an already display-encoded value.
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <tonemapping_fragment>",
-        "\tif (!gl_FrontFacing) gl_FragColor.rgb *= 0.16;\n#include <tonemapping_fragment>",
+        `
+        if (!gl_FrontFacing) gl_FragColor.rgb *= 0.16;
+        // The procedural shell folds into each wheelhouse. Treat that hidden
+        // return as a dark liner, including front-facing triangles at the fold.
+        float wellX = min(abs(vObjPos.x - ${SPEC.XF}), abs(vObjPos.x - ${SPEC.XR}));
+        float wellY = max(vObjPos.y - ${SPEC.tireR}, 0.0);
+        if (abs(vObjPos.z) < 0.82 && pow(wellX, 2.7) + pow(wellY, 2.7) < pow(0.51, 2.7))
+          gl_FragColor.rgb *= 0.035;
+        #include <tonemapping_fragment>`,
       );
     }
   };
   // Each combination must have its own compiled program, or whichever compiles
   // first decides whether the apertures and the cavity exist for all of them.
   material.customProgramCacheKey = () =>
-    `r2-shell${aperture ? "-cut" : ""}${cavity ? "-cavity" : ""}${flake ? "-flake" : ""}`;
+    `r2-shell-v2-${material.userData.finishRole ?? "plain"}${aperture ? "-cut" : ""}${cavity ? "-cavity" : ""}${flake ? "-flake" : ""}`;
   return material;
 }
 
@@ -455,6 +463,7 @@ function patchShell<T extends Material>(
  */
 function doubleSided<T extends Material>(materials: Record<string, T>): Record<string, T> {
   for (const [role, material] of Object.entries(materials)) {
+    material.userData.finishRole = role;
     material.side = DoubleSide;
     // The paint already carries its flake patch; re-patching would drop it.
     if (role !== "paint") patchShell(material, false);
@@ -475,6 +484,7 @@ function buildMaterials(
   // from the paint being sold, not from one generic coat.
   const paint = new MeshPhysicalMaterial({ side: DoubleSide });
   applyPaintSpec(paint, paintSpecFor(options.paintId, options.paintColor), flake);
+  paint.userData.finishRole = "paint";
   patchShell(paint, false, false, flake);
 
   const roofPaint = new MeshPhysicalMaterial({
@@ -483,7 +493,7 @@ function buildMaterials(
     roughness: 0.055,
     clearcoat: 1,
     clearcoatRoughness: 0.02,
-    envMapIntensity: 2.4,
+    envMapIntensity: 1.25,
     side: DoubleSide,
   });
 
@@ -536,13 +546,16 @@ function buildMaterials(
     // low — a fully transmissive windscreen costs a render pass and reads worse
     // than a tinted reflector at showroom distance.
     glass: new MeshPhysicalMaterial({
-      color: new Color("#141c21"),
+      color: new Color("#263832"),
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false,
       metalness: 0.02,
       roughness: 0.045,
       clearcoat: 1,
       clearcoatRoughness: 0.02,
       ior: 1.52,
-      envMapIntensity: 2.1,
+      envMapIntensity: 0.9,
       side: DoubleSide,
     }),
     // Lamp lens: clear, thick, and refracting, with the emitter behind it.
@@ -561,7 +574,7 @@ function buildMaterials(
       // Held below full blow-out. These are daytime running lamps in a lit
       // studio, not headlights on main beam at night, and untoned emissive at
       // 3+ turns the whole lamp into a white slab with no visible internals.
-      emissiveIntensity: 0.3 + lamp * 1.45,
+      emissiveIntensity: 0.15 + lamp * 2.1,
       metalness: 0.1,
       roughness: 0.2,
       toneMapped: false,
@@ -674,6 +687,8 @@ function buildMaterials(
 }
 
 export interface ShowroomHandle {
+  /** Commit to the scene only after React accepts this material handle. */
+  applyMaterials(): void;
   scan: PresentationScan;
   materials: Record<Role, Material>;
   paint: MeshPhysicalMaterial;
@@ -708,9 +723,11 @@ export interface ShowroomHandle {
 export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): ShowroomHandle {
   const flake = { value: 0 };
   const base = buildMaterials(options, flake);
+  const assignments: (() => void)[] = [];
   // Every material needs a cut twin, because the same paint appears on both cut
   // shells and uncut panels.
   const cutTwins = new Map<Material, Material>();
+  const cutDepth = patchShell(new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide }), true);
   const cutVariant = (material: Material, cavity: boolean) => {
     const existing = cutTwins.get(material);
     if (existing) return existing;
@@ -730,8 +747,10 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
     if (CUTAWAY_ONLY.has(part.name)) {
       // Go through the builder's own hide set as well, so its per-frame update
       // keeps them hidden instead of switching them back on.
-      vehicle.hidden.add(part.name);
-      part.group.visible = false;
+      assignments.push(() => {
+        vehicle.hidden.add(part.name);
+        part.group.visible = false;
+      });
       continue;
     }
     for (const object of part.meshes) {
@@ -741,9 +760,15 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
         ? WHEEL_ROLE[sub] ?? "rim"
         : ROLE_BY_MESH[`${part.name}#${sub}`] ?? ROLE_BY_MESH[part.name] ?? "trim";
       const material = base[role];
-      mesh.material = mesh.userData.cut ? cutVariant(material, role === "paint") : material;
-      mesh.castShadow = part.category !== "interior";
-      mesh.receiveShadow = false;
+      const assigned = mesh.userData.cut ? cutVariant(material, role === "paint") : material;
+      assignments.push(() => {
+        mesh.material = assigned;
+        mesh.castShadow = !["glass", "lampLens", "lampEmitter", "tailEmitter"].includes(role);
+        mesh.receiveShadow = role !== "glass" && role !== "lampLens";
+        if (mesh.userData.cut) mesh.customDepthMaterial = cutDepth;
+        // The studio assembly supplies an actual DRL ring and optical modules.
+        if (part.name === "headlamps") mesh.visible = false;
+      });
     }
   }
 
@@ -753,13 +778,24 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
     reflector: base.chrome,
     emitter: base.lampEmitter,
     bezel: base.gloss,
-  });
+    lens: base.lampLens,
+    rubber: base.cladding,
+  }, (vehicle.parts.headlamps.meshes[0] as Mesh).position.x - 0.010);
 
-  const restoreWheels = styleWheels(vehicle, RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten, base.rim);
-  const scan = createPresentationScan([vehicle.root, detail], [...Object.values(base), ...cutTwins.values()]);
+  let restoreWheels = () => {};
+  let scan: PresentationScan | undefined;
 
   return {
-    scan,
+    applyMaterials() {
+      scan?.dispose();
+      scan = undefined;
+      restoreWheels();
+      for (const apply of assignments) apply();
+      restoreWheels = styleWheels(vehicle, RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten, base.rim);
+    },
+    get scan() {
+      return scan ??= createPresentationScan([vehicle.root, detail], [...Object.values(base), ...cutTwins.values()]);
+    },
     materials: base,
     paint: base.paint as MeshPhysicalMaterial,
     setPaint(spec) {
@@ -775,12 +811,13 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       for (const material of cutTwins.values()) fn(material);
     },
     dispose() {
-      scan.dispose();
+      scan?.dispose();
       restoreWheels();
       detail.removeFromParent();
       (detail.userData.dispose as (() => void) | undefined)?.();
       for (const material of Object.values(base)) material.dispose();
       for (const material of cutTwins.values()) material.dispose();
+      cutDepth.dispose();
     },
   };
 }

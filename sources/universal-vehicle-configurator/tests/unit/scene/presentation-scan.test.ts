@@ -78,6 +78,7 @@ describe("material presentation scan", () => {
       paintColor: "#c0bdb8", paintId: "paint.esker_silver", rimFinish: "tungsten",
       caliperColor: "#222222", cabinColor: "#222222", lampsOn: true,
     });
+    showroom.applyMaterials();
     showroom.scan.attach();
     showroom.scan.setBlueprint(true, false, 0);
     const shell = vehicle.parts.body.meshes[0] as Mesh<BoxGeometry, MeshStandardMaterial>;

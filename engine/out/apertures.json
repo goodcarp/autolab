@@ -25,21 +25,21 @@
       "projection": "y",
       "outwardSign": 1,
       "skinMeshes": 1,
-      "skinTriangles": 2432,
-      "footprintArea_m2": 2.068,
+      "skinTriangles": 2368,
+      "footprintArea_m2": 2.0106,
       "assemblyParts": [
         "hood"
       ],
       "bounds_m": {
         "min": [
           1.1080000143051145,
-          0.9084435011653897,
-          -0.8735441226959229
+          0.909610798528671,
+          -0.8735474605560303
         ],
         "max": [
-          2.3065000886917115,
+          2.272499930381775,
           1.2006404657363892,
-          0.8735441226959229
+          0.8735474605560303
         ]
       },
       "poses": [
@@ -50,11 +50,11 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.9,
+              "intrusionDepth_mm": 5.5,
               "at_m": {
-                "x": 2.230331,
-                "y": 1.071868,
-                "z": 0.70325
+                "x": 2.196366,
+                "y": 1.079429,
+                "z": 0.70796
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -73,11 +73,11 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.9,
+              "intrusionDepth_mm": 5.5,
               "at_m": {
-                "x": 2.230331,
-                "y": 1.071868,
-                "z": 0.70325
+                "x": 2.196366,
+                "y": 1.079429,
+                "z": 0.70796
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -96,11 +96,11 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.9,
+              "intrusionDepth_mm": 5.5,
               "at_m": {
-                "x": 2.230331,
-                "y": 1.071868,
-                "z": 0.70325
+                "x": 2.196366,
+                "y": 1.079429,
+                "z": 0.70796
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -119,11 +119,11 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.9,
+              "intrusionDepth_mm": 5.5,
               "at_m": {
-                "x": 2.230331,
-                "y": 1.071868,
-                "z": 0.70325
+                "x": 2.196366,
+                "y": 1.079429,
+                "z": 0.70796
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -623,14 +623,14 @@
       "outwardSign": -1,
       "skinMeshes": 3,
       "skinTriangles": 3116,
-      "footprintArea_m2": 1.6322,
+      "footprintArea_m2": 1.6402,
       "assemblyParts": [
         "tailgate"
       ],
       "bounds_m": {
         "min": [
-          -2.412000088214874,
-          0.5527526264190674,
+          -2.3930000348091123,
+          0.5520175819396973,
           -0.9159999747276306
         ],
         "max": [
@@ -647,9 +647,9 @@
             {
               "part": "cargoFloor",
               "inset_mm": 156,
-              "intrusionDepth_mm": 15,
+              "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -2.395,
+                "x": -2.392,
                 "y": 0.71,
                 "z": -0.55
               },
@@ -672,9 +672,9 @@
             {
               "part": "cargoFloor",
               "inset_mm": 156,
-              "intrusionDepth_mm": 15,
+              "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -2.395,
+                "x": -2.392,
                 "y": 0.71,
                 "z": -0.55
               },
@@ -697,9 +697,9 @@
             {
               "part": "cargoFloor",
               "inset_mm": 156,
-              "intrusionDepth_mm": 15,
+              "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -2.395,
+                "x": -2.392,
                 "y": 0.71,
                 "z": -0.55
               },
@@ -722,9 +722,9 @@
             {
               "part": "cargoFloor",
               "inset_mm": 156,
-              "intrusionDepth_mm": 15,
+              "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -2.395,
+                "x": -2.392,
                 "y": 0.71,
                 "z": -0.55
               },
@@ -774,12 +774,12 @@
           "offenders": [
             {
               "part": "body",
-              "inset_mm": 72,
+              "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.086538,
-                "y": 0.815682,
-                "z": -0.924938
+                "x": -2.087533,
+                "y": 0.823123,
+                "z": -0.924905
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -805,12 +805,12 @@
           "offenders": [
             {
               "part": "body",
-              "inset_mm": 72,
+              "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.086538,
-                "y": 0.815682,
-                "z": -0.924938
+                "x": -2.087533,
+                "y": 0.823123,
+                "z": -0.924905
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -836,12 +836,12 @@
           "offenders": [
             {
               "part": "body",
-              "inset_mm": 72,
+              "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.086538,
-                "y": 0.815682,
-                "z": -0.924938
+                "x": -2.087533,
+                "y": 0.823123,
+                "z": -0.924905
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -867,12 +867,12 @@
           "offenders": [
             {
               "part": "body",
-              "inset_mm": 72,
+              "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.086538,
-                "y": 0.815682,
-                "z": -0.924938
+                "x": -2.087533,
+                "y": 0.823123,
+                "z": -0.924905
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true

@@ -340,5 +340,163 @@
         "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
       }
     ]
+  },
+  {
+    "shot": "blueprint-mid",
+    "device": "phone",
+    "path": "scan-phone-blueprint-mid.png",
+    "ok": true,
+    "trigger": "b key",
+    "elapsedMs": 500,
+    "state": {
+      "progress": 0.47909090909090907,
+      "active": true,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "blueprint-settled",
+    "device": "phone",
+    "path": "scan-phone-blueprint-settled.png",
+    "ok": true,
+    "state": {
+      "progress": 1,
+      "active": false,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "showroom-mid",
+    "device": "phone",
+    "path": "scan-phone-showroom-mid.png",
+    "ok": true,
+    "trigger": "presentation tool",
+    "elapsedMs": 500,
+    "state": {
+      "progress": 0.5345454545454545,
+      "active": true,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "showroom-settled",
+    "device": "phone",
+    "path": "scan-phone-showroom-settled.png",
+    "ok": true,
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "demand-idle",
+    "device": "phone",
+    "extraFrames": 33,
+    "ok": false
+  },
+  {
+    "shot": "reduced-motion",
+    "device": "phone",
+    "ok": true,
+    "state": {
+      "progress": 1,
+      "active": false,
+      "openT": 0,
+      "mode": "blueprint",
+      "preset": "profile"
+    }
+  },
+  {
+    "shot": "open-angle",
+    "device": "phone",
+    "path": "scan-phone-open-angle.png",
+    "ok": true,
+    "trigger": "presentation tool bodyOpen:true",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 1,
+      "mode": "showroom",
+      "preset": "angle"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "open-profile",
+    "device": "phone",
+    "path": "scan-phone-open-profile.png",
+    "ok": true,
+    "trigger": "presentation tool bodyOpen:true",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 1,
+      "mode": "showroom",
+      "preset": "profile"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
+  },
+  {
+    "shot": "interior",
+    "device": "phone",
+    "path": "scan-phone-interior.png",
+    "ok": true,
+    "purpose": "plain-render interior regression",
+    "state": {
+      "progress": 0,
+      "active": false,
+      "openT": 0,
+      "mode": "showroom",
+      "preset": "interior"
+    },
+    "errors": [
+      {
+        "type": "warning",
+        "text": "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+      }
+    ]
   }
 ]
