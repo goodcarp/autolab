@@ -1,15 +1,18 @@
 // WebMCP: expose the drawing to an agent as callable tools.
 //
-// Three surfaces, all driving the same handlers, because the ecosystem has not settled:
-//   1. navigator.modelContext  - the W3C Web Model Context proposal (Chrome origin trial). Both the
-//      provideContext({tools}) and registerTool(tool) shapes are tried; whichever exists is used.
-//   2. window.r2               - a plain promise-returning API. Works in any browser, in devtools,
-//      in Playwright/Puppeteer, and is what the capture harness in tools/ drives.
-//   3. postMessage             - same API across an iframe boundary, so the sheet can be embedded
-//      and still be operable: {source:'r2-blueprint', id, tool, args} in, {id, ok, result} back.
+// One module serves the standalone Owner's Guide and the copy the configurator embeds as its Garage.
+// Three surfaces, all driving the same handlers:
+//   1. document.modelContext (then navigator.modelContext) — registerTool per tool with titles,
+//      annotations and closed schemas, provideContext as a fallback, a 12-second watch for a
+//      late-injected API, and no registration at all when the sheet is framed (the host page owns
+//      the agent surface and drives this drawing over the bridge).
+//   2. window.r2 — a plain promise-returning API for any browser, devtools, Playwright, and the
+//      capture harness in tools/. Also carries registration, registered, api, dispose and callTour.
+//   3. postMessage — the same API across an iframe boundary, same-origin parent only:
+//      {source:'r2-blueprint', id, tool, args} in, {source:'r2-blueprint-result', id, ok, result} back.
 //
-// Every tool is synchronous against the scene graph and returns structured JSON, not prose: an agent
-// asking "how wide is the battery pack" gets numbers in metres, not a sentence it has to parse.
+// Every call is validated against its schema, then runs synchronously against the scene graph and
+// returns structured JSON in metres, not prose.
 import * as THREE from 'three';
 
 const box = new THREE.Box3();
@@ -150,6 +153,145 @@ export function installWebMCP(ctx) {
     }
     return d;
   };
+  // ---- spatial instruments ----------------------------------------------------------------------
+  // What the camera can actually see. The sheet renders a part-id G-buffer every frame
+  // (blueprint.js: gData = depth, part id, sub id), so read that back and sample it on a
+  // grid: exact per pixel, and it honours the dissolved shell and the shader-cut openings.
+  // Without a renderer (tests, WebGL failure) fall back to a coarse ray grid.
+  let raycaster, idPass;
+  const partById = () => new Map(vehicle.order.map((p) => [p.id, p]));
+  const visibleParts = (cols) => {
+    const hits = new Map(), byId = partById(); let empty = 0, rows;
+    const tally = (part, nx, ny, depth) => {
+      const e = hits.get(part) || { part, n: 0, sx: 0, sy: 0, nearest: Infinity };
+      e.n++; e.sx += nx; e.sy += ny; e.nearest = Math.min(e.nearest, depth); hits.set(part, e);
+    };
+    let basis;
+    const bp = ctx.bp;
+    if (bp?.renderer && bp.scene && bp.vehicleMeshes && bp.gMatProto) {
+      // An id pass at exactly the grid's resolution: one pixel per sample, into a single
+      // float attachment this three.js can read back (the sheet's own G-buffer is a
+      // half-float MRT that readRenderTargetPixels cannot address in r170).
+      const W = bp.gbuf.width, H = bp.gbuf.height;
+      rows = Math.max(2, Math.round(cols * H / W));
+      if (!idPass || idPass.target.width !== cols || idPass.target.height !== rows) {
+        idPass?.target.dispose();
+        idPass = { target: new THREE.WebGLRenderTarget(cols, rows, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true, generateMipmaps: false }), materials: idPass?.materials ?? new Map() };
+      }
+      const frag = bp.gMatProto.fragmentShader
+        .replace('layout(location = 0) out vec4 gNormal;', '').replace('layout(location = 1) out vec4 gData;', 'out vec4 gData;')
+        .replace('gNormal = vec4(n, 1.0);', '');
+      const r = bp.renderer, dis = st.shellDissolve ?? 1;
+      for (const m of bp.vehicleMeshes) {
+        let mat = idPass.materials.get(m);
+        if (!mat) { mat = bp.gMatProto.clone(); mat.fragmentShader = frag; mat.uniforms = m.userData.gMat.uniforms; idPass.materials.set(m, mat); }
+        if (m.userData.shell) m.userData.gMat.uniforms.uDissolve.value = dis;
+        m.material = mat;
+      }
+      const groundWas = bp.ground.visible, shadowWas = r.shadowMap.enabled;
+      const buf = new Float32Array(cols * rows * 4);
+      try {
+        bp.ground.visible = false; r.shadowMap.enabled = false;
+        vehicle.root?.updateMatrixWorld(true);
+        rig.apply(W / H);                     // the camera as posed right now, not as of the last drawn frame
+        r.setRenderTarget(idPass.target); r.setClearColor(0x000000, 0); r.clear(true, true, true);
+        r.render(bp.scene, rig.camera);
+        r.readRenderTargetPixels(idPass.target, 0, 0, cols, rows, buf);
+      } finally {
+        // whatever happened, the sheet gets its materials, ground and shadows back
+        r.setRenderTarget(null);
+        for (const m of bp.vehicleMeshes) m.material = m.userData.beautyMat;
+        bp.ground.visible = groundWas; r.shadowMap.enabled = shadowWas;
+      }
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const k = ((rows - 1 - j) * cols + i) * 4;   // rows are bottom-up in the readback
+        if (buf[k + 3] < 0.5) { empty++; continue; }
+        const part = byId.get(Math.round(buf[k + 1]));
+        if (!part) { empty++; continue; }
+        tally(part, ((i + 0.5) / cols) * 2 - 1, 1 - ((j + 0.5) / rows) * 2, buf[k]);
+      }
+      basis = 'part-id pass rendered at the grid resolution, one pixel per sample';
+    } else {
+      raycaster ??= new THREE.Raycaster();
+      cols = Math.min(cols, 24); rows = Math.max(2, Math.round(cols / rig.aspect));
+      if (!rig.ray || !vehicle.pickables) throw new Error('list_visible_parts needs the drawing\'s renderer or ray picking; neither is available here.');
+      vehicle.root?.updateMatrixWorld(true);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const nx = ((i + 0.5) / cols) * 2 - 1, ny = 1 - ((j + 0.5) / rows) * 2;
+        const ray = rig.ray(nx, ny); raycaster.set(ray.origin, ray.direction);
+        const found = raycaster.intersectObjects(vehicle.pickables, false).find((h) => h.object.visible && h.object.parent.visible);
+        if (!found || !found.object.userData.part) { empty++; continue; }
+        tally(found.object.userData.part, nx, ny, found.distance);
+      }
+      basis = 'ray grid against the meshes (no renderer available)';
+    }
+    const total = cols * rows;
+    const parts = [...hits.values()].sort((a, b) => b.n - a.n).map((e) => ({
+      id: e.part.name, label: e.part.label, category: e.part.category,
+      coverage_pct: round(100 * e.n / total, 1),
+      // where on the sheet its visible area sits, 0..1 from the left and from the top
+      screen_centre: { x: round((e.sx / e.n + 1) / 2, 3), y: round((1 - e.sy / e.n) / 2, 3) },
+      nearest_m: round(e.nearest, 3),
+    }));
+    return { samples: total, grid: { columns: cols, rows }, vehicle_pct: round(100 * (total - empty) / total, 1), basis, parts };
+  };
+  // Nearest surface-to-surface gap between two parts, in world space at this instant.
+  // Vertices of one part against the triangles around the nearest vertices of the other, both
+  // ways; exact on the triangles it tests, and it tests the ones that matter.
+  const surfaceOf = (p) => {
+    const verts = [], tris = [], adj = [];
+    const w = new THREE.Vector3();
+    for (const m of p.meshes) {
+      if (!m.visible || !m.parent.visible) continue;
+      m.updateWorldMatrix(true, false);
+      const pos = m.geometry.getAttribute('position'), idx = m.geometry.getIndex(); if (!pos) continue;
+      const base = verts.length;
+      for (let i = 0; i < pos.count; i++) { verts.push(w.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).clone()); adj.push([]); }
+      const n = idx ? idx.count : pos.count;
+      for (let i = 0; i < n; i += 3) {
+        const t = [0, 1, 2].map((k) => base + (idx ? idx.getX(i + k) : i + k));
+        const ti = tris.push(t) - 1; for (const v of t) adj[v].push(ti);
+      }
+    }
+    return { verts, tris, adj };
+  };
+  const gridIndex = (verts, cell) => {
+    const cells = new Map(); const key = (v) => `${Math.floor(v.x / cell)},${Math.floor(v.y / cell)},${Math.floor(v.z / cell)}`;
+    verts.forEach((v, i) => { const k = key(v); (cells.get(k) || cells.set(k, []).get(k)).push(i); });
+    return (v, reach) => {
+      const out = []; const cx = Math.floor(v.x / cell), cy = Math.floor(v.y / cell), cz = Math.floor(v.z / cell);
+      for (let dx = -reach; dx <= reach; dx++) for (let dy = -reach; dy <= reach; dy++) for (let dz = -reach; dz <= reach; dz++) {
+        const c = cells.get(`${cx + dx},${cy + dy},${cz + dz}`); if (c) out.push(...c);
+      }
+      return out;
+    };
+  };
+  let tri, cp;
+  const bounds = (verts) => { const bb = new THREE.Box3(); for (const v of verts) bb.expandByPoint(v); return bb; };
+  const nearestSurface = (a, b, cell) => {
+    tri ??= new THREE.Triangle(); cp ??= new THREE.Vector3();
+    const near = gridIndex(b.verts, cell);
+    let best = { d: Infinity };
+    // Only vertices of A near B's envelope can be nearest to B; widen until some exist.
+    const bb = bounds(b.verts); let margin = 0.15, pool = [];
+    while (pool.length < 40 && margin < 50) { const region = bb.clone().expandByScalar(margin); pool = a.verts.filter((v) => region.containsPoint(v)); margin *= 2; }
+    const step = Math.max(1, Math.floor(pool.length / 2500));
+    for (let i = 0; i < pool.length; i += step) {
+      const v = pool[i];
+      let cands = [], reach = 1;
+      while (!cands.length && reach <= 6) { cands = near(v, reach); reach++; }
+      if (!cands.length) continue;
+      let bi = -1, bd = Infinity;
+      for (const j of cands) { const d = v.distanceToSquared(b.verts[j]); if (d < bd) { bd = d; bi = j; } }
+      const seen = new Set();
+      for (const ti of b.adj[bi]) { if (seen.has(ti)) continue; seen.add(ti);
+        const [p0, p1, p2] = b.tris[ti]; tri.set(b.verts[p0], b.verts[p1], b.verts[p2]); tri.closestPointToPoint(v, cp);
+        const d = v.distanceTo(cp); if (d < best.d) best = { d, from: v.clone(), to: cp.clone() };
+      }
+      if (bd < best.d * best.d) best = { d: Math.sqrt(bd), from: v.clone(), to: b.verts[bi].clone() };
+    }
+    return best;
+  };
   // Break any running tween before moving the camera by hand, then hold the new pose.
   const takeCamera = (keepTarget) => {
     if (!keepTarget) { rig.cur.tx = 0; rig.cur.tz = 0; }
@@ -178,6 +320,26 @@ export function installWebMCP(ctx) {
 
   const TOOLS = [
     {
+      name: 'start_tour',
+      title: 'Start the guided tour',
+      description: 'Start the 54-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: { from: { type: 'integer', minimum: 1, maximum: Math.max(1, config.tour?.length ?? 1) } } },
+      annotations: SAFE_ACTION,
+      run: ({ from = 1 }) => {
+        if (!ctx.startTour || !config.tour?.length) throw new Error('The tour is not available on this sheet.');
+        if (!Number.isInteger(from) || from < 1 || from > config.tour.length) throw new Error(`from must be an integer from 1 to ${config.tour.length}`);
+        return ctx.startTour(from - 1);
+      },
+    },
+    {
+      name: 'stop_tour',
+      title: 'Stop the guided tour',
+      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, battery, drive unit, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      annotations: SAFE_SET,
+      run: () => (ctx.stopTour ? ctx.stopTour('tool') : { running: false }),
+    },
+    {
       name: 'get_state',
       title: 'Get digital twin state',
       description: 'Current view preset, camera pose, which motions are running, and what is selected. Call this first to orient.',
@@ -186,6 +348,7 @@ export function installWebMCP(ctx) {
       run: () => ({
         camera: cameraState(),
         view: st.view,
+        tour: ctx.tourState ? ctx.tourState() : undefined,
         vehicle_context: { ...st.vehicleContext },
         vehicle_context_synced: syncedContextRevision !== null,
         // `panels` reads the same way as the button and as set_motion: on = shell dissolved
@@ -390,7 +553,7 @@ export function installWebMCP(ctx) {
       description: 'Show or hide the callout cards, dimension lines and title block, leaving the vehicle alone. Hide them for a clean look at the geometry.',
       inputSchema: { type: 'object', required: ['visible'], properties: { visible: { type: 'boolean' } }, additionalProperties: false },
       annotations: SAFE_SET,
-      run: ({ visible }) => { ui.setCards(visible); return { annotations_visible: visible }; },
+      run: ({ visible }) => { ui.setCards(visible, !!ctx.tourState?.().running); return { annotations_visible: visible }; },
     },
     {
       name: 'get_specification',
@@ -432,6 +595,65 @@ export function installWebMCP(ctx) {
       },
     },
     {
+      name: 'list_visible_parts',
+      title: 'List the components in view',
+      description: 'What the camera can see right now: a grid of rays through the sheet, first surface hit per ray, tallied by component. Returns each visible component with the percentage of the sheet it covers, where its visible area sits on the sheet (0..1 from the left and from the top) and its nearest distance; plus how much of the sheet the vehicle fills. Use it to know what a person is looking at before explaining it, or to confirm a frame_part landed. Reads the sheet\'s own part-id buffer, so it honours the dissolved shell and open panels.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: { columns: { type: 'integer', minimum: 8, maximum: 96, description: 'Ray grid width; rows follow the sheet aspect. Default 40.' } } },
+      annotations: READ_ONLY,
+      run: ({ columns = 40 } = {}) => {
+        if (!Number.isInteger(columns) || columns < 8 || columns > 96) throw new Error('columns must be an integer from 8 to 96');
+        return { view: st.view, camera: cameraState(), ...visibleParts(columns) };
+      },
+    },
+    {
+      name: 'clearance',
+      title: 'Clearance between two parts',
+      description: 'Nearest surface-to-surface gap in metres between two components as they are posed right now (open panels and explode change it), with the two closest points in the vehicle frame. Unlike measure, which uses bounding-box centres, this is the real gap: use it for packaging questions such as how close the battery pack sits to the floor or a tyre to its arch. Zero means the surfaces touch or intersect.',
+      inputSchema: { type: 'object', additionalProperties: false, required: ['from', 'to'], properties: { from: { type: 'string' }, to: { type: 'string' } } },
+      annotations: READ_ONLY,
+      run: ({ from, to }) => {
+        const a = findPart(from), b = findPart(to);
+        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (a === b) throw new Error('clearance needs two different components');
+        vehicle.root?.updateMatrixWorld(true);
+        const sa = surfaceOf(a), sb = surfaceOf(b);
+        if (!sa.verts.length || !sb.verts.length) throw new Error('one of those parts has no visible geometry right now');
+        const cell = 0.05;
+        const ab = nearestSurface(sa, sb, cell), ba = nearestSurface(sb, sa, cell);
+        const best = ab.d <= ba.d ? ab : { d: ba.d, from: ba.to, to: ba.from };
+        if (!Number.isFinite(best.d)) throw new Error('the parts are too far apart to index; use measure for their centre separation');
+        return { from: a.name, to: b.name, clearance_m: round(best.d), at_from_m: xyz(best.from), at_to_m: xyz(best.to),
+          basis: 'nearest of: each sampled vertex of one part against the triangles around the closest vertex of the other, both directions, in world space at this instant' };
+      },
+    },
+    {
+      name: 'frame_point',
+      title: 'Frame a point in the vehicle frame',
+      description: 'Point the camera at a coordinate in the vehicle frame (metres: x forward from the wheelbase midpoint, y up from the ground, z to the right) and look at it from a chosen bearing and distance. For inspecting a place rather than a part: an engine finding at x/y/z, a gap between two components, a spot on the skin. Omitted azimuth and elevation keep the current bearing; distance defaults to 1.6 m. Things under the shell need set_motion {motion:"panels", on:true} first.',
+      inputSchema: {
+        type: 'object', additionalProperties: false, required: ['x', 'y', 'z'],
+        properties: {
+          x: { type: 'number', minimum: -4, maximum: 4 }, y: { type: 'number', minimum: -0.5, maximum: 3 }, z: { type: 'number', minimum: -2, maximum: 2 },
+          azimuth_deg: { type: 'number' }, elevation_deg: { type: 'number', minimum: 2, maximum: 86 },
+          distance_m: { type: 'number', minimum: 1.2, maximum: 22, description: 'Camera distance from the point; 1.2 m is the floor (the near plane is 0.5 m).' },
+        },
+      },
+      annotations: SAFE_SET,
+      run: ({ x, y, z, azimuth_deg, elevation_deg, distance_m = 1.6 }) => {
+        for (const [k, v, lo, hi] of [['x', x, -4, 4], ['y', y, -0.5, 3], ['z', z, -2, 2]]) {
+          if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) throw new Error(`${k} must be a number between ${lo} and ${hi} metres`);
+        }
+        takeCamera(true);
+        if (azimuth_deg !== undefined) rig.cur.az = azimuth_deg;
+        if (elevation_deg !== undefined) rig.cur.el = Math.max(2, Math.min(86, elevation_deg));
+        rig.cur.tx = x; rig.cur.ty = y; rig.cur.tz = z;
+        rig.cur.dist = Math.max(1.2, Math.min(22, distance_m)); rig.userZoom = true;
+        const out = { point_m: { x: round(x), y: round(y), z: round(z) }, camera: cameraState() };
+        if (st.panels && Math.abs(z) < 0.85 && y > 0.25 && y < 1.55) out.hint = 'That point is inside the body. Call set_motion {motion:"panels", on:true} to dissolve the shell, or expect to see the skin.';
+        return out;
+      },
+    },
+    {
       name: 'reset',
       title: 'Reset digital twin presentation',
       description: 'Return the sheet to how it opens: ISO view, shell on, nothing exploded or open, nothing selected. The ISO view drifts slowly by design, so the camera pose it returns to is not fixed.',
@@ -444,7 +666,7 @@ export function installWebMCP(ctx) {
           if (cur !== want) motion(m);
         }
         if (!st.panels) motion('panels');
-        ui.setCards(true); setView('iso');
+        ui.setCards(true, !!ctx.tourState?.().running); setView('iso');
         // Every other mutating tool here returns the state it produced. An
         // acknowledgement forces a second call to find out what happened.
         return {
@@ -461,10 +683,15 @@ export function installWebMCP(ctx) {
   ];
 
   // ---- dispatch -------------------------------------------------------------------------------
-  const call = async (name, args = {}) => {
+  // A private identity marks calls made by the tour's sequencer. Every surface uses this dispatcher,
+  // and any other call while the tour runs interrupts it, which is the tour's contract.
+  const tourSource = Symbol('tour');
+  const call = async (name, args = {}, source) => {
+    // Reads and the host's context sync do not touch the scene, so they are not interruptions.
+    if (ctx.stopTour && source !== tourSource && !['get_state', 'start_tour', 'stop_tour', 'set_vehicle_context', 'get_specification', 'list_parts', 'get_part', 'measure', 'clearance', 'list_visible_parts'].includes(name)) ctx.stopTour('tool');
     const t = TOOLS.find((x) => x.name === name);
     if (!t) throw new Error(`unknown tool "${name}". Available: ${TOOLS.map((x) => x.name).join(', ')}`);
-    const input = args === undefined ? {} : args;
+    const input = args === undefined || args === null ? {} : args;
     validateValue(input, t.inputSchema, name);
     return t.run(input);
   };
@@ -476,6 +703,7 @@ export function installWebMCP(ctx) {
     )),
     call,
     registered: false,
+    api: null,
   };
   for (const t of TOOLS) api[t.name] = (args = {}) => call(t.name, args);
   window.r2 = api;
@@ -483,15 +711,15 @@ export function installWebMCP(ctx) {
   // 2. postMessage bridge, for the sheet embedded in an iframe
   const onBridgeMessage = async (e) => {
     const m = e.data;
-    const expectedSource = window.parent === window ? window : window.parent;
+    // Same origin, and from the page that embedded or opened this sheet (or the sheet itself). The
+    // reply goes back to whoever asked, never to '*'.
+    const parent = window.parent, fromHost = e.source && (e.source === window || (parent && parent !== window && e.source === parent) || (window.opener && e.source === window.opener) || (!parent || parent === window));
     if (
       e.origin !== location.origin
-      || e.source !== expectedSource
+      || !fromHost
       || !isRecord(m)
       || m.source !== 'r2-blueprint'
-      || typeof m.id !== 'string'
-      || m.id.length < 1
-      || m.id.length > 128
+      || !((typeof m.id === 'string' && m.id.length >= 1 && m.id.length <= 128) || (typeof m.id === 'number' && Number.isFinite(m.id)))
       || typeof m.tool !== 'string'
     ) return;
     try { e.source?.postMessage({ source: 'r2-blueprint-result', id: m.id, ok: true, result: await call(m.tool, m.args) }, e.origin); }
@@ -499,61 +727,71 @@ export function installWebMCP(ctx) {
   };
   window.addEventListener('message', onBridgeMessage);
 
-  // 3. modelContext — current hosts expose this on document; retain the
-  // navigator fallback for proposal-era browsers.
-  // Register only when the Garage is the page, not when AutoLab has embedded
-  // it. Framed, the host page owns the agent surface and drives this drawing
-  // over the bridge; publishing a second, unguarded copy of these tools from
-  // inside the iframe would let an agent reach set_vehicle_context directly and
-  // wedge the sync the host is maintaining. The postMessage bridge below is
-  // installed either way, which is how the host still reaches every tool.
-  const framed = (() => {
-    try {
-      return window.top !== window;
-    } catch {
-      // Cross-origin parent: we are certainly framed.
-      return true;
-    }
-  })();
-  const mc = framed ? null : (document.modelContext || navigator.modelContext);
+  // 3. Browser registration. Only when this sheet is the page: framed, the host owns the agent
+  // surface and reaches every tool over the bridge above; a second copy of the tools from inside
+  // the iframe would let an agent reach set_vehicle_context directly and wedge the host's sync.
+  // A missing window.top (a stub) is not a frame; a cross-origin one that throws is.
+  const framed = (() => { try { return !!window.top && window.top !== window; } catch { return true; } })();
   const registrationController = new AbortController();
+  let stopWatch = () => {};
+  api.framed = framed;
   api.dispose = () => {
-    registrationController.abort();
+    registrationController.abort(); stopWatch();
     window.removeEventListener('message', onBridgeMessage);
     if (window.r2 === api) delete window.r2;
   };
-  if (mc) {
-    const decl = TOOLS.map((t) => ({
-      name: t.name,
-      title: t.title,
-      description: t.description,
-      inputSchema: t.inputSchema,
-      annotations: t.annotations,
-      async execute(args = {}, options = {}) {
-        if (options.signal?.aborted) throw options.signal.reason || new DOMException('Tool execution was aborted.', 'AbortError');
-        const result = await call(t.name, args);
-        if (options.signal?.aborted) throw options.signal.reason || new DOMException('Tool execution was aborted.', 'AbortError');
-        return result;
-      },
-    }));
-    api.registration = (async () => {
-      if (typeof mc.provideContext === 'function') {
-        await mc.provideContext({ tools: decl });
-      } else if (typeof mc.registerTool === 'function') {
-        await Promise.all(decl.map((t) => mc.registerTool(t, { signal: registrationController.signal })));
-      } else {
-        return false;
-      }
-      api.registered = true;
-      return true;
-    })().catch((err) => {
-      registrationController.abort();
-      api.registrationError = String(err.message || err);
+  ui.setAgentTools?.(api);
+  api.registration = framed ? Promise.resolve(false) : new Promise((resolve) => {
+    stopWatch = watchWebMCP(api, call, registrationController.signal, (ok) => { ui.setAgentTools?.(api); resolve(ok); });
+  });
+  // The sequencer's private dispatcher rides on the returned handle only, never on window.r2: an
+  // agent must not be able to make calls that the tour would not treat as an interruption.
+  return Object.create(api, { callTour: { value: (name, args) => call(name, args, tourSource) } });
+}
+
+// Register with the browser: document.modelContext first, then navigator.modelContext; registerTool
+// per tool (titles and annotations travel), provideContext as the legacy fallback. Retries every
+// 250 ms for twelve seconds so an API injected after load still gets the tools, never registering
+// a tool twice on the same object. Calls done(true) on success, done(false) at the deadline or on
+// abort. Returns a function that stops the watch.
+export function watchWebMCP(api, call, signal, done = () => {}) {
+  const completed = new WeakMap();
+  let busy = false, ended = false;
+  const finish = (ok) => { if (ended) return; ended = true; clearInterval(timer); clearTimeout(deadline); done(ok); };
+  const declarations = () => api.tools.map((t) => ({ ...t, async execute(args = {}, options = {}) {
+    if (options.signal?.aborted) throw options.signal.reason || new DOMException('Tool execution was aborted.', 'AbortError');
+    try {
+      const result = await call(t.name, args);
+      if (options.signal?.aborted) throw options.signal.reason || new DOMException('Tool execution was aborted.', 'AbortError');
+      return result;
+    } catch (err) {
+      if (err?.name === 'AbortError') throw err;
+      return { content: [{ type: 'text', text: `error: ${err.message || err}` }], isError: true };
+    }
+  } }));
+  const attempt = async () => {
+    if (busy || ended || signal?.aborted) return;
+    const mc = (typeof document !== 'undefined' && document.modelContext) || (typeof navigator !== 'undefined' && navigator.modelContext) || null;
+    const surface = typeof document !== 'undefined' && document.modelContext ? 'document.modelContext' : 'navigator.modelContext';
+    const method = typeof mc?.registerTool === 'function' ? 'registerTool' : typeof mc?.provideContext === 'function' ? 'provideContext' : null;
+    if (!method) return;
+    busy = true;
+    try {
+      if (method === 'registerTool') {
+        let done = completed.get(mc); if (!done) { done = new Set(); completed.set(mc, done); }
+        const results = await Promise.allSettled(declarations().map(async (t) => { if (!done.has(t.name)) { await mc.registerTool(t, { signal }); done.add(t.name); } }));
+        const failure = results.find((r) => r.status === 'rejected'); if (failure) throw failure.reason;
+      } else await mc.provideContext({ tools: declarations() });
+      api.registered = true; api.api = `${surface}.${method}`;
+      finish(true);
+    } catch (err) {
+      api.registrationError = String(err?.message || err);
       console.warn('[r2] WebMCP registration failed:', err);
-      return false;
-    });
-  } else {
-    api.registration = Promise.resolve(false);
-  }
-  return api;
+    } finally { busy = false; }
+  };
+  const timer = setInterval(attempt, 250);
+  const deadline = setTimeout(() => finish(false), 12000);
+  signal?.addEventListener?.('abort', () => finish(false), { once: true });
+  void attempt();
+  return () => finish(false);
 }

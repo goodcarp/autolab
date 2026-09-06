@@ -172,15 +172,15 @@ describe("Garage direct WebMCP surface", () => {
     expect(measured.distance_m).toBeGreaterThan(0);
   });
 
-  it("publishes and functionally exercises all 14 closed, non-destructive tools", async () => {
+  it("publishes and functionally exercises all 19 closed, non-destructive tools", async () => {
     const registerTool = vi.fn().mockResolvedValue(undefined);
     document.modelContext = { registerTool };
     activeApi = installWebMCP(setupGarage()) as GarageApi;
 
     await expect(activeApi.registration).resolves.toBe(true);
-    expect(activeApi.tools).toHaveLength(14);
-    expect(new Set(activeApi.tools.map((tool) => tool.name)).size).toBe(14);
-    expect(registerTool).toHaveBeenCalledTimes(14);
+    expect(activeApi.tools).toHaveLength(19);
+    expect(new Set(activeApi.tools.map((tool) => tool.name)).size).toBe(19);
+    expect(registerTool).toHaveBeenCalledTimes(19);
     for (const tool of activeApi.tools) {
       expect(tool.title.length).toBeGreaterThan(3);
       expect(tool.inputSchema.additionalProperties).toBe(false);

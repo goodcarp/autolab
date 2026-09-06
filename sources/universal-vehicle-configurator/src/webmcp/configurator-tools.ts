@@ -48,6 +48,7 @@ export const CONFIGURATOR_TOOL_NAMES = [
   "set_vehicle_twin_motion",
   "measure_vehicle_parts",
   "set_autolab_workspace",
+  "tour_vehicle_twin",
 ] as const;
 
 export type ConfiguratorToolName = (typeof CONFIGURATOR_TOOL_NAMES)[number];
@@ -1702,6 +1703,44 @@ export function createConfiguratorToolDefinitions(
     },
   };
 
+  const tourVehicleTwin: ToolDefinition = {
+    name: CONFIGURATOR_TOOL_NAMES[17],
+    title: "Run the digital twin's guided tour",
+    description:
+      "Open AutoLab Garage and start (or stop) the twin's guided tour: nine stops over about fifty-four seconds, each a tool call on the drawing, with a caption card. The tour shows the overview, the headlamps lit, the side elevation with dimensions, the structural battery with the shell dissolved, the front drive unit, everything open, the exploded assembly, drive with lights, and the reset. Any other twin tool call, or any click or key on the drawing, stops it where it is. Pass from to start at a later stop.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["start", "stop"] },
+        from: { type: "integer", minimum: 1, maximum: 9, description: "Stop to start at, 1-based. Only with action start." },
+      },
+      required: ["action"],
+      additionalProperties: false,
+    },
+    annotations: { ...SAFE_MUTATION_ANNOTATIONS, idempotentHint: false },
+    execute: async (input, options) => {
+      throwIfAborted(options?.signal);
+      const toolName = CONFIGURATOR_TOOL_NAMES[17];
+      const record = assertRecord(input, toolName);
+      assertOnlyKeys(record, ["action", "from"], toolName);
+      if (record.action !== "start" && record.action !== "stop") {
+        throw new TypeError(`${toolName} requires action to be start or stop.`);
+      }
+      if (record.from !== undefined && (!Number.isInteger(record.from) || (record.from as number) < 1 || (record.from as number) > 9)) {
+        throw new TypeError(`${toolName} expects from to be an integer from 1 to 9.`);
+      }
+      bridge.setWorkspace("garage");
+      const { state } = await synchronizeTwin(toolName, options?.signal);
+      const result = await bridge.call<Record<string, unknown>>(
+        record.action === "start" ? "start_tour" : "stop_tour",
+        record.action === "start" && record.from !== undefined ? { from: record.from } : {},
+        { signal: options?.signal, trackActivity: false },
+      );
+      assertTwinRevision(state.domain.revision, toolName);
+      return { ok: true, revision: state.domain.revision, workspace: bridge.getWorkspace(), tour: result };
+    },
+  };
+
   /**
    * The way back.
    *
@@ -1794,6 +1833,7 @@ export function createConfiguratorToolDefinitions(
     setVehicleTwinMotion,
     measureVehicleParts,
     setAutolabWorkspace,
+    tourVehicleTwin,
   ].map((tool) => ({
     ...tool,
     execute: (input, options) => trackToolExecution(tool.name, input, () => tool.execute(input, options)),

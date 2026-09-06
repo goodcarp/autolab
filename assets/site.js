@@ -11,7 +11,7 @@
       title: "Web 4.0-enabled Vehicle Configurator",
       role: "sales",
       url: url("configure/"),
-      tools: 17,
+      tools: 18,
       summary:
         "Live 3D showroom where a person and an agent share one revisioned build. Pricing, options, incentives with sources, financing and ownership cost, presentation and camera control, plus the embedded Garage digital twin.",
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/universal-vehicle-configurator",

@@ -22,7 +22,8 @@
     "test": "node scripts/sync-r2-model.mjs && vitest",
     "test:model": "vitest run tests/unit/scene/canonical-r2-model.test.ts",
     "test:run": "node scripts/sync-r2-model.mjs && vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "garage:sync": "node scripts/sync-garage-sheet.mjs"
   },
   "dependencies": {
     "@react-three/drei": "10.7.8",

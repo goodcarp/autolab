@@ -10,6 +10,10 @@ import { createTour } from './tour.js';
 import { easeInOut, clamp } from './geom.js';
 
 const q = new URLSearchParams(location.search);
+// Framed (the configurator's Garage, the landing page's tour): the host owns navigation and the
+// agent surface, so the header links and chip stay hidden and the GPU is shared.
+const framed = (() => { try { return !!window.top && window.top !== window; } catch { return true; } })();
+if (framed) document.body.classList.add('framed', 'nav-off');
 let tour;
 const tourState = () => tour?.state() ?? { running: false, step: 0, of: CONFIG.tour.length, id: null, title: null };
 const stopTour = (reason) => tour?.stop(reason) ?? tourState();
@@ -28,6 +32,8 @@ const overlay = new Overlay(svg, rig, vehicle);
 const st = {
   view: 'iso', run: true, drive: false, lights: false, panels: true, explode: 0, open: 0, explodeOn: false, openOn: false,
   speed: 0, steer: 0, soc: 87.0, time: 0, ortho: 0, hoverId: -1, hoverPart: null, lampGlow: 0, gridOffset: 0, gridAlpha: 1, hidePanels: false,
+  // What the configurator has told this sheet about the car it is showing; 'Not supplied' until it does.
+  vehicleContext: { build: 'Hudian RX2', paint: 'Not supplied', wheels: 'Not supplied', interior: 'Not supplied', rangeMiles: null, vehicleTotal: null, revision: 1 },
 };
 const ui = new UI(CONFIG, {
   onView: (v) => { stopTour('view'); setView(v); },
@@ -71,6 +77,39 @@ const endDrag = (e) => { if (!e.isPrimary) return; dragging = false; canvas.clas
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('pointerleave', () => { pointerX = pointerY = -1; });
 canvas.addEventListener('wheel', (e) => { stopTour('wheel'); e.preventDefault(); rig.zoom(Math.exp(e.deltaY * 0.0012)); rig.idle = 0; }, { passive: false });
+
+// Pinch to zoom. Zoom was bound to the wheel alone, so on a touch device the only way in or out of
+// the drawing was the view presets, and the hint named a gesture that does not exist there. Tracked
+// over raw pointer ids because the orbit handler only follows the primary pointer; a second finger
+// arriving switches this to a pinch and suspends the orbit rather than letting the two fight.
+const pinch = new Map();
+let pinchSpan = 0;
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch.size === 2) {
+    const [a, b] = [...pinch.values()];
+    pinchSpan = Math.hypot(a.x - b.x, a.y - b.y);
+    dragging = false; canvas.classList.remove('dragging');
+  }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'touch' || !pinch.has(e.pointerId)) return;
+  pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch.size !== 2) return;
+  const [a, b] = [...pinch.values()];
+  const span = Math.hypot(a.x - b.x, a.y - b.y);
+  if (pinchSpan > 0 && span > 0) {
+    stopTour('pinch');
+    if (rig.view) { rig.grab(); ui.setView(null); overlay.setView(null); ui.showViewTitle(null); ui.showPanels(true); st.hidePanels = false; st.view = null; }
+    rig.zoom(pinchSpan / span); rig.idle = 0;
+  }
+  pinchSpan = span;
+});
+const endPinch = (e) => { if (e.pointerType !== 'touch') return; pinch.delete(e.pointerId); if (pinch.size < 2) pinchSpan = 0; };
+canvas.addEventListener('pointerup', endPinch); canvas.addEventListener('pointercancel', endPinch);
+// Name the gesture the device actually has.
+{ const hint = document.getElementById('hint'); if (hint && window.matchMedia('(hover: none) and (pointer: coarse)').matches) hint.textContent = 'DRAG TO ORBIT · PINCH TO ZOOM'; }
 // arrows orbit and [ ] dolly, so the camera is reachable without a pointer (and from a screen reader
 // or an agent driving the page by keystroke rather than through window.r2)
 function camKey(k, shift) {
@@ -235,6 +274,10 @@ function step(dt, render = true) {
 }
 function frame(now) {
   requestAnimationFrame(frame);
+  // Framed, a 30 Hz technical drawing still feels immediate and halves the three-pass GPU work so the
+  // host page stays tactile; hidden, do nothing and reset the clock so returning never jumps.
+  if (document.hidden) { last = now; return; }
+  if (framed && now - last < 1000 / 30) return;
   // clamp BOTH ends: a negative delta (rAF timestamp earlier than our last sample, which happens after
   // the deterministic ?adv= pre-roll, on bfcache restore and under timer coarsening) would run st.time
   // backwards and drive the explode/open ramps to full because their decay term flips sign.

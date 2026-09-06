@@ -52,8 +52,11 @@ export class UI {
       if (!noPersist) try { localStorage.setItem('r2.cards', on ? '1' : '0'); } catch (e) {}
     };
     // The sheet opens bare; the drawing panels are opt-in (H, the corner toggle, or ?cards=1).
-    let cardsOn = false;
-    try { cardsOn = localStorage.getItem('r2.cards') === '1'; } catch (e) {}
+    // Standalone the sheet opens bare and the panels are opt-in; framed inside the configurator it opens
+    // with its panels, because there the sheet is the whole point of the view.
+    const framed = (() => { try { return !!window.top && window.top !== window; } catch (e) { return true; } })();
+    let cardsOn = framed;
+    try { const saved = localStorage.getItem('r2.cards'); if (saved !== null) cardsOn = saved === '1'; } catch (e) {}
     document.body.classList.add('no-card-anim');
     this.setCards(cardsOn);
     requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('no-card-anim')));
@@ -70,6 +73,7 @@ export class UI {
   setAgentTools(api) {
     const chip = document.getElementById('agent-chip');
     chip.textContent = api.registered ? `${api.tools.length} AGENT TOOLS` : 'MANUAL MODE';
+    chip.hidden = !!api.framed;   // framed, the host page's chip speaks for the tools
     chip.classList.toggle('registered', api.registered);
     if (this.agentToolsReady) return;
     this.agentToolsReady = true;

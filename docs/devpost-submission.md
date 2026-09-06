@@ -92,10 +92,10 @@ for about twelve seconds after load. The same functions are mirrored on a
 `window.*` object so any browser, devtools session or Playwright script can
 drive the page exactly as an agent would.
 
-- Configurator: 17 curated tools describing customer outcomes (configure,
+- Configurator: 18 curated tools describing customer outcomes (configure,
   simulate, apply, interrupt, undo, price, incentives, ownership math, compare,
   present, twin state, parts, reveal, views, motion, measure, switch surface).
-  The embedded Garage publishes 14 lower-level drawing tools of its own, including
+  The embedded Garage publishes 19 drawing tools of its own (the same sheet as the Owner's Guide, plus a bridge), including
   the `set_vehicle_context` bridge, connected over a validated same-origin
   `postMessage` channel with request ids, bounded timeouts and revision checks.
 - Owner's Guide: 18 tools over three surfaces (`navigator.modelContext`,

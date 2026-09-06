@@ -7,7 +7,7 @@ houses the three AutoLab experiences for
 | Path | Experience | Source | WebMCP tools |
 | --- | --- | --- | --- |
 | `/` | Landing page | `index.html`, `assets/` | 3 |
-| `/configure/` | Web 4.0-enabled Vehicle Configurator (with the embedded **Garage** digital twin) | [`sources/universal-vehicle-configurator`](sources/universal-vehicle-configurator) | 17 (+14 inside Garage) |
+| `/configure/` | Web 4.0-enabled Vehicle Configurator (with the embedded **Garage** digital twin) | [`sources/universal-vehicle-configurator`](sources/universal-vehicle-configurator) | 18 (+19 inside Garage) |
 | `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 18 |
 | `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 3 |
 

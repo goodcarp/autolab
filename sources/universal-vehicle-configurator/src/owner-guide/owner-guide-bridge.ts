@@ -16,6 +16,8 @@ export type VehicleTwinTool =
   | "set_camera"
   | "orbit_camera"
   | "set_vehicle_context"
+  | "start_tour"
+  | "stop_tour"
   | "reset";
 
 export type VehicleTwinContext = {

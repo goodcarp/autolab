@@ -1,6 +1,9 @@
 // Blueprint renderer: beauty (lighting + shadows) pass, G-buffer (normal / linear depth / part id) pass,
 // then a full-screen composite shader that draws ink edges, hatching and the ground grid.
 import * as THREE from 'three';
+// Framed beside the configurator the drawing shares the GPU: three passes at a retina-scale buffer
+// would quietly quadruple the work, so the backing buffer and the shadow map come down.
+const FRAMED = (() => { try { return !!window.top && window.top !== window; } catch (e) { return true; } })();
 import { cutGLSL } from './geom.js';
 import { CUT } from './vehicle.js';
 
@@ -144,16 +147,12 @@ export class Blueprint {
     renderer.autoClear = false;
     this.renderer = renderer;
     this.scene = new THREE.Scene();
-    // The drawing uses three GPU passes, so a retina-scale backing buffer can
-    // quietly quadruple the work. 1.35 keeps the linework crisp while leaving
-    // enough headroom for the configurator and an agent-driven iframe to run
-    // side by side on ordinary laptops.
-    this.dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+    this.dpr = Math.min(window.devicePixelRatio || 1, FRAMED ? 1.35 : 2);
     // lights (r155+ physical units: Lambert output = (ambient + sun·N·L) / π → lit range ≈ 0.40 .. 1.02)
     this.sun = new THREE.DirectionalLight(0xffffff, 1.9);
     this.sun.position.set(3.0, 9.0, 4.2); this.sun.castShadow = true;
     const sc = this.sun.shadow.camera; sc.left = -5.2; sc.right = 5.2; sc.top = 5.2; sc.bottom = -5.2; sc.near = 1; sc.far = 30;
-    this.sun.shadow.mapSize.set(1024, 1024); this.sun.shadow.bias = -0.0006; this.sun.shadow.normalBias = 0.01; this.sun.shadow.radius = 3;
+    this.sun.shadow.mapSize.set(FRAMED ? 1024 : 2048, FRAMED ? 1024 : 2048); this.sun.shadow.bias = -0.0006; this.sun.shadow.normalBias = 0.01; this.sun.shadow.radius = 3;
     this.scene.add(this.sun); this.scene.add(this.sun.target);
     this.scene.add(new THREE.AmbientLight(0xffffff, 1.25));
     // ground (beauty pass only)
@@ -196,7 +195,7 @@ export class Blueprint {
     this.compMat.uniforms.uLampIds.value.set(v.lampIds[0], v.lampIds[1], -1); this.compMat.uniforms.uTailIds.value.set(v.tailIds[0], v.tailIds[1]); this.compMat.uniforms.uNose.value = v.SPEC.NOSE; this.compMat.uniforms.uTail.value = v.SPEC.TAIL;
   }
   setSize(w, h) {
-    this.dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+    this.dpr = Math.min(window.devicePixelRatio || 1, FRAMED ? 1.35 : 2);
     this.renderer.setPixelRatio(this.dpr); this.renderer.setSize(w, h, false);
     const W = Math.floor(w * this.dpr), H = Math.floor(h * this.dpr);
     this.beauty.setSize(W, H); this.gbuf.setSize(W, H);

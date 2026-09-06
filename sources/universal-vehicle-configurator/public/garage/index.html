@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AutoLab Garage · Rivian R2 Digital Twin</title>
-<meta name="description" content="An agent-operable Rivian R2 digital twin for owner guidance, component inspection, and service context.">
+<title>AutoLab Garage · Hudian RX2 Digital Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script type="importmap">
 {
@@ -14,6 +16,20 @@
   }
 }
 </script>
+<!-- Fetch the whole module graph at once instead of wave by wave. -->
+<link rel="modulepreload" href="./vendor/three.module.js">
+<link rel="modulepreload" href="./vendor/addons/geometries/RoundedBoxGeometry.js">
+<link rel="modulepreload" href="src/main.js">
+<link rel="modulepreload" href="src/config.js">
+<link rel="modulepreload" href="src/vehicle.js">
+<link rel="modulepreload" href="src/blueprint.js">
+<link rel="modulepreload" href="src/camera.js">
+<link rel="modulepreload" href="src/overlay.js">
+<link rel="modulepreload" href="src/ui.js">
+<link rel="modulepreload" href="src/webmcp.js">
+<link rel="modulepreload" href="src/geom.js">
+<link rel="modulepreload" href="src/tour.js">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f6fa'/%3E%3Cpath d='M16 4 28 16 16 28 4 16Z' fill='none' stroke='%231c2b4f' stroke-width='2'/%3E%3Cpath d='M16 11 21 16 16 21 11 16Z' fill='%23c94b31'/%3E%3C/svg%3E">
 </head>
 <body>
 <div id="sheet">
@@ -26,7 +42,8 @@
 
   <button id="cards-toggle" type="button" aria-label="Hide the drawing panels" title="Hide panels (H)"><span></span></button>
   <div id="stage">
-    <canvas id="gl"></canvas>
+    <canvas id="gl" tabindex="0" role="img" aria-label="Interactive Hudian RX2 drawing" aria-describedby="drawing-description"></canvas>
+    <p id="drawing-description" class="sr-only">Three-dimensional vehicle drawing showing body panels, chassis and named components. Use arrow keys to orbit and brackets to zoom.</p>
     <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
     <div id="hint">DRAG TO ORBIT · SCROLL TO ZOOM</div>
     <div id="viewtitle"><div class="vt-rule"></div><div class="vt-name"></div><div class="vt-sub"></div></div>
@@ -38,6 +55,12 @@
     <div>
       <div class="hdr-title" id="hdr-left-title"></div>
       <div class="hdr-sub" id="hdr-left-sub"></div>
+      <nav class="header-tools" aria-label="Guide tools and home">
+        <button id="agent-chip" type="button" aria-expanded="false" aria-controls="agent-tools">MANUAL MODE</button>
+        <a href="../" title="AutoLab home">◂ AUTOLAB</a>
+        <a href="../configure/" title="Shop: the vehicle configurator">SHOP</a>
+        <a href="../engine/" title="The AutoLab 3D Creation Engine">ENGINE</a>
+      </nav>
     </div>
   </header>
   <header id="hdr-right">
@@ -45,8 +68,13 @@
     <div class="hdr-sub" id="hdr-right-sub"></div>
   </header>
 
+  <section class="panel" id="agent-tools" aria-labelledby="agent-tools-title" hidden>
+    <div class="panel-h"><span id="agent-tools-title">AGENT TOOLS</span><button id="agent-tools-close" class="panel-min" type="button" aria-label="Close agent tools">×</button></div>
+    <dl id="agent-tools-list"></dl>
+  </section>
+
   <section class="panel" id="key">
-    <div class="panel-h"><span>KEY FEATURES</span><button class="panel-min" type="button" aria-label="Minimize key features" title="Minimize">−</button></div>
+    <div class="panel-h"><span>KEY FEATURES</span><button class="panel-min" type="button" aria-label="Minimize key" title="Minimize">−</button></div>
     <div class="key-grid" id="key-grid"></div>
     <div class="key-foot"><span>PROJECTION <b>FIRST ANGLE</b></span><span>UNITS <b>MM</b></span><span>TOL. <b>±2</b></span></div>
   </section>
@@ -64,11 +92,6 @@
   <section class="panel" id="titleblock">
     <div class="tb-title"><div><div class="tb-lbl">TITLE</div><div class="tb-big" id="tb-title"></div></div><button class="panel-min" type="button" aria-label="Minimize title block" title="Minimize">−</button></div>
     <div class="tb-grid" id="tb-grid"></div>
-    <!--
-      The Garage is a supported entry point on its own, and on its own it reads
-      as a manufacturer engineering release: a title block, a drawing number and
-      a revision letter. Say plainly what it is.
-    -->
   </section>
 </div>
 <div id="fallback" hidden>

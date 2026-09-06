@@ -104,7 +104,7 @@ describe("real configurator Site Tools", () => {
     expect(window.autolab).toBe(mirror);
     expect(mirror?.registered).toBe(true);
     expect(mirror?.api).toBe("navigator.modelContext");
-    expect(registerTool).toHaveBeenCalledTimes(17);
+    expect(registerTool).toHaveBeenCalledTimes(18);
   });
 
   it("cancels an old late-injection watcher on teardown", async () => {
@@ -115,7 +115,7 @@ describe("real configurator Site Tools", () => {
     document.modelContext = { registerTool };
     await registerConfiguratorSiteTools(setup());
     await vi.advanceTimersByTimeAsync(12_001);
-    expect(registerTool).toHaveBeenCalledTimes(17);
+    expect(registerTool).toHaveBeenCalledTimes(18);
     expect(window.autolab!.registered).toBe(true);
   });
 
