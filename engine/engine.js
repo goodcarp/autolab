@@ -72,6 +72,23 @@
       extremes: live.extremes, basis: REPORT.basis,
     };
   }
+  function renderApertures(rep) {
+    const body = document.querySelector("#apertures tbody"); if (!body || !rep?.apertures) return;
+    const rows = rep.apertures.map((a) => {
+      const survivors = Object.values(a.poses.flatMap((p) => p.offenders).reduce((m, o) => { if (!m[o.part] || (o.inset_mm ?? 0) > (m[o.part].inset_mm ?? 0)) m[o.part] = o; return m; }, {}));
+      const edge = [...new Set(a.poses.flatMap((p) => p.edgeContacts))].sort();
+      const cls = a.status === "FAIL" ? "miss" : a.status === "INFO" ? "info" : "";
+      return `<tr><td><code>${esc(a.aperture)}</code></td><td class="${cls}">${esc(a.status)}${a.gated === false ? " (lid, not judged)" : ""}</td><td>${survivors.length ? survivors.map((o) => `${esc(o.part)} ${fmt(o.inset_mm, 0)} / ${o.intrusionDepth_mm === null ? "?" : fmt(o.intrusionDepth_mm, 0)}`).join("; ") : "none"}</td><td>${edge.length ? esc(edge.join(", ")) : "none"}</td></tr>`;
+    });
+    body.innerHTML = rows.join("");
+    const summary = document.getElementById("aperture-summary");
+    if (summary) {
+      const failing = rep.apertures.filter((a) => a.status === "FAIL");
+      const named = failing.flatMap((a) => Object.values(a.poses.flatMap((p) => p.offenders).reduce((m, o) => { if (!m[o.part] || (o.inset_mm ?? 0) > (m[o.part].inset_mm ?? 0)) m[o.part] = o; return m; }, {})).map((o) => `${o.part} ${fmt(o.inset_mm, 0)} mm inside the ${a.aperture} outline`));
+      summary.innerHTML = `On this assembly the gate (band ${rep.band_mm} mm behind the skin, edge margin ${rep.edge_mm} mm) ${failing.length ? `names ${failing.length} of ${rep.apertures.filter((a) => a.gated !== false).length} gated openings for the author to judge: ${esc(named.join("; "))}.` : "passes every gated opening."} Everything else that meets an opening does so within the edge margin. The full report is <a href="out/apertures.json">out/apertures.json</a>, and an agent can read it with <code>get_aperture_report</code>.`;
+    }
+  }
+  fetch(new URL("out/apertures.json", location.href)).then((r) => (r.ok ? r.json() : null)).then((rep) => { if (rep) renderApertures(rep); }).catch(() => {});
   const fitReady = fetch(new URL("out/fit.json", location.href)).then((r) => (r.ok ? r.json() : null)).then((fit) => { if (fit && fit.rows) { live = fit; renderFit(fit); } }).catch(() => {});
 
   const INSTRUMENTS = [...document.querySelectorAll("#instruments tbody tr")].map((tr) => ({

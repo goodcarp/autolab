@@ -17,6 +17,8 @@
   .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
   .fit{font-family:var(--mono);font-size:14px}
   .fit .miss{color:#b3261e;font-weight:500}
+td.miss{color:#c94b31;font-weight:600}
+td.info{color:#666}
   .hero h1{font-size:clamp(40px,7vw,96px)}
   .kicker{font:500 14px var(--mono);color:var(--mute)}
 </style>
@@ -88,6 +90,12 @@
   <div class="prose">
     <p>Five defects in a row shipped on this model and were found by eye: a belt rail across both door openings, a body crease inside the rear door opening, a deck band across the cargo opening, a C-pillar overhanging a door opening, a charge-port light through the flank. Every capture had rendered the doors shut, and nothing measured a panel line. The instrument that could have caught all five is now in the engine: it closes every panel, takes the panel's projected footprint, and at four open fractions reports any fixed geometry within 50 mm of the skin and more than 65 mm inside that footprint, by part, inset and depth. Four fixtures of those defect classes fail at 176 to 454 mm inside.</p>
     <p id="aperture-summary">On the current model four openings carry survivors, three distinct findings for the author to judge: the rear door frames reach about 158 mm over the B-pillar above the belt line; the fender top runs 76 mm under the hood's side edge; the load floor's rear lip sits 156 mm inside the liftgate outline (which is how SUVs are built, and listed because the instrument cannot know that). Everything else that meets an opening does so within 65 mm of its edge. The full report is <a href="out/apertures.json">out/apertures.json</a>, and an agent can read it with <code>get_aperture_report</code>.</p>
+  </div>
+  <div class="table-wrap">
+  <table id="apertures">
+    <thead><tr><th>Opening</th><th>Result</th><th>Survivors (part, mm inside the outline, mm behind the skin)</th><th>Touching the edge</th></tr></thead>
+    <tbody><tr><td colspan="4">Read from out/apertures.json when this page loads.</td></tr></tbody>
+  </table>
   </div>
   <div class="sec-h"><span class="num">04</span><h2>The instruments</h2></div>
   <div class="table-wrap">

@@ -21,6 +21,7 @@ const xyz = (v) => ({ x: round(v.x), y: round(v.y), z: round(v.z) });
 // Pure declaration projection shared by the browser registration, mirror and tests.
 export function toolDeclarations(tools) {
   const readOnly = new Set(['get_state', 'list_parts', 'get_part', 'get_specification', 'measure', 'list_visible_parts', 'clearance']);
+  // frame_point is absolute, so repeating it is idempotent like set_camera
   const relative = new Set(['start_tour', 'set_motion', 'orbit_camera', 'frame_part']);
   return tools.map(({ name, description, inputSchema }) => ({
     name, title: name.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' '),
@@ -447,6 +448,31 @@ export function installWebMCP(ctx) {
         if (!Number.isFinite(best.d)) throw new Error('the parts are too far apart to index; use measure for their centre separation');
         return { from: a.name, to: b.name, clearance_m: round(best.d), at_from_m: xyz(best.from), at_to_m: xyz(best.to),
           basis: 'nearest of: each sampled vertex of one part against the triangles around the closest vertex of the other, both directions, in world space at this instant' };
+      },
+    },
+    {
+      name: 'frame_point',
+      description: 'Point the camera at a coordinate in the vehicle frame (metres: x forward from the wheelbase midpoint, y up from the ground, z to the right) and look at it from a chosen bearing and distance. For inspecting a place rather than a part: an engine finding at x/y/z, a gap between two components, a spot on the skin. Omitted azimuth and elevation keep the current bearing; distance defaults to 1.6 m. Things under the shell need set_motion {motion:"panels", on:true} first.',
+      inputSchema: {
+        type: 'object', required: ['x', 'y', 'z'],
+        properties: {
+          x: { type: 'number', minimum: -4, maximum: 4 }, y: { type: 'number', minimum: -0.5, maximum: 3 }, z: { type: 'number', minimum: -2, maximum: 2 },
+          azimuth_deg: { type: 'number' }, elevation_deg: { type: 'number', minimum: 2, maximum: 86 },
+          distance_m: { type: 'number', minimum: 1.2, maximum: 22, description: 'Camera distance from the point; 1.2 m is the floor (the near plane is 0.5 m).' },
+        },
+      },
+      run: ({ x, y, z, azimuth_deg, elevation_deg, distance_m = 1.6 }) => {
+        for (const [k, v, lo, hi] of [['x', x, -4, 4], ['y', y, -0.5, 3], ['z', z, -2, 2]]) {
+          if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) throw new Error(`${k} must be a number between ${lo} and ${hi} metres`);
+        }
+        takeCamera(true);
+        if (azimuth_deg !== undefined) rig.cur.az = azimuth_deg;
+        if (elevation_deg !== undefined) rig.cur.el = Math.max(2, Math.min(86, elevation_deg));
+        rig.cur.tx = x; rig.cur.ty = y; rig.cur.tz = z;
+        rig.cur.dist = Math.max(1.2, Math.min(22, distance_m)); rig.userZoom = true;
+        const out = { point_m: { x: round(x), y: round(y), z: round(z) }, camera: cameraState() };
+        if (st.panels && Math.abs(z) < 0.85 && y > 0.25 && y < 1.55) out.hint = 'That point is inside the body. Call set_motion {motion:"panels", on:true} to dissolve the shell, or expect to see the skin.';
+        return out;
       },
     },
     {

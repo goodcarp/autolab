@@ -8,7 +8,7 @@ houses the three AutoLab experiences for
 | --- | --- | --- | --- |
 | `/` | Landing page | `index.html`, `assets/` | 3 |
 | `/configure/` | Web 4.0-enabled Vehicle Configurator (with the embedded **Garage** digital twin) | [`sources/universal-vehicle-configurator`](sources/universal-vehicle-configurator) | 17 (+14 inside Garage) |
-| `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 17 |
+| `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 18 |
 | `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 3 |
 
 Live: **https://goodcarp.github.io/autolab/**
@@ -37,7 +37,7 @@ since then is recorded here so the state at the deadline is not misrepresented:
 
 - Owner's Guide: a guided, interruptible tour (`start_tour` / `stop_tour`), `list_visible_parts` (what the camera
   sees, by component and coverage, from an id pass) and `clearance` (real
-  surface-to-surface gap), 17 tools, a header chip that reports registration, a home link, registration
+  surface-to-surface gap) and `frame_point` (look at a coordinate), 18 tools, a header chip that reports registration, a home link, registration
   parity with the other pages (`document.modelContext` first, titles,
   annotations, closed schemas, a late-injection watch), sharper descriptions for
   `measure`, `frame_part` and `set_camera`, and keyboard access.
