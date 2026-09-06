@@ -62,6 +62,7 @@ function motion(m) {
   else if (m === 'open') { st.openOn = !st.openOn; ui.setToggle('open', st.openOn); }
 }
 let flashT = 99;
+const phonePortrait = window.matchMedia('(max-width: 640px) and (orientation: portrait)');
 
 // ---- pointer interaction ----
 let dragging = false, lastX = 0, lastY = 0, moved = 0, pointerX = -1, pointerY = -1;
@@ -242,7 +243,9 @@ function step(dt, render = true) {
   // ground datum with groundFrac, so they need a smaller lift than the ISO views.
   const elev = rig.view === 'front' || rig.view === 'side';
   const q34 = rig.view === 'q34f' || rig.view === 'q34r'; // tight, low 3/4 framings need the most pull-back
-  rig.fitScale = 1 + (q34 ? 0.95 : 0.56) * vehicle.explodeT; rig.tyOffset = (elev ? 0.60 : 1.08) * vehicle.explodeT;
+  // On a portrait phone the controls take the top of the sheet, so the car is framed lower.
+  const phone = phonePortrait.matches && !document.body.classList.contains('framed');
+  rig.fitScale = (phone ? 1.08 : 1) + (q34 ? 0.95 : 0.56) * vehicle.explodeT; rig.tyOffset = (phone ? 0.72 : 0) + (elev ? 0.60 : 1.08) * vehicle.explodeT;
   vehicle.panelsT += ((st.panels ? 1 : 0) - vehicle.panelsT) * Math.min(1, dt * 6);
   if (Math.abs(vehicle.panelsT - (st.panels ? 1 : 0)) < 0.01) vehicle.panelsT = st.panels ? 1 : 0;
   flashT += dt; const flashGlow = flashT < 0.6 ? (1 - flashT / 0.6) : 0;

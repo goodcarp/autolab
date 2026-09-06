@@ -1613,3 +1613,19 @@
 }
 /* Focus hotspots are agent-addressable through present_vehicle; the floating rings cluttered the showroom. */
 .vc-hotspots { display: none; }
+
+/* Phones: the HUD's micro-labels are set for a desk and shrink below legibility at 390 px; a floor. */
+@media (max-width: 640px) {
+  .vc-hud__identity > span:last-child,
+  .vc-hud__index,
+  .vc-status,
+  .vc-focus-card__kind,
+  .vc-footer,
+  .vc-view-picker > button > span:last-child {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+  }
+  .vc-model-attribution {
+    font-size: 0.62rem;
+  }
+}

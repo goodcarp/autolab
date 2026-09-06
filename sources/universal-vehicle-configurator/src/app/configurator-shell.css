@@ -1590,3 +1590,22 @@
     padding: 1rem;
   }
 }
+
+@media (max-width: 640px) {
+  .tool-activity-strip {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .owner-guide__actions output {
+    font-size: max(0.6rem, 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .configuration-facts small,
+  .configurator-head__model > span {
+    font-size: max(0.55rem, 10px);
+  }
+}

@@ -928,3 +928,25 @@
     transition: none;
   }
 }
+
+@media (max-width: 640px) {
+  .configurator-total__price small {
+    font-size: max(0.53rem, 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .config-option__meta > span,
+  .config-option__impact {
+    font-size: max(0.55rem, 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .config-option__price abbr,
+  .buyer-context__label,
+  .buyer-context label small,
+  .configurator-total > p {
+    font-size: max(0.6rem, 10px);
+  }
+}

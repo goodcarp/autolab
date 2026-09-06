@@ -188,6 +188,8 @@
   if (demo && play) {
     play.addEventListener("click", () => {
       if (demo.classList.contains("is-live")) return;
+      // On a phone the sheet is the whole screen or nothing: open it full size rather than in a 220 px frame.
+      if (window.matchMedia("(max-width: 640px)").matches) { location.assign(url("garage/?tour=1")); return; }
       const frame = document.createElement("iframe");
       frame.src = url("garage/?tour=1&cards=0&nodrift=1&nav=0");
       frame.title = "Agentic Owner's Guide, running its guided tour";

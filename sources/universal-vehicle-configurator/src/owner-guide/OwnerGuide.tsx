@@ -7,7 +7,7 @@ type OwnerGuideProps = {
   context: VehicleTwinContext;
 };
 
-type GuideAction = "battery" | "open" | "explode" | null;
+type GuideAction = "battery" | "open" | "explode" | "tour" | null;
 
 export function OwnerGuide({ active, context }: OwnerGuideProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -65,6 +65,9 @@ export function OwnerGuide({ active, context }: OwnerGuideProps) {
         await ownerGuideBridge.call("set_view", { view: "q34r" });
         await ownerGuideBridge.call("set_motion", { motion: "open", on: true });
         setMessage("Doors, frunk, liftgate and charge port opened");
+      } else if (action === "tour") {
+        await ownerGuideBridge.call("start_tour", {});
+        setMessage("Guided tour running · nine stops · any tap on the drawing stops it");
       } else {
         await ownerGuideBridge.call("set_view", { view: "iso" });
         await ownerGuideBridge.call("set_motion", { motion: "explode", on: true });
@@ -141,6 +144,9 @@ export function OwnerGuide({ active, context }: OwnerGuideProps) {
         </button>
         <button type="button" disabled={!frameReady || activeAction !== null} onClick={() => void run("explode")}>
           <Boxes aria-hidden="true" /> Explode
+        </button>
+        <button type="button" disabled={!frameReady || activeAction !== null} onClick={() => void run("tour")}>
+          <Sparkles aria-hidden="true" /> Tour
         </button>
         <output aria-live="polite">
           {!frameReady ? "Drawing the vehicle…" : activeAction ? "Moving through the vehicle…" : message}

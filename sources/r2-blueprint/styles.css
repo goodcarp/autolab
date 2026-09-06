@@ -293,3 +293,28 @@ body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:
 .header-tools a{border:1px solid var(--ink-soft);border-radius:3px;padding:2px 7px;text-decoration:none;color:var(--ink);letter-spacing:.16em}
 .header-tools a:hover,.header-tools a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
 body.nav-off .header-tools a{display:none}
+
+/* phones: the sheet is a drawing designed for a desk, so on a phone the drawing panels stay off but the
+   controls stay on, at a size a thumb can hit; the header links wrap under the title */
+@media (max-width:640px){
+  #hdr-left{right:64px}
+  .header-tools{flex-wrap:wrap;gap:6px;margin-top:6px}
+  .header-tools button:not([hidden]),.header-tools a{font-size:10.5px;padding:5px 8px;min-height:28px;display:inline-flex;align-items:center}
+  /* framed inside the configurator on a phone the host's own controls drive the sheet; the caption card
+     moves to the top, clear of the host's bottom sheet */
+  body.framed #controls{display:none}
+  body.framed #tour-card{top:150px;bottom:auto}
+  #cards-toggle{width:32px;height:32px;top:22px;right:22px}
+  body.cards-off #controls{visibility:visible;opacity:1;pointer-events:auto;transform:none}
+  body.cards-off #controls .ctl-row{visibility:visible}
+  body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:hidden}
+  #controls{top:140px;left:22px;right:22px;padding:6px 8px;background:rgba(244,246,250,.92)}
+  /* the caption card and the title block share the bottom edge; the tour wins while it runs */
+  body:has(#tour-card:not([hidden])) #titleblock{visibility:hidden}
+  .ctl-label{display:none}
+  .ctl-row{gap:0;margin:4px 0}
+  .ctl-btns{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .btn{height:34px;font-size:11px;letter-spacing:.06em}
+  #tour-btn{height:34px}
+  #tour-card{bottom:26px;left:22px;width:calc(100vw - 44px)}
+}

@@ -104,3 +104,26 @@ td:nth-child(2){font-family:var(--mono);font-weight:500;white-space:nowrap}
   .top{gap:10px}
   .chip{margin-left:auto}
 }
+
+/* phones: wide tables stack into cards, and preformatted blocks scroll instead of clipping */
+pre{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media (max-width:640px){
+  table{min-width:0}
+  .table-wrap{overflow:visible}
+  .table-wrap td,.table-wrap td code{white-space:normal;overflow-wrap:anywhere}
+  .table-wrap table,.table-wrap tbody,.table-wrap tr,.table-wrap td{display:block;width:100%}
+  .table-wrap thead{display:none}
+  .table-wrap tr{padding:14px 0;border-top:1px solid var(--rule)}
+  .table-wrap td{padding:2px 0;border:0}
+  .table-wrap td:first-child{font-weight:700;display:inline}
+  .table-wrap td:nth-child(2){display:inline;margin-left:8px;color:var(--mute)}
+  #surface td:nth-child(2)::after{content:" tools"}
+  #apertures td:nth-child(3)::before{content:"Survivors (part, mm inside, mm behind): ";color:var(--mute)}
+  #apertures td:nth-child(4)::before{content:"Touching the edge: ";color:var(--mute)}
+  #apertures td:nth-child(2){font-weight:700}
+  #instruments td:first-child{display:block;margin-bottom:2px}
+  #instruments td:nth-child(2){display:block;margin:0;color:inherit}
+  #instruments td:nth-child(2)::after{content:none}
+  pre{font-size:11px}
+  #fit-table{font-size:9.5px;line-height:1.55}
+}
