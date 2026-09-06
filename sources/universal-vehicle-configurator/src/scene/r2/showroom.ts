@@ -763,7 +763,8 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       const assigned = mesh.userData.cut ? cutVariant(material, role === "paint") : material;
       assignments.push(() => {
         mesh.material = assigned;
-        mesh.castShadow = !["glass", "lampLens", "lampEmitter", "tailEmitter"].includes(role);
+        // Only the big shapes throw the contact shadow; small trim doubles the shadow pass for nothing visible.
+        mesh.castShadow = ["paint", "cladding", "tyre", "tire", "rim", "wheel"].includes(role);
         mesh.receiveShadow = role !== "glass" && role !== "lampLens";
         if (mesh.userData.cut) mesh.customDepthMaterial = cutDepth;
         // The studio assembly supplies an actual DRL ring and optical modules.

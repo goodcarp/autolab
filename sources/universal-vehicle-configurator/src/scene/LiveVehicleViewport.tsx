@@ -234,7 +234,7 @@ function Studio({
         position={[4.5, 7.5, 5.5]}
         intensity={(blueprint ? 0.72 : 2.4) * rig}
         castShadow={!blueprint && grounded}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-4}
         shadow-camera-right={4}
         shadow-camera-top={4}
@@ -496,8 +496,8 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
           near: 0.1,
           far: 60,
         }}
-        dpr={[1, 2]}
-        shadows="soft"
+        dpr={[1, 1.5]}
+        shadows
         frameloop="demand"
         gl={{
           alpha: true,
