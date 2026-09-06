@@ -135,16 +135,20 @@ export function installWebMCP(ctx) {
         m.material = mat;
       }
       const groundWas = bp.ground.visible, shadowWas = r.shadowMap.enabled;
-      bp.ground.visible = false; r.shadowMap.enabled = false;
-      vehicle.root.updateMatrixWorld(true);
-      rig.apply(W / H);                       // the camera as posed right now, not as of the last drawn frame
-      r.setRenderTarget(idPass.target); r.setClearColor(0x000000, 0); r.clear(true, true, true);
-      r.render(bp.scene, rig.camera);
       const buf = new Float32Array(cols * rows * 4);
-      r.readRenderTargetPixels(idPass.target, 0, 0, cols, rows, buf);
-      r.setRenderTarget(null);
-      for (const m of bp.vehicleMeshes) m.material = m.userData.beautyMat;
-      bp.ground.visible = groundWas; r.shadowMap.enabled = shadowWas;
+      try {
+        bp.ground.visible = false; r.shadowMap.enabled = false;
+        vehicle.root.updateMatrixWorld(true);
+        rig.apply(W / H);                     // the camera as posed right now, not as of the last drawn frame
+        r.setRenderTarget(idPass.target); r.setClearColor(0x000000, 0); r.clear(true, true, true);
+        r.render(bp.scene, rig.camera);
+        r.readRenderTargetPixels(idPass.target, 0, 0, cols, rows, buf);
+      } finally {
+        // whatever happened, the sheet gets its materials, ground and shadows back
+        r.setRenderTarget(null);
+        for (const m of bp.vehicleMeshes) m.material = m.userData.beautyMat;
+        bp.ground.visible = groundWas; r.shadowMap.enabled = shadowWas;
+      }
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
         const k = ((rows - 1 - j) * cols + i) * 4;   // rows are bottom-up in the readback
         if (buf[k + 3] < 0.5) { empty++; continue; }
@@ -161,7 +165,7 @@ export function installWebMCP(ctx) {
         const nx = ((i + 0.5) / cols) * 2 - 1, ny = 1 - ((j + 0.5) / rows) * 2;
         const ray = rig.ray(nx, ny); raycaster.set(ray.origin, ray.direction);
         const found = raycaster.intersectObjects(vehicle.pickables, false).find((h) => h.object.visible && h.object.parent.visible);
-        if (!found) { empty++; continue; }
+        if (!found || !found.object.userData.part) { empty++; continue; }
         tally(found.object.userData.part, nx, ny, found.distance);
       }
       basis = 'ray grid against the meshes (no renderer available)';

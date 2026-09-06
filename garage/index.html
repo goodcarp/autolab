@@ -11,11 +11,25 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
   }
 }
 </script>
+<!-- Fetch the whole module graph at once instead of wave by wave. -->
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/geometries/RoundedBoxGeometry.js">
+<link rel="modulepreload" href="src/main.js">
+<link rel="modulepreload" href="src/config.js">
+<link rel="modulepreload" href="src/vehicle.js">
+<link rel="modulepreload" href="src/blueprint.js">
+<link rel="modulepreload" href="src/camera.js">
+<link rel="modulepreload" href="src/overlay.js">
+<link rel="modulepreload" href="src/ui.js">
+<link rel="modulepreload" href="src/webmcp.js">
+<link rel="modulepreload" href="src/geom.js">
+<link rel="modulepreload" href="src/tour.js">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f6fa'/%3E%3Cpath d='M16 4 28 16 16 28 4 16Z' fill='none' stroke='%231c2b4f' stroke-width='2'/%3E%3Cpath d='M16 11 21 16 16 21 11 16Z' fill='%23c94b31'/%3E%3C/svg%3E">
 </head>
 <body>
 <div id="sheet">

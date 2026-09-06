@@ -1,0 +1,141 @@
+{
+ "spec": "specs/rivian-r2.json",
+ "rows": [
+  {
+   "dimension": "length_m",
+   "expected_m": 4.722,
+   "measured_m": 4.722,
+   "deviation_mm": 0,
+   "tolerance_mm": 10,
+   "status": "within",
+   "measuredFrom": "extreme x over every part"
+  },
+  {
+   "dimension": "widthOverBody_m",
+   "expected_m": 1.905,
+   "measured_m": 1.896,
+   "deviation_mm": -9,
+   "tolerance_mm": 10,
+   "status": "within",
+   "measuredFrom": "body, cladding, fasciaFront, fasciaRear only"
+  },
+  {
+   "dimension": "widthOverMirrors_m",
+   "expected_m": 2.151,
+   "measured_m": 2.151,
+   "deviation_mm": 0,
+   "tolerance_mm": 10,
+   "status": "within",
+   "measuredFrom": "extreme z over every part"
+  },
+  {
+   "dimension": "height_m",
+   "expected_m": 1.699,
+   "measured_m": 1.7,
+   "deviation_mm": 1,
+   "tolerance_mm": 10,
+   "status": "within",
+   "measuredFrom": "extreme y excluding the front doors, which carry the mirrors"
+  },
+  {
+   "dimension": "wheelbase_m",
+   "expected_m": 2.936,
+   "measured_m": 2.936,
+   "deviation_mm": 0,
+   "tolerance_mm": 3,
+   "status": "within",
+   "measuredFrom": "centres of wheelFL/FR and wheelRL/RR bounding boxes"
+  },
+  {
+   "dimension": "frontTrack_m",
+   "expected_m": 1.64,
+   "measured_m": 1.64,
+   "deviation_mm": 0,
+   "tolerance_mm": 3,
+   "status": "within"
+  },
+  {
+   "dimension": "rearTrack_m",
+   "expected_m": 1.64,
+   "measured_m": 1.64,
+   "deviation_mm": 0,
+   "tolerance_mm": 3,
+   "status": "within"
+  },
+  {
+   "dimension": "frontOverhang_m",
+   "expected_m": 0.842,
+   "measured_m": 0.842,
+   "deviation_mm": 0,
+   "tolerance_mm": 10,
+   "status": "within"
+  },
+  {
+   "dimension": "rearOverhang_m",
+   "expected_m": 0.944,
+   "measured_m": 0.944,
+   "deviation_mm": 0,
+   "tolerance_mm": 10,
+   "status": "within"
+  }
+ ],
+ "summary": {
+  "compared": 9,
+  "within": 9,
+  "out": 0,
+  "meanDeviation_mm": 1.11,
+  "worstDeviation_mm": 9,
+  "worst": null
+ },
+ "extremes": {
+  "x": {
+   "min": {
+    "value_m": -2.412,
+    "part": "tailgate",
+    "label": "LIFTGATE & DROP GLASS"
+   },
+   "max": {
+    "value_m": 2.31,
+    "part": "headlamps",
+    "label": "STADIUM HEADLAMPS"
+   }
+  },
+  "y": {
+   "min": {
+    "value_m": 0,
+    "part": "wheelFL",
+    "label": "FRONT LEFT WHEEL"
+   },
+   "max": {
+    "value_m": 1.7,
+    "part": "greenhouse",
+    "label": "GREENHOUSE"
+   }
+  },
+  "z": {
+   "min": {
+    "value_m": -1.0755,
+    "part": "doorFL",
+    "label": "FRONT LEFT DOOR"
+   },
+   "max": {
+    "value_m": 1.0755,
+    "part": "doorFR",
+    "label": "FRONT RIGHT DOOR"
+   }
+  }
+ },
+ "model": {
+  "repository": "r2-blueprint",
+  "file": "src/vehicle.js",
+  "commit": "f36b54b",
+  "committed": "2026-09-05"
+ },
+ "selftest": {
+  "passed": 59,
+  "total": 59,
+  "gate": "passed",
+  "line": "selftest: 59/59 passed · gate passed"
+ },
+ "measuredAt": "2026-09-06T01:03:58.766Z"
+}

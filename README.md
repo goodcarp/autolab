@@ -46,6 +46,13 @@ since then is recorded here so the state at the deadline is not misrepresented:
   firmer contact shadows and a rim light. Geometry unchanged.
 - Engine: the `apertures` gate and its report on this page, with three named
   survivors on the current model for the author to judge.
+- Engine page: the fit table, self-test line and summary are read from
+  `engine/out/fit.json`, written by `fit --json` on every assembly, instead of
+  typed in. On the current model (body envelope and roof covers fitted to the
+  published dimensions, 2026-09-05) all nine published dimensions are within
+  tolerance; the submission-time state was five of nine, with the overall
+  length 54 mm long.
+- Landing page: the Owner's Guide tour can be played in place.
 
 ## How this site is assembled
 

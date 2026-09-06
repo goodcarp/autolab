@@ -181,6 +181,23 @@
     chip.setAttribute("aria-expanded", "false");
   });
 
+  // ---- the tour, played in place ----------------------------------------
+  // The still is a capture from the Owner's Guide; the click swaps in the live
+  // sheet running its tour. Nothing 3D loads until someone asks for it.
+  const demo = document.getElementById("hero-demo"), play = document.getElementById("hero-play");
+  if (demo && play) {
+    play.addEventListener("click", () => {
+      if (demo.classList.contains("is-live")) return;
+      const frame = document.createElement("iframe");
+      frame.src = url("garage/?tour=1&cards=0&nodrift=1");
+      frame.title = "Agentic Owner's Guide, running its guided tour";
+      frame.loading = "eager"; frame.allow = "fullscreen";
+      play.replaceChildren(frame);
+      play.setAttribute("aria-label", "The Owner's Guide is running its guided tour");
+      demo.classList.add("is-live");
+    }, { once: true });
+  }
+
   // ---- copyable starter prompts -----------------------------------------
   document.querySelectorAll("[data-copy]").forEach((btn) => {
     btn.addEventListener("click", async () => {

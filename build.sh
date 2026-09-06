@@ -48,7 +48,8 @@ echo "▸ garage/     <- $R2"
 rm -rf "$HERE/garage"; mkdir -p "$HERE/garage/docs"
 rsync -a "$R2/index.html" "$R2/styles.css" "$HERE/garage/"
 rsync -a --exclude '*.autolab-backup' "$R2/src/" "$HERE/garage/src/"
-rsync -a "$R2/docs/" "$HERE/garage/docs/"
+# Notes and half-size JPG captures ship; the full-resolution PNG captures (tens of MB) stay in the source repository.
+rsync -a --exclude '*.png' "$R2/docs/" "$HERE/garage/docs/"
 
 echo "▸ engine/     <- $ENGINE"
 mkdir -p "$HERE/engine/out" "$HERE/engine/docs" "$HERE/engine/specs" "$HERE/engine/reference"
@@ -74,6 +75,20 @@ OUT="$HERE/engine/out"; rm -f "$OUT"/*.svg
 node -e 'const fs=require("fs");const p=process.argv[1];const r=JSON.parse(fs.readFileSync(p,"utf8"));r.model="sources/r2-blueprint/src/vehicle.js";fs.writeFileSync(p,JSON.stringify(r,null,2)+"\n")' "$OUT/apertures.json"
 APERTURES="$(node -e 'const r=require(process.argv[1]);const f=r.apertures.filter(a=>a.status==="FAIL").map(a=>a.aperture);console.log(`${r.status} (${f.length} of ${r.apertures.filter(a=>a.gated).length} gated openings carry a survivor${f.length?": "+f.join(", "):""})`)' "$OUT/apertures.json" 2>/dev/null || echo unavailable)"
 SELFTEST="$(cd "$ENGINE" && node src/cli.mjs selftest 2>&1 | tail -1)"
+# The measured fit, as data, with the model commit and the self-test line beside it,
+# so the engine page and its tool show what was measured on this assembly.
+( cd "$ENGINE" && node src/cli.mjs fit --json > "$OUT/fit-raw.json" ) || true
+node -e '
+const fs = require("fs"); const [raw, out, sources, selftest] = process.argv.slice(1);
+const fit = JSON.parse(fs.readFileSync(raw, "utf8"));
+const r2 = fs.readFileSync(sources, "utf8").split("\n").find((l) => l.startsWith("r2-blueprint")) || "";
+const [, commit = "", date = ""] = r2.split(/\s+/);
+const m = /(\d+)\/(\d+) passed(?: · gate (\w+))?/.exec(selftest) || [];
+fit.model = { repository: "r2-blueprint", file: "src/vehicle.js", commit: commit.slice(0, 7), committed: date };
+fit.selftest = { passed: +m[1] || null, total: +m[2] || null, gate: m[3] || null, line: selftest };
+fit.measuredAt = new Date().toISOString();
+fs.writeFileSync(out, JSON.stringify(fit, null, 1) + "\n");
+' "$OUT/fit-raw.json" "$OUT/fit.json" "$SRC/SOURCES.txt" "$SELFTEST" && rm -f "$OUT/fit-raw.json"
 
 {
   echo "assembled: $(date -u +%Y-%m-%dT%H:%M:%SZ)"

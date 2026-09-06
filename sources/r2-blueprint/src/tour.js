@@ -32,7 +32,7 @@ export function createTour({ steps, call, onStep = () => {}, onStop = () => {},
         cancel = undefined;
         if (i + 1 === steps.length) stop('complete');
         else void enter(i + 1, run).catch(() => {}); // onStop already reports the failure
-      }, Math.max(0, step.dwell - (now() - began)));
+      }, Math.max(0, (step.dwell ?? 0) - (now() - began)));
     } catch (error) {
       if (live(run)) stop('error');
       throw error;

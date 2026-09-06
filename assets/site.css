@@ -43,6 +43,17 @@ p{margin:0 0 12px}
 .btn.primary{background:var(--ink);color:var(--paper)}
 .btn.ghost{border-color:var(--rule)}
 .hero-note{margin-top:22px;color:var(--mute);font-size:14px;max-width:760px}
+.hero-demo{margin:44px 0 0;max-width:1180px}
+.hero-demo__play{display:block;position:relative;width:100%;padding:0;border:1.5px solid var(--ink);border-radius:14px;overflow:hidden;background:#f4f6fa;cursor:pointer;aspect-ratio:16/10}
+.hero-demo__play img{display:block;width:100%;height:100%;object-fit:cover}
+.hero-demo__play iframe{display:block;width:100%;height:100%;border:0;background:#f4f6fa}
+.hero-demo__label{position:absolute;left:18px;bottom:18px;display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;letter-spacing:.01em;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.hero-demo__dot{width:9px;height:9px;border-radius:50%;background:#c8ff4d}
+.hero-demo__play:hover .hero-demo__label{background:#000}
+.hero-demo__play:focus-visible{outline:3px solid #c8ff4d;outline-offset:3px}
+.hero-demo.is-live .hero-demo__label{display:none}
+.hero-demo figcaption{margin-top:12px;color:var(--mute);font-size:14px}
+@media (prefers-reduced-motion:reduce){.hero-demo__play{transition:none}}
 
 /* sections */
 section{max-width:var(--max);margin:0 auto;padding:clamp(40px,6vw,80px) clamp(16px,4vw,48px)}

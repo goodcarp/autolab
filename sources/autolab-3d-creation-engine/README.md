@@ -17,7 +17,7 @@ npm run fit               # measured against published dimensions
 | --- | --- |
 | `node src/cli.mjs selftest` | Are the instruments calibrated? Refuses to certify a model whose axle-to-axle distance is not its published wheelbase. |
 | `node src/cli.mjs dims` | The measurements a specification actually names, each carrying the landmarks it was taken from. |
-| `node src/cli.mjs fit` | Every published dimension against the model, with tolerances, and the part that owns each extreme. |
+| `node src/cli.mjs fit [--json]` | Every published dimension against the model, with tolerances, and the part that owns each extreme; `--json` for a page or an agent. |
 | `node src/cli.mjs extremes` | Which part owns each end of the envelope. Turns "54 mm too long" into "the headlamps". |
 | `node src/cli.mjs parts` | Every part, its category, triangle count and envelope. |
 | `node src/cli.mjs section <x> --svg out/s.svg` | A cross-section, drawn to scale on a millimetre grid, for laying over a drawing. |

@@ -19,10 +19,10 @@ export function ToolActivityStrip() {
   const summary = latest && latest !== expired
     ? ["AGENT", latest.tool, latest.argsSummary, latest.ok ? "ok" : `error: ${latest.error}`, `${latest.ms} ms`].filter(Boolean).join(" · ")
     : "";
-  const text = latest && !latest.ok && summary.length > 160 ? `${summary.slice(0, 159)}…` : summary;
+  const text = latest && summary.length > 160 ? `${summary.slice(0, 159)}…` : summary;
   return (
     <div className="tool-activity-strip" role="status" aria-live="polite" aria-atomic="true"
-      data-active={Boolean(text) || undefined} data-ok={latest?.ok} title={text || undefined}>
+      data-active={Boolean(text) || undefined} data-ok={text ? latest?.ok : undefined} title={text || undefined}>
       {text}
     </div>
   );

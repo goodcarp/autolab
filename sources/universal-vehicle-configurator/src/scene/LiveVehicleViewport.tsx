@@ -497,7 +497,7 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
           far: 60,
         }}
         dpr={[1, 1.5]}
-        shadows
+        shadows="percentage"
         frameloop="demand"
         gl={{
           alpha: true,

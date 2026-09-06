@@ -51,33 +51,20 @@
 
 <section>
   <div class="sec-h"><span class="num">01</span><h2>One command to rule them all</h2></div>
-  <p class="kicker" id="fit-kicker">EX. npm run fit · measured against reference specs · model rx2-blueprint de1afa2</p>
+  <p class="kicker" id="fit-kicker">npm run fit · measured against specs/rivian-r2.json · model r2-blueprint (this assembly)</p>
   <pre class="fit" id="fit-table"><code>dimension             expected   measured   dev       tol
 --------------------------------------------------------------
-<span class="miss">!length_m             4.722      4.776      +54mm     ±10mm</span>
- widthOverBody_m      1.905      1.896      -9mm      ±10mm
- widthOverMirrors_m   2.151      2.151      0mm       ±10mm
-<span class="miss">!height_m             1.699      1.7097     +10.7mm   ±10mm</span>
- wheelbase_m          2.936      2.936      0mm       ±3mm
- frontTrack_m         1.64       1.64       0mm       ±3mm
- rearTrack_m          1.64       1.64       0mm       ±3mm
-<span class="miss">!frontOverhang_m      0.842      0.876      +34mm     ±10mm</span>
-<span class="miss">!rearOverhang_m       0.944      0.964      +20mm     ±10mm</span>
---------------------------------------------------------------
-5/9 within tolerance · mean 14.19mm · worst 54mm (length_m)
-
-extremes, so an out-of-tolerance row names a part:
-  x  min -2.432 m  tailgate                   max 2.344 m  headlamps
-  y  min 0 m  wheelFL                         max 1.7097 m  roofGlass
-  z  min -1.0755 m  doorFL                    max 1.0755 m  doorFR</code></pre>
+ (the measured rows are read from out/fit.json when this page loads;
+  open that file directly if scripts are off)
+--------------------------------------------------------------</code></pre>
   <div class="cols" style="margin-top:28px">
     <div>
       <h3>The miss has a name</h3>
-      <p>The headlamps stand 34 mm proud of the nose and the tailgate 20 mm past the tail. That is the whole of the +54 mm. The roof glass is 10.7 mm above the published height. Wheelbase, both tracks and width over mirrors are exact. None of it required looking at the car.</p>
+      <p id="fit-story">Every published dimension is measured directly off the triangles and compared with its tolerance; where a row is out, the extremes name the part that owns the miss. The numbers on this page are read from <a href="out/fit.json">out/fit.json</a>, written by the engine when the site was assembled.</p>
     </div>
     <div>
       <h3>Calibrated, not assumed</h3>
-      <p>The self-test drives every instrument against a fixture whose answer is known by construction, then refuses to certify a real model until its axle-to-axle distance comes back as the published wheelbase. Tonight: <code>57/57 passed · gate passed</code>, measured 2.936 m against 2.936 m.</p>
+      <p>The self-test drives every instrument against a fixture whose answer is known by construction, then refuses to certify a real model until its axle-to-axle distance comes back as the published wheelbase. On this assembly: <code id="selftest-line">see out/fit.json</code>, <span id="selftest-wheelbase">wheelbase measured against the published figure</span>.</p>
     </div>
     <div>
       <h3>Two honest answers</h3>

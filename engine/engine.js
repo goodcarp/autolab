@@ -30,6 +30,50 @@
     basis: "Independent procedural reconstruction fitted to published dimensions and photographs; not manufacturer CAD.",
   };
 
+  // ---- the measured report, as assembled ---------------------------------
+  // build.sh runs `fit --json` and `selftest` and writes out/fit.json beside the
+  // section drawings. The page and the tool read that; REPORT above is only the
+  // fallback if the file is missing.
+  let live = null;
+  const fmt = (n, d = 3) => (n === null || n === undefined ? "—" : String(Math.round(n * 10 ** d) / 10 ** d));
+  const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  function renderFit(fit) {
+    const table = document.getElementById("fit-table"), kicker = document.getElementById("fit-kicker");
+    const line = document.getElementById("selftest-line"), wb = document.getElementById("selftest-wheelbase"), story = document.getElementById("fit-story");
+    const pad = (t, w) => String(t).padEnd(w);
+    const rows = fit.rows.map((r) => {
+      const dev = r.deviation_mm === null || r.deviation_mm === undefined ? "—" : `${r.deviation_mm > 0 ? "+" : ""}${fmt(r.deviation_mm, 1)}mm`;
+      const text = `${r.status === "out" ? "!" : " "}${pad(r.dimension, 21)}${pad(fmt(r.expected_m), 11)}${pad(fmt(r.measured_m), 11)}${pad(dev, 10)}±${fmt(r.tolerance_mm, 1)}mm`;
+      return r.status === "out" ? `<span class="miss">${esc(text)}</span>` : esc(text);
+    });
+    const s = fit.summary;
+    const worst = s.worst ? ` (${s.worst.dimension ?? s.worst})` : "";
+    const summary = `${s.within}/${s.compared} within tolerance · mean ${fmt(s.meanDeviation_mm, 2)}mm · worst ${fmt(s.worstDeviation_mm, 1)}mm${worst}`;
+    const ext = Object.entries(fit.extremes || {}).map(([axis, v]) => `  ${axis}  ${pad(`min ${fmt(v.min.value_m)} m  ${v.min.part}`, 40)}max ${fmt(v.max.value_m)} m  ${v.max.part}`);
+    if (table) table.innerHTML = `<code>${esc(pad("dimension", 22) + pad("expected", 11) + pad("measured", 11) + pad("dev", 10) + "tol")}\n${"-".repeat(62)}\n${rows.join("\n")}\n${"-".repeat(62)}\n${esc(summary)}\n\nextremes, so an out-of-tolerance row names a part:\n${esc(ext.join("\n"))}</code>`;
+    if (kicker) kicker.textContent = `npm run fit · measured against ${fit.spec} · model r2-blueprint ${fit.model?.commit ?? ""} · assembled ${(fit.measuredAt || "").slice(0, 10)}`;
+    if (line && fit.selftest?.passed) line.textContent = `${fit.selftest.passed}/${fit.selftest.total} passed · gate ${fit.selftest.gate}`;
+    const wbRow = fit.rows.find((r) => r.dimension === "wheelbase_m");
+    if (wb && wbRow) wb.textContent = `measured ${fmt(wbRow.measured_m)} m against ${fmt(wbRow.expected_m)} m`;
+    if (story) {
+      const out = fit.rows.filter((r) => r.status === "out");
+      story.textContent = out.length
+        ? `${s.within} of ${s.compared} published dimensions are within tolerance on this assembly (mean deviation ${fmt(s.meanDeviation_mm, 2)} mm). Out: ${out.map((r) => `${r.dimension} by ${fmt(r.deviation_mm, 1)} mm`).join(", ")}. The extremes below name the part that owns each end of the envelope, so a miss has an owner, not a mystery. Read from out/fit.json, written when the site was assembled.`
+        : `All ${s.compared} published dimensions are within tolerance on this assembly: mean deviation ${fmt(s.meanDeviation_mm, 2)} mm, worst ${fmt(s.worstDeviation_mm, 1)} mm. The extremes below still name the part that owns each end of the envelope. Read from out/fit.json, written when the site was assembled.`;
+    }
+  }
+  function liveReport() {
+    if (!live) return REPORT;
+    return {
+      engine: REPORT.engine, model: live.model, measuredAt: live.measuredAt, units: "metres", spec: live.spec,
+      selftest: { passed: live.selftest?.passed, total: live.selftest?.total, gate: live.selftest?.gate },
+      summary: { withinTolerance: live.summary.within, total: live.summary.compared, meanDeviation_mm: live.summary.meanDeviation_mm, worstDeviation_mm: live.summary.worstDeviation_mm },
+      rows: live.rows.map((r) => ({ dimension: r.dimension, expected: r.expected_m, measured: r.measured_m, deviation_mm: r.deviation_mm, tolerance_mm: r.tolerance_mm, within: r.status === "within", measuredFrom: r.measuredFrom })),
+      extremes: live.extremes, basis: REPORT.basis,
+    };
+  }
+  const fitReady = fetch(new URL("out/fit.json", location.href)).then((r) => (r.ok ? r.json() : null)).then((fit) => { if (fit && fit.rows) { live = fit; renderFit(fit); } }).catch(() => {});
+
   const INSTRUMENTS = [...document.querySelectorAll("#instruments tbody tr")].map((tr) => ({
     command: tr.children[0].textContent.trim(),
     question: tr.children[1].textContent.trim(),
@@ -41,9 +85,9 @@
     {
       name: "get_engine_fit_report",
       title: "Read the measured fit report",
-      description: "Return the AutoLab engine's latest measurement of the vehicle model against its published specification: per-dimension deviation in millimetres with tolerances, the part that owns each extreme, and the self-test gate. Includes the model commit and date it was measured.",
+      description: "Return the AutoLab engine's measurement of the vehicle model against its published specification, as taken when this site was assembled: per-dimension deviation in millimetres with tolerances, the part that owns each extreme, and the self-test gate. Includes the model commit and the assembly time.",
       inputSchema: noArgs, annotations: readOnly,
-      execute: async () => REPORT,
+      execute: async () => { await fitReady; return liveReport(); },
     },
     {
       name: "list_engine_instruments",

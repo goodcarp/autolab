@@ -60,7 +60,7 @@ if (command === "selftest") {
   clearance <partA> <partB>      nearest surface-to-surface distance
   overlaps                       which parts' envelopes intersect
   apertures [--band 50] [--edge 65]  fixed geometry inside a panel's opening (mm behind the skin, mm inside the outline)
-  fit [--spec path]              measured against published dimensions
+  fit [--spec path] [--json]     measured against published dimensions
   symmetry                       shape symmetry about the centreline
 
 MODEL_PATH=<file exporting buildVehicle()>   defaults to ~/Desktop/r2-blueprint/src/vehicle.js
@@ -408,12 +408,16 @@ MODEL_PATH=<file exporting buildVehicle()>   defaults to ~/Desktop/r2-blueprint/
   } else if (command === "fit") {
     const spec = await loadSpec(flag("spec", "specs/rivian-r2.json"));
     const report = fitReport(model, spec);
-    process.stdout.write(`${formatFit(report)}\n\n`);
     const owners = extremes(model);
-    process.stdout.write("extremes, so an out-of-tolerance row names a part:\n");
-    for (const [axis, v] of Object.entries(owners)) {
-      process.stdout.write(`  ${axis}  min ${v.min.value_m} m  ${v.min.part}`.padEnd(46)
-        + `max ${v.max.value_m} m  ${v.max.part}\n`);
+    if (argv.includes("--json")) {   // the same report, for a page or an agent to read
+      print({ spec: flag("spec", "specs/rivian-r2.json"), rows: report.rows, summary: report.summary, extremes: owners });
+    } else {
+      process.stdout.write(`${formatFit(report)}\n\n`);
+      process.stdout.write("extremes, so an out-of-tolerance row names a part:\n");
+      for (const [axis, v] of Object.entries(owners)) {
+        process.stdout.write(`  ${axis}  min ${v.min.value_m} m  ${v.min.part}`.padEnd(46)
+          + `max ${v.max.value_m} m  ${v.max.part}\n`);
+      }
     }
     if (report.summary.out) process.exitCode = 1;
   } else {
