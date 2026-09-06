@@ -31,8 +31,11 @@ await window.r2.stop_tour({});          // stop in place
 
 `get_state` adds `tour: { running, step, of, id, title }`. Step numbers are 1-based;
 before the first run they are 0 with null id/title. A held capture remains running
-until interrupted. Every external tool call other than `get_state`, `start_tour`, or
-`stop_tour` interrupts, including read tools and invalid/unknown calls. `stop_tour`
+until interrupted. Every external call that moves the scene (views, motions, camera,
+framing, highlighting, annotations, reset) interrupts; reads (`get_state`, `get_part`,
+`list_parts`, `measure`, `clearance`, `list_visible_parts`, `get_specification`) and the
+host's `set_vehicle_context` do not, so an agent can narrate the tour and the
+configurator can keep the sheet in sync without stopping it. `stop_tour`
 explicitly stops; `start_tour` replaces the current run. Invalid `from` values fail
 without replacing a running tour.
 

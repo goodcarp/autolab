@@ -128,7 +128,7 @@
  "model": {
   "repository": "r2-blueprint",
   "file": "src/vehicle.js",
-  "commit": "33e7cc3",
+  "commit": "7d0b680",
   "committed": "2026-09-05"
  },
  "selftest": {
@@ -137,5 +137,5 @@
   "gate": "passed",
   "line": "selftest: 59/59 passed · gate passed"
  },
- "measuredAt": "2026-09-06T03:52:11.716Z"
+ "measuredAt": "2026-09-06T03:56:54.795Z"
 }

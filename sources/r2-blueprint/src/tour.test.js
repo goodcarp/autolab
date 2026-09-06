@@ -109,18 +109,18 @@ test('WebMCP dispatcher preserves tour calls and interrupts on external calls ac
   await window.r2.start_tour();
   assert.equal((await window.r2.get_state()).tour.running, true);
   assert.deepEqual(calls, ['iso', 'iso']);
-  await window.r2.get_specification(); assert.equal(tour.state().running, false);
+  await window.r2.set_annotations({ visible: true }); assert.equal(tour.state().running, false);
   const starting = window.r2.start_tour();
-  await window.r2.get_specification(); await starting;
+  await window.r2.set_annotations({ visible: true }); await starting;
   assert.equal(calls.length, 3, 'external call between actions prevents the second action');
   await assert.rejects(window.r2.start_tour({ from: 0 }), /from must/);
   await window.r2.start_tour();
-  await declared.find(tool => tool.name === 'get_specification').execute({});
+  await declared.find(tool => tool.name === 'set_annotations').execute({ visible: true });
   assert.equal(tour.state().running, false, 'registered tools interrupt');
   await window.r2.start_tour();
   let reply;
   await listeners.message({ origin: location.origin, source: { postMessage: body => { reply = body; } },
-    data: { source: 'r2-blueprint', id: 1, tool: 'get_specification', args: {} } });
+    data: { source: 'r2-blueprint', id: 1, tool: 'set_annotations', args: { visible: true } } });
   assert.equal(reply.ok, true); assert.equal(tour.state().running, false, 'postMessage interrupts');
   await window.r2.start_tour(); await window.r2.stop_tour();
   assert.equal(tour.state().running, false);

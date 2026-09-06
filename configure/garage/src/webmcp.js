@@ -322,7 +322,7 @@ export function installWebMCP(ctx) {
     {
       name: 'start_tour',
       title: 'Start the guided tour',
-      description: 'Start the 54-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly.',
+      description: 'Start the 54-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly. Any call that moves the scene (views, motions, camera, framing, highlighting, annotations, reset), and any click or key on the drawing, stops it where it is; reads and the host\'s context sync do not.',
       inputSchema: { type: 'object', additionalProperties: false, properties: { from: { type: 'integer', minimum: 1, maximum: Math.max(1, config.tour?.length ?? 1) } } },
       annotations: SAFE_ACTION,
       run: ({ from = 1 }) => {
@@ -334,7 +334,7 @@ export function installWebMCP(ctx) {
     {
       name: 'stop_tour',
       title: 'Stop the guided tour',
-      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, battery, drive unit, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it.',
+      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, battery, drive unit, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it. Reads never stop the tour; only this, a scene-moving call, or a person\'s click or key does.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: SAFE_SET,
       run: () => (ctx.stopTour ? ctx.stopTour('tool') : { running: false }),
