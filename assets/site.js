@@ -189,7 +189,7 @@
     play.addEventListener("click", () => {
       if (demo.classList.contains("is-live")) return;
       const frame = document.createElement("iframe");
-      frame.src = url("garage/?tour=1&cards=0&nodrift=1");
+      frame.src = url("garage/?tour=1&cards=0&nodrift=1&nav=0");
       frame.title = "Agentic Owner's Guide, running its guided tour";
       frame.loading = "eager"; frame.allow = "fullscreen";
       play.replaceChildren(frame);

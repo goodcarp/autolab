@@ -55,3 +55,22 @@ as in the first version; an unresolved region still FAILs rather than passing.
 
 The superseded first version (100 mm prism, no edge margin) failed every opening on the real model because floors, sills and
 flanges legitimately live inside such a prism; it is kept in git history only.
+
+
+## Looked at, 2026-09-05 (Fable)
+
+The three survivors were framed from their own coordinates in the Owner's Guide
+with the doors, hood and liftgate open (`frame_point`, then `list_visible_parts`):
+
+- rear door frames over the B-pillar (158 mm): the frame's upper rail runs over
+  the pillar's face behind it; nothing crosses the opening. Reads as the door
+  frame overlapping the pillar, which real doors do, only wider here.
+- fender top under the hood's side edge (76 mm): the fender top surface runs
+  under the raised hood edge; with the hood shut the seam is clean.
+- load floor lip inside the liftgate outline (156 mm): the liftgate drops below
+  the load floor, as SUV gates do; the floor's rear lip is inside its outline
+  by construction.
+
+None is a visible defect from those views. They stay listed, because the gate
+cannot know that, and the author has the say. If they are accepted, the honest
+change is an explicit accepted-survivor list in the report, not a wider margin.

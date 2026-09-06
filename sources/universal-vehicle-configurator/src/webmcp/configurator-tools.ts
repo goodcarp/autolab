@@ -1714,7 +1714,7 @@ export function createConfiguratorToolDefinitions(
     name: CONFIGURATOR_TOOL_NAMES[16],
     title: "Switch AutoLab surface",
     description:
-      "Show either the Configure surface (build, pricing, paint, wheels, interior) or the Garage digital twin (components, motion, measurement). Inspecting a part, setting a twin view or running a twin motion switches to Garage on its own; this is how you come back. Presentation tools such as present_vehicle_configuration only affect the Configure canvas, so switch back before using them. Read the current surface from get_vehicle_configuration.",
+      "Show either the Configure surface (build, pricing, paint, wheels, interior) or the Garage digital twin (components, motion, measurement). Inspecting a part, setting a twin view or running a twin motion switches to Garage on its own; this is how you come back. Presentation tools such as present_vehicle_configuration only affect the Configure canvas, so switch back before using them. Read the current surface from get_vehicle_configuration. On screen the switch is labelled Shop (configure) and My Car (garage).",
     inputSchema: {
       type: "object",
       properties: {

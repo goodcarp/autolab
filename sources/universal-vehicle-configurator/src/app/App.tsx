@@ -317,14 +317,14 @@ export function App() {
               aria-pressed={workspace === "configure"}
               onClick={() => ownerGuideBridge.setWorkspace("configure")}
             >
-              <Orbit aria-hidden="true" /> Configure
+              <Orbit aria-hidden="true" /> Shop
             </button>
             <button
               type="button"
               aria-pressed={workspace === "garage"}
               onClick={() => ownerGuideBridge.setWorkspace("garage")}
             >
-              <Wrench aria-hidden="true" /> Garage
+              <Wrench aria-hidden="true" /> My Car
             </button>
           </nav>
           <div className="configurator-header__model">

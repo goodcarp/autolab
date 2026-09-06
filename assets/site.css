@@ -68,7 +68,8 @@ section{max-width:var(--max);margin:0 auto;padding:clamp(40px,6vw,80px) clamp(16
 .card p{color:#222}
 .feats{margin:6px 0 20px;padding-left:18px;color:#333;font-size:15px}
 .feats li{margin:4px 0}
-.card-actions{margin-top:auto;display:flex;gap:10px}
+.card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px}
+.card-actions .btn{font-size:14px;padding:10px 16px;white-space:nowrap}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px}
 .cols.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .prompts{list-style:none;margin:0;padding:0;display:grid;gap:8px}

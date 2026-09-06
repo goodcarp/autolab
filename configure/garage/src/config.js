@@ -1,11 +1,11 @@
 // All sheet text lives here so it is easy to edit.
 export const CONFIG = {
-  hdrLeft: { title: 'AUTOLAB · GARAGE', sub: 'AutoMoto Agentic Vehicle Laboratory' },
-  hdrRight: { title: 'HUDIAN RX2 · DIGITAL TWIN', sub: 'Owner guidance, component inspection & service context' },
-  title: ['MY HUDIAN RX2 · CONFIGURATION-SYNCED', 'OWNER & SERVICE GENERAL ARRANGEMENT'],
+  hdrLeft: { title: "AGENTIC OWNER'S GUIDE", sub: 'Hudian Motors · MY CAR' },
+  hdrRight: { title: 'HUDIAN RX2 · MIDSIZE ELECTRIC WAGON', sub: 'Session ID: 16974 Knowledge Base: Online' },
+  title: ['MY HUDIAN RX2 · DUAL-MOTOR AWD', 'LAUNCH EDITION'],
   titleBlock: [
-    { lbl: 'ID NO.', val: 'RX2-4715-NY' }, { lbl: 'SHEET', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'REV.', val: 'C' },
-    { lbl: 'MODEL', val: 'A. CARPENTER' }, { lbl: 'SYSTEM', val: 'AUTOLAB' }, { lbl: 'DATE', val: '03 · 09 · 26' }, { lbl: 'STATUS', val: 'LIVE TWIN', red: true },
+    { lbl: 'ID NO.', val: 'RX2-4715-NY' }, { lbl: 'REF', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'CLASS', val: 'C' },
+    { lbl: 'OWNER', val: 'H. YUTANI' }, { lbl: 'CHECKED', val: '—' }, { lbl: 'BORN', val: '01 · 09 · 26' }, { lbl: 'STATUS', val: 'SYNCED', red: true },
   ],
   zonesX: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K'],
   zonesY: ['6', '5', '4', '3', '2', '1'],

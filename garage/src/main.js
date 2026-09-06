@@ -155,6 +155,8 @@ if (q.get('only')) { const keep = q.get('only').split(','); for (const p of vehi
 // default for the origin, with no ?cards=1 able to undo it.
 if (q.get('cards') === '0' || q.get('cards') === '1') ui.setCards(q.get('cards') === '1', true);
 if (q.get('min')) for (const id of q.get('min').split(',')) { if (!/^[a-z]+$/.test(id)) continue; const el = document.getElementById(id); const b = el && el.querySelector('.panel-min'); if (b && !el.classList.contains('min')) { b.dataset.noPersist = '1'; b.click(); delete b.dataset.noPersist; } }
+// ?nav=0 hides the header links when the sheet is embedded somewhere that has its own navigation
+if (q.get('nav') === '0') document.body.classList.add('nav-off');
 if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'titleblock', 'viewtitle', 'hint', 'hdr-left', 'hdr-right']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
 if (q.get('nodrift') === '1') rig.driftOn = false;
 if (q.get('snap') === '1' || q.get('az') || q.get('el')) { rig.goTo(st.view || 'iso', 0); rig.driftOn = false; if (q.get('az')) rig.cur.az = +q.get('az'); if (q.get('el')) rig.cur.el = +q.get('el'); rig.onSettle(st.view); }

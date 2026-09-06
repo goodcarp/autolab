@@ -266,7 +266,7 @@ body.cards-off #tour-btn{visibility:visible;pointer-events:auto}
 /* Registration and navigation use the same ink, rules and type as the sheet. */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .header-tools{display:flex;align-items:center;gap:12px;margin-top:5px;pointer-events:auto}
-.header-tools button,.header-tools a{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink);background:var(--paper)}
+.header-tools button,.header-tools a{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink);background:var(--paper)}
 #agent-chip{border:1px solid var(--ink);padding:2px 6px;cursor:pointer;line-height:1.3}
 #agent-chip.registered{color:var(--accent);border-color:var(--accent)}
 .header-tools a{text-decoration:none;border-bottom:1px solid var(--ink-soft)}
@@ -288,3 +288,8 @@ body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:
   #agent-tools-list dd{margin-bottom:7px}
 }
 @media (max-height:520px){#agent-tools{top:76px;max-height:calc(100vh - 96px)}}
+
+/* header links: legible as buttons, not only as labels */
+.header-tools a{border:1px solid var(--ink-soft);border-radius:3px;padding:2px 7px;text-decoration:none;color:var(--ink);letter-spacing:.16em}
+.header-tools a:hover,.header-tools a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+body.nav-off .header-tools a{display:none}
