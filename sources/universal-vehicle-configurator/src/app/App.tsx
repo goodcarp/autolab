@@ -302,7 +302,7 @@ export function App() {
   return (
     <main className="configurator-shell" data-workspace={workspace}>
       <header className="configurator-header">
-        <a className="configurator-header__brand" href="/" aria-label="AutoLab home">
+        <a className="configurator-header__brand" href="../" aria-label="AutoLab home">
           <span className="configurator-header__mark" aria-hidden="true">A</span>
           <span className="configurator-header__wordmark">
             <strong>AutoLab</strong>
