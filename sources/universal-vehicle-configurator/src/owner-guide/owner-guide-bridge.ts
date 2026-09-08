@@ -96,20 +96,30 @@ function hasLoadedFrameDocument(candidate: HTMLIFrameElement | null): boolean {
  * cross-frame contract testable without mutating global application state.
  */
 export function createOwnerGuideBridge(
-  options: { frameTimeoutMs?: number; framePollMs?: number } = {},
+  options: { frameTimeoutMs?: number; framePollMs?: number; persistWorkspace?: boolean } = {},
 ): OwnerGuideBridge {
   const frameTimeoutMs = options.frameTimeoutMs ?? FRAME_TIMEOUT_MS;
   const framePollMs = options.framePollMs ?? FRAME_POLL_MS;
   const listeners = new Set<WorkspaceListener>();
   const loadListeners = new Set<LoadListener>();
 
-  let workspace: AutoLabWorkspace = "configure";
+  const readWorkspace = (): AutoLabWorkspace => options.persistWorkspace
+    && new URLSearchParams(window.location.search).get("workspace") === "garage"
+    ? "garage" : "configure";
+  let workspace: AutoLabWorkspace = readWorkspace();
   let loadRequested = false;
   let frame: HTMLIFrameElement | null = null;
   let frameReady = false;
 
   function emitWorkspace() {
     listeners.forEach((listener) => listener(workspace));
+  }
+
+  function restoreWorkspace() {
+    const next = readWorkspace();
+    if (workspace === next) return;
+    workspace = next;
+    emitWorkspace();
   }
 
   function requestFrameLoad() {
@@ -211,13 +221,26 @@ export function createOwnerGuideBridge(
     setWorkspace(next) {
       if (workspace === next) return;
       workspace = next;
+      if (options.persistWorkspace) {
+        const url = new URL(window.location.href);
+        if (next === "garage") url.searchParams.set("workspace", "garage");
+        else url.searchParams.delete("workspace");
+        window.history.pushState(window.history.state, "", url);
+      }
       emitWorkspace();
     },
     observeWorkspace(listener) {
+      if (options.persistWorkspace && listeners.size === 0) {
+        workspace = readWorkspace();
+        window.addEventListener("popstate", restoreWorkspace);
+      }
       listeners.add(listener);
       listener(workspace);
       return () => {
         listeners.delete(listener);
+        if (options.persistWorkspace && listeners.size === 0) {
+          window.removeEventListener("popstate", restoreWorkspace);
+        }
       };
     },
     requestFrame: requestFrameLoad,
@@ -243,6 +266,7 @@ export function createOwnerGuideBridge(
       args: Record<string, unknown> = {},
       callOptions: VehicleTwinCallOptions = {},
     ) {
+      throwIfAborted(callOptions.signal);
       if (callOptions.reveal) bridge.setWorkspace("garage");
       const execute = () => callTwin<T>(tool, args, callOptions.signal);
       return callOptions.trackActivity === false ? execute() : trackToolExecution(tool, args, execute);
@@ -259,4 +283,4 @@ export function createOwnerGuideBridge(
   return bridge;
 }
 
-export const ownerGuideBridge = createOwnerGuideBridge();
+export const ownerGuideBridge = createOwnerGuideBridge({ persistWorkspace: true });

@@ -17,7 +17,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const source = resolve(process.argv[2] ?? process.env.R2_BLUEPRINT_PATH ?? resolve(root, "..", "r2-blueprint"));
-const FILES = ["blueprint.js", "camera.js", "config.js", "geom.js", "main.js", "overlay.js", "tour.js", "ui.js", "vehicle.js", "webmcp.js"];
+const FILES = ["blueprint.js", "camera.js", "config.js", "discovery.js", "geom.js", "main.js", "overlay.js", "tooltip-layout.js", "tour.js", "ui.js", "vehicle.js", "webmcp.js"];
 if (!existsSync(resolve(source, "src", "webmcp.js"))) { console.error(`no Owner's Guide at ${source}`); process.exit(1); }
 let changed = 0;
 for (const name of FILES) {

@@ -71,8 +71,59 @@ export class Overlay {
     return p.group.localToWorld(out.copy(p.anchor).sub(p.rest)); // authored in parent space at rest
   }
 
+  partTooltip(part) {
+    const world = new THREE.Vector3();
+    if (!this.anchorWorld(part, world)) {
+      // A part without an authored callout uses its first authored geometry's
+      // centre. Picking another surface must never move the diagram endpoint.
+      const mesh = part.meshes.find(mesh => mesh.geometry);
+      if (!mesh) return null;
+      if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+      mesh.localToWorld(world.copy(mesh.geometry.boundingSphere.center));
+    }
+    const anchor = this.rig.project(world, this.w, this.h, {});
+    if (anchor.behind || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
+    // Inspectors use current panel geometry, never the annotation layer's
+    // throttled cache: a just-opened tray must affect the first visible frame.
+    const stage = this.svg.getBoundingClientRect(), obstacles = [];
+    const furniture = ['key', 'instr', 'titleblock', 'tour-card', 'compact-sheet', 'agent-tools',
+      'primary-controls', 'cards-toggle', 'hdr-left-title', 'hdr-left-sub', 'hdr-right', 'hint', 'viewtitle', 'tour-btn']
+      .map(id => document.getElementById(id));
+    furniture.push(document.querySelector?.('#hdr-left .header-tools'), document.querySelector?.('#hdr-left .logo'));
+    if (!document.body?.classList.contains('cards-off')) furniture.push(document.getElementById('controls'));
+    this.tooltipFurniture ||= new WeakMap();
+    for (const el of furniture) {
+      if (!el) continue;
+      const style = getComputedStyle(el);
+      if (style.visibility === 'hidden' || style.visibility === 'collapse') continue;
+      const ancestry = []; let visible = true;
+      for (let node = el; node; node = node.parentElement) {
+        const css = getComputedStyle(node);
+        if (css.display === 'none' || Number(css.opacity || 1) <= 0.001 || css.contentVisibility === 'hidden') { visible = false; break; }
+        ancestry.push(String(node.className?.baseVal ?? node.className ?? ''), Boolean(node.hidden), Boolean(node.open));
+      }
+      if (!visible) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) continue;
+      const key = JSON.stringify([part.id, this.w, this.h, stage.left, stage.top, el.offsetWidth ?? rect.width, el.offsetHeight ?? rect.height, ancestry]);
+      let cached = this.tooltipFurniture.get(el);
+      if (cached?.key !== key) {
+        // Reserve a little extra room for the sheet's short fade/translate
+        // transition, then retain that rectangle until an explicit UI/size
+        // change. The card must not chase a panel a pixel at a time.
+        cached = { key, rect: [rect.left - stage.left - 16, rect.top - stage.top - 16,
+          rect.right - stage.left + 16, rect.bottom - stage.top + 16].map(Math.round) };
+        this.tooltipFurniture.set(el, cached);
+      }
+      if (cached.rect[2] > 0 && cached.rect[3] > 0 && cached.rect[0] < this.w && cached.rect[1] < this.h) obstacles.push(cached.rect);
+    }
+    return { ...this.tooltipLayout, obstacles, partId: part.id, anchor,
+      number: this.callouts.find(callout => callout.part === part)?.n ?? null };
+  }
+
   update(st, dt) {
     const w = this.w, h = this.h, rig = this.rig;
+    const compact = w < 640 || h < 360;
     this.dimAlpha += (this.dimTarget - this.dimAlpha) * Math.min(1, dt * 5);
     const dimFade = Math.max(0, 1 - st.explode * 4);
     const parts = [];
@@ -94,9 +145,10 @@ export class Overlay {
       const q = rig.project(tmp.set(x, y + (st.explode > 0.02 ? 1.0 * st.explode : 0), z), w, h, {}); if (q.behind) continue;
       bx0 = Math.min(bx0, q.x); by0 = Math.min(by0, q.y); bx1 = Math.max(bx1, q.x); by1 = Math.max(by1, q.y);
     }
+    this.tooltipLayout = { vehicle: [bx0, by0, bx1, by1], obstacles: this._rects };
 
     // ---- datum lines ----
-    const dash = `stroke="${this.ink}" stroke-width="1" stroke-dasharray="16 5 3 5" opacity="0.55" fill="none"`;
+    const dash = `stroke="${this.ink}" stroke-width="1" stroke-dasharray="16 5 3 5" opacity="0.3" fill="none"`;
     const seg = (a, b, attrs) => { const s = rig.projectSegment(a, b, w, h); if (s) parts.push(`<line x1="${s[0].toFixed(1)}" y1="${s[1].toFixed(1)}" x2="${s[2].toFixed(1)}" y2="${s[3].toFixed(1)}" ${attrs}/>`); };
     const axisX = [new THREE.Vector3(-60, 0.001, 0), new THREE.Vector3(60, 0.001, 0)];
     if (this.view === 'front') seg(new THREE.Vector3(3, -1, 0), new THREE.Vector3(3, 4, 0), dash);
@@ -113,7 +165,7 @@ export class Overlay {
 
     // ---- dimensions ----
     const dims = this.dims[this.view] || [];
-    if (this.dimAlpha > 0.01 && dimFade > 0 && st.panels) {
+    if (this.dimAlpha > 0.01 && dimFade > 0 && st.panels && (!compact || ortho)) {
       const g = [];
       for (const d of dims) {
         const A = rig.project(d.a, w, h, {}), B = rig.project(d.b, w, h, {});
@@ -169,6 +221,8 @@ export class Overlay {
       for (const c of this.callouts) {
         if (this.view === 'top' && ortho) break; // the reference draws no callouts in the top view
         const p = c.part; if (!p || !p.anchor || !p.group.visible) continue;
+        if (p.id === this.tooltipPartId) continue; // its inspected-part leader replaces this annotation
+        if (compact && this.hoverId !== p.id) continue;
         const A = this.anchorWorld(p, tmp); if (!A) continue;
         const N = tmpN.copy(p.anchorN || new THREE.Vector3(0, 1, 0)).normalize();
         N.transformDirection(p.group.matrixWorld);
@@ -187,9 +241,10 @@ export class Overlay {
           for (const [x, y, pref] of cands) { const d = Math.hypot(x - cx, y - cy) * (pref ? 0.6 : 1); if (d < bd) { bd = d; best = [x, y]; } }
           cx = best[0]; cy = best[1];
         }
-        cx = Math.max(60, Math.min(w - 60, cx)); cy = Math.max(70, Math.min(h - 120, cy));
+        const padY = compact ? 24 : 70, bottomPad = compact ? 24 : 120;
+        cx = Math.max(30, Math.min(w - 30, cx)); cy = Math.max(padY, Math.min(h - bottomPad, cy));
         for (let pass = 0; pass < 2; pass++) for (const [rx0, ry0, rx1, ry1] of this._rects) { if (cx > rx0 && cx < rx1 && cy > ry0 && cy < ry1) { cy = (cy - ry0 < ry1 - cy) ? ry0 : ry1; } }
-        cx = Math.max(60, Math.min(w - 60, cx)); cy = Math.max(70, Math.min(h - 120, cy));
+        cx = Math.max(30, Math.min(w - 30, cx)); cy = Math.max(padY, Math.min(h - bottomPad, cy));
         const dx = cx - a.x, dy = cy - a.y;
         let ex, ey;
         if (Math.abs(dx) >= Math.abs(dy)) { ex = a.x + Math.sign(dx) * Math.abs(dy); ey = cy; } else { ex = cx; ey = a.y + Math.sign(dy) * Math.abs(dx); }

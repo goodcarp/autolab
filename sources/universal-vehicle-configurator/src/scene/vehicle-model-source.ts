@@ -47,6 +47,21 @@ export type VehicleModelComponent =
 
 export type VehicleModelSourceId = "licensed-glb" | "r2-engineering";
 
+export const LICENSED_VEHICLE_MODEL_URL = `${import.meta.env.BASE_URL}models/openx-volvo-ex30-2024.glb`;
+
+/** Each viewport attempt needs its own lazy wrapper: React caches rejections. */
+export function createVehicleModelComponent(
+  id: VehicleModelSourceId = DEFAULT_VEHICLE_MODEL_SOURCE,
+): VehicleModelComponent {
+  return id === "licensed-glb"
+    ? lazy(async () => ({
+      default: (await import("./LicensedVehicleModel")).LicensedVehicleModel,
+    }))
+    : lazy(async () => ({
+      default: (await import("./R2VehicleModel")).R2VehicleModel,
+    }));
+}
+
 export interface VehicleModelSource {
   id: VehicleModelSourceId;
   label: string;
@@ -103,9 +118,7 @@ export const VEHICLE_MODEL_SOURCES: Record<VehicleModelSourceId, VehicleModelSou
     },
     attribution: "Licensed EX30 reference · not an R2",
     hasOpenableBody: false,
-    Component: lazy(async () => ({
-      default: (await import("./LicensedVehicleModel")).LicensedVehicleModel,
-    })),
+    Component: createVehicleModelComponent("licensed-glb"),
   },
   "r2-engineering": {
     id: "r2-engineering",
@@ -131,9 +144,7 @@ export const VEHICLE_MODEL_SOURCES: Record<VehicleModelSourceId, VehicleModelSou
       chargePort: { x: 0.152, y: 0.495 },
       rearHitch: { x: 0.140, y: 0.610 },
     },
-    Component: lazy(async () => ({
-      default: (await import("./R2VehicleModel")).R2VehicleModel,
-    })),
+    Component: createVehicleModelComponent("r2-engineering"),
   },
 };
 

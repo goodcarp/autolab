@@ -200,3 +200,35 @@ describe("browser boot and history integration", () => {
     expect(store.getState().domain.buyerContext.state).toBe("CO");
   });
 });
+
+describe("workspace-preserving share links", () => {
+  it.each(["push", "replace"] as const)("keeps My Car and %s history state while removing private and unrelated query data", (mode) => {
+    const store = createConfiguratorStore(catalog, { buyerContext: { utility: "xcel", financing: true, state: "CO" } });
+    const marker = { reviewOpen: false, routingKey: "same-entry" };
+    const target = {
+      location: { href: "https://example.test/configure/?workspace=garage&utility=xcel&financing=true&state=CO&tracking=secret#vehicle", search: "?workspace=garage&utility=xcel" },
+      history: { state: marker, pushState: vi.fn(), replaceState: vi.fn() },
+    };
+    const shared = applyShareStateToHistory(catalog, store.getState().domain, { target, mode });
+    const url = new URL(shared);
+    expect(url.searchParams.get("workspace")).toBe("garage");
+    expect(url.hash).toBe("#vehicle");
+    for (const key of ["utility", "financing", "state", "tracking"]) expect(url.searchParams.has(key)).toBe(false);
+    expect(target.history[mode === "push" ? "pushState" : "replaceState"]).toHaveBeenCalledWith(marker, "", url);
+    const restored = createConfiguratorStoreFromSearch(catalog, url.search);
+    expect(restored.decoded.report.status).toBe("valid");
+    expect(restored.store.getState().domain.selections).toEqual(store.getState().domain.selections);
+    expect(restored.store.getState().domain.buyerContext.utility).toBe("unknown");
+    expect(store.getState().domain.buyerContext.utility).toBe("xcel");
+  });
+
+  it("does not carry an unrecognized workspace into a generated share link", () => {
+    const store = createConfiguratorStore(catalog);
+    const target = {
+      location: { href: "https://example.test/configure/?workspace=not-a-surface", search: "?workspace=not-a-surface" },
+      history: { replaceState: vi.fn(), pushState: vi.fn() },
+    };
+    const shared = applyShareStateToHistory(catalog, store.getState().domain, { target });
+    expect(new URL(shared).searchParams.has("workspace")).toBe(false);
+  });
+});

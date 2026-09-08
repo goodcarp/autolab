@@ -17,15 +17,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/site.css?v=20260908">
 </head>
-<body>
+<body class="home-page">
 <header class="top">
   <a class="brand" href="./" aria-label="AutoLab by AutoMoto home">
     <img class="brand-mark" src="assets/brand/autolab-mark.svg" alt="" width="44" height="41">
     <span class="brand-word">AutoLab <small>by AutoMoto <sup>©</sup></small></span>
   </a>
-  <nav class="nav" aria-label="Experiences">
+  <nav class="nav" id="site-navigation" aria-label="Experiences">
     <a href="configure/">Configure</a>
     <a href="garage/">Garage</a>
     <a href="engine/">Engine</a>
@@ -34,11 +34,18 @@
   <button class="chip" id="chip" type="button" aria-live="polite" aria-expanded="false" aria-controls="tools-sheet">
     <span class="dot" aria-hidden="true"></span><span id="chip-label">Manual mode</span>
   </button>
+  <button class="nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
 </header>
 
 <section class="hero">
   <p class="eyebrow">Introducing</p>
   <h1>Agent-native,<br>web&nbsp;4.0 tools<br>for car lovers.</h1>
+  <figure class="hero-demo" id="hero-demo">
+    <button type="button" class="hero-demo__play" id="hero-play" aria-label="Play the guided tour of the Owner's Guide here">
+      <img src="garage/docs/demo/tour/step-4_half.jpg" alt="The Agentic Owner's Guide mid-tour: the body shell dissolved and the structural battery pack highlighted on the drawing sheet" width="1680" height="1050" fetchpriority="high" decoding="async">
+      <span class="hero-demo__label"><span class="hero-demo__dot" aria-hidden="true"></span>Play the guided tour</span>
+    </button>
+  </figure>
   <p class="lede">Car? Meet AI. AI? Meet car. AutoLab by AutoMoto lets enthusiasts and automakers <em>dream, build, and understand</em> the greatest vehicles in the world. Powered by WebMCP.</p>
   <div class="cta">
     <a class="btn primary" href="configure/">Open the Configurator</a>
@@ -46,13 +53,7 @@
     <a class="btn ghost" href="engine/">See the Engine</a>
   </div>
   <p class="hero-note">Optimized for Chrome, Claude in Chrome, and the ChatGPT Browser.</p>
-  <figure class="hero-demo" id="hero-demo">
-    <button type="button" class="hero-demo__play" id="hero-play" aria-label="Play the guided tour of the Owner's Guide here">
-      <img src="garage/docs/demo/tour/step-4_half.jpg" alt="The Agentic Owner's Guide mid-tour: the body shell dissolved and the structural battery pack highlighted on the drawing sheet" width="1680" height="1050" loading="lazy" decoding="async">
-      <span class="hero-demo__label"><span class="hero-demo__dot" aria-hidden="true"></span>Play the guided tour</span>
-    </button>
-    <figcaption>Nine stops, fifty-four seconds, every one of them a WebMCP tool call. Click to run it here, or <a href="garage/?tour=1">open it full size</a>.</figcaption>
-  </figure>
+
 </section>
 
 <section class="experiences" id="experiences">
@@ -61,15 +62,16 @@
     <article class="card" id="card-configure">
       <div class="card-top">
         <span class="tag">Sales</span>
-        <span class="count">18 WebMCP tools</span>
       </div>
       <h3>Web 4.0-enabled Vehicle Configurator</h3>
       <p>Show, don't tell. Claude or ChatGPT can now help you build, and bring home, your dream car. Your agent walks you through the build, prices it, explores options, and configures the vehicle right in front of your eyes.</p>
+      <details class="card-details"><summary><span class="count">18 WebMCP tools</span></summary>
       <ul class="feats">
         <li>Get help navigating dynamic pricing, financing, energy use and multi-year ownership cost</li>
         <li>ASI = Always Save (w/) Incentives. An agent-readable incentives and offers engine is an agent query away.</li>
         <li>Showroom controls like camera placement, feature spotlight and component focus via WebMCP</li>
       </ul>
+      </details>
       <div class="card-actions">
         <a class="btn primary" href="configure/">Open</a>
         <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/universal-vehicle-configurator" rel="noopener">Source</a>
@@ -79,15 +81,16 @@
     <article class="card" id="card-garage">
       <div class="card-top">
         <span class="tag">Ownership</span>
-        <span class="count">18 WebMCP tools</span>
       </div>
       <h3>Agentic Owner's Guide</h3>
       <p>Know your vehicle like never before. A real-time digital twin 3D model synced to your vehicle, with a visual and agentic library of components: what they do and where they go.</p>
+      <details class="card-details"><summary><span class="count">18 WebMCP tools</span></summary>
       <ul class="feats">
         <li>Detailed component library and modeling allows a user and their agent to view, inspect and highlight key vehicle elements; the agent can ask what is on the sheet and measure real clearances</li>
         <li>Comprehensive visual demonstration capabilities</li>
         <li>Fully operable. Drive. Open doors, front trunk, liftgate and charge-port</li>
       </ul>
+      </details>
       <div class="card-actions">
         <a class="btn primary" href="garage/">Open</a>
         <a class="btn" href="garage/?tour=1">Guided tour</a>
@@ -98,15 +101,16 @@
     <article class="card" id="card-engine">
       <div class="card-top">
         <span class="tag">Framework</span>
-        <span class="count">16 instruments</span>
       </div>
       <h3>AutoLab 3D Creation Engine</h3>
       <p>An agent-native spatial-reasoning tool and framework for code-native 3D model creation by large language models. A ruler that measures the model directly, instead of measuring a picture of it. It is how the vehicle above got built.</p>
+      <details class="card-details"><summary><span class="count">16 instruments</span></summary>
       <ul class="feats">
         <li>Includes tolerance and component verifier, and an aperture gate that names fixed geometry inside any door, hood or liftgate opening</li>
         <li>Maps sections, clearances, symmetry and silhouette deviation; camera-less loop</li>
         <li>Geometry solver w/ curve prover</li>
       </ul>
+      </details>
       <div class="card-actions">
         <a class="btn primary" href="engine/">Open</a>
         <a class="btn ghost" href="https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" rel="noopener">Source</a>
@@ -116,7 +120,8 @@
 </section>
 
 <section class="why">
-  <div class="sec-h"><span class="num">02</span><h2>Why WebMCP</h2></div>
+  <details class="section-disclosure">
+  <summary class="sec-h"><span class="num">02</span><h2>Why WebMCP</h2></summary>
   <div class="cols">
     <div>
       <h3>The agent sees what you see</h3>
@@ -131,10 +136,12 @@
       <p>Incentive outcomes carry source records with titles, URLs and retrieval dates. Digital-twin measurements state their basis: an independent reconstruction fitted to published dimensions, not manufacturer CAD. The agent can say where a number came from.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <section class="judges" id="judges">
-  <div class="sec-h"><span class="num">03</span><h2>Try it with an agent</h2></div>
+  <details class="section-disclosure">
+  <summary class="sec-h"><span class="num">03</span><h2>Try it with an agent</h2></summary>
   <div class="cols two">
     <div>
       <h3>ChatGPT desktop</h3>
@@ -158,10 +165,12 @@
       <p class="fine">Click a prompt to copy it.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <section class="surface" id="surface">
-  <div class="sec-h"><span class="num">04</span><h2>The tool surface</h2></div>
+  <details class="section-disclosure">
+  <summary class="sec-h"><span class="num">04</span><h2>The tool surface</h2></summary>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Page</th><th>Tools</th><th>What an agent can do</th></tr></thead>
@@ -193,15 +202,16 @@ await api.registerTool({
       <p>Closed top-level schemas. Human-readable titles. Explicit read-only, non-destructive and idempotency hints. Errors carry the recovery: <code>no part "flux capacitor". Call list_parts for the 42 available ids.</code> Structured JSON in metres. Build-changing tools are revision-gated; presentation tools are not, because they cannot lose anyone's work.</p>
     </div>
   </div>
+  </details>
 </section>
 
-<section class="manifesto">
-  <p class="eyebrow">Dope questions, for car people in the AI age</p>
+<section class="manifesto" aria-labelledby="manifesto-title">
+  <h2 id="manifesto-title">Are you a ball knower?</h2>
   <div class="lines">
     <p>What if agents could truly help you understand the product you're buying?</p>
     <p>Or the product you already own?</p>
     <p>Or help the company that sold it to you fix the thing, the right way, at the lowest cost, the first time you bring it in?</p>
-    <p class="big">Your car got smarter. Your AI got smarter.<br>Shouldn't you?</p>
+    <p class="big"><span>Your car got smarter.</span> <span>Your AI should get smarter about your car.</span></p>
   </div>
 </section>
 
@@ -213,7 +223,7 @@ await api.registerTool({
   <p class="fine">AutoLab and AutoMoto are independent and unofficial. This project is not associated with, endorsed by, or sponsored by Rivian or any manufacturer. The vehicle geometry is an independent reconstruction. Not manufacturer CAD.</p>
 </footer>
 
-<div class="sheet" id="tools-sheet" hidden>
+<div class="sheet" id="tools-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
   <div class="sheet-h"><b id="sheet-title">Agent tools on this page</b><button type="button" id="sheet-close" aria-label="Close">×</button></div>
   <div id="sheet-body"></div>
 </div>

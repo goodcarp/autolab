@@ -4,6 +4,7 @@ import {
   Environment,
   Grid,
   Lightformer,
+  useGLTF,
 } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, ToneMapping, Vignette } from "@react-three/postprocessing";
@@ -25,18 +26,25 @@ import {
 import { fitCameraToAspect, getCameraPose, type CameraRigId } from "./camera-presets";
 import { createCycloramaTexture } from "./studio-backdrop";
 import { CabinInterior } from "./CabinInterior";
-import { resolveVehicleModelSource } from "./vehicle-model-source";
+import {
+  createVehicleModelComponent,
+  LICENSED_VEHICLE_MODEL_URL,
+  resolveVehicleModelSource,
+  type VehicleModelComponent,
+  type VehicleModelSourceId,
+} from "./vehicle-model-source";
 import type {
   LiveVehicleRenderMode,
   LiveVehicleViewportProps,
 } from "./live-vehicle.types";
 import "./live-vehicle.css";
 
-class LicensedModelBoundary extends Component<
+export class VehicleModelBoundary extends Component<
   Readonly<{
     children: ReactNode;
     fallback: ReactNode;
     onFailure: (reason: string) => void;
+    modelSource?: VehicleModelSourceId;
   }>,
   Readonly<{ failed: boolean }>
 > {
@@ -47,7 +55,10 @@ class LicensedModelBoundary extends Component<
   }
 
   componentDidCatch(error: unknown) {
-    this.props.onFailure(error instanceof Error ? error.message : "Licensed model failed to load");
+    // useGLTF also retains rejected loads. Evict only this failed reference
+    // before the parent exposes Retry; successful models keep their cache.
+    if (this.props.modelSource === "licensed-glb") useGLTF.clear(LICENSED_VEHICLE_MODEL_URL);
+    this.props.onFailure(error instanceof Error ? error.message : "Vehicle model failed to load");
   }
 
   render() {
@@ -378,10 +389,11 @@ function Studio({
   );
 }
 
-function VehicleScene(props: LiveVehicleViewportProps) {
+function VehicleScene(props: LiveVehicleViewportProps & Readonly<{ VehicleBody: VehicleModelComponent }>) {
   // Whichever body is registered for this source draws the vehicle; camera,
   // lighting, blueprint mode, focus and the cabin are all source-agnostic.
-  const { Component: VehicleBody, hasCabin, cameraRig } = resolveVehicleModelSource(props.modelSource);
+  const { hasCabin, cameraRig } = resolveVehicleModelSource(props.modelSource);
+  const VehicleBody = props.VehicleBody;
   // Interior swaps the exterior shell for the cabin rather than drawing one
   // inside the other: from a camera in the driver's seat the body's front
   // faces are culled anyway, so keeping it would just leak the studio in.
@@ -448,7 +460,7 @@ function VehicleScene(props: LiveVehicleViewportProps) {
         </group>
       )}
       <group visible={!insideCabin}>
-        <LicensedModelBoundary fallback={null} onFailure={props.onFailure}>
+        <VehicleModelBoundary fallback={null} onFailure={props.onFailure} modelSource={props.modelSource}>
           <Suspense fallback={null}>
             <VehicleBody
               paint={props.paint}
@@ -462,7 +474,7 @@ function VehicleScene(props: LiveVehicleViewportProps) {
               onReady={props.onReady}
             />
           </Suspense>
-        </LicensedModelBoundary>
+        </VehicleModelBoundary>
       </group>
       <CabinInterior interior={props.interior} visible={insideCabin} />
       <CameraDirector
@@ -481,6 +493,9 @@ function VehicleScene(props: LiveVehicleViewportProps) {
 }
 
 export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
+  // Keep the lazy identity outside the scene's Suspense boundary so a pending
+  // model is stable, while a remounted viewport can retry a rejected import.
+  const VehicleBody = useMemo(() => createVehicleModelComponent(props.modelSource), [props.modelSource]);
   return (
     <div
       className="live-vehicle-viewport"
@@ -514,7 +529,7 @@ export function LiveVehicleViewport(props: LiveVehicleViewportProps) {
         }}
       >
         <Suspense fallback={null}>
-          <VehicleScene {...props} />
+          <VehicleScene {...props} VehicleBody={VehicleBody} />
         </Suspense>
       </Canvas>
       <div className="live-vehicle-blueprint-overlay">

@@ -52,14 +52,14 @@ function IncentiveBucket({ title, hint, tone, outcomes, catalog }: BucketProps) 
   if (outcomes.length === 0) return null;
 
   return (
-    <section className="incentives__bucket" data-tone={tone}>
-      <header>
+    <details className="incentives__bucket" data-tone={tone} open={tone === "matched"}>
+      <summary>
         {toneIcon(tone)}
         <div>
-          <strong>{title}</strong>
+          <strong>{title} <span className="incentives__count">{outcomes.length}</span></strong>
           <small>{hint}</small>
         </div>
-      </header>
+      </summary>
       <ul>
         {outcomes.map((outcome) => {
           const sources = outcome.sourceIds
@@ -77,8 +77,8 @@ function IncentiveBucket({ title, hint, tone, outcomes, catalog }: BucketProps) 
 
               {tone === "potential" && outcome.missingContext.length > 0 ? (
                 <p className="incentives__why">
-                  Needs {joinList(outcome.missingContext.map(contextLabel))}. Set it
-                  above and this recalculates.
+                  Needs {joinList(outcome.missingContext.map(contextLabel))}. Update
+                  Buyer details above and this recalculates.
                 </p>
               ) : tone === "matched" ? null : (
                 <p className="incentives__why">{outcome.reason}</p>
@@ -102,7 +102,7 @@ function IncentiveBucket({ title, hint, tone, outcomes, catalog }: BucketProps) 
           );
         })}
       </ul>
-    </section>
+    </details>
   );
 }
 

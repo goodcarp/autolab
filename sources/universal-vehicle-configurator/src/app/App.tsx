@@ -1,6 +1,7 @@
 import { Copy, Orbit, Share2, Sparkles, Undo2, Wrench, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VehicleConfigurator } from "../features/configurator";
+import { BuyerContextPanel } from "../features/configurator/VehicleConfigurator";
 import {
   VehicleCanvas,
   type VehicleCanvasMode,
@@ -82,8 +83,17 @@ export function App() {
 
   useEffect(() => ownerGuideBridge.observeWorkspace(setWorkspace), []);
   const [changeNotice, setChangeNotice] = useState<ChangeNotice | null>(null);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
-  const [reviewOpen, setReviewOpen] = useState(false);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copying" | "copied" | "failed">("idle");
+  const [shareUrl, setShareUrl] = useState("");
+  const [sharedBuild, setSharedBuild] = useState<{ revision: number; workspace: AutoLabWorkspace } | null>(null);
+  const visibleShareStatus = shareStatus === "copying" || (sharedBuild?.revision === revision && sharedBuild.workspace === workspace) ? shareStatus : "idle";
+  const [reviewOpen, setReviewOpen] = useState(() => Boolean(window.history.state?.autolabReview));
+  const reviewRef = useRef<HTMLElement>(null);
+  const reviewOpenRef = useRef(reviewOpen);
+  const reviewReturnFocus = useRef<HTMLElement | null>(null);
+  const currentBuildUrl = useRef(window.location.href);
+  const shareTimer = useRef<number | undefined>(undefined);
+  const sharePending = useRef(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const pendingHumanPresentationRevision = useRef<number | null>(null);
 
@@ -129,10 +139,93 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    applyShareStateToHistory(catalog, configuratorStore.getState().domain, {
+    currentBuildUrl.current = applyShareStateToHistory(catalog, configuratorStore.getState().domain, {
       mode: "replace",
     });
-  }, [catalog, domain]);
+  }, [catalog, domain, workspace]);
+
+  const closeReview = useCallback(() => {
+    if (window.history.state?.autolabReview) window.history.back();
+    else setReviewOpen(false);
+  }, []);
+
+  const openReview = () => {
+    currentBuildUrl.current = window.location.href;
+    reviewReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!window.history.state?.autolabReview) {
+      window.history.pushState({ ...window.history.state, autolabReview: true }, "", window.location.href);
+    }
+    reviewOpenRef.current = true;
+    setReviewOpen(true);
+  };
+
+  useEffect(() => {
+    const onPopstate = (event: PopStateEvent) => {
+      const opening = Boolean(event.state?.autolabReview);
+      if (reviewOpenRef.current && !opening) {
+        // This entry is the review's same-page origin. Preserve buyer edits
+        // before the URL restore listeners run, so closing never undoes them.
+        const currentUrl = new URL(currentBuildUrl.current);
+        if (currentUrl.pathname === window.location.pathname) {
+          // The history destination owns navigation. Only carry over build
+          // edits; a stale workspace must never reroute a dismissed review.
+          const destination = new URL(window.location.href);
+          currentUrl.searchParams.delete("workspace");
+          if (destination.searchParams.get("workspace") === "garage") currentUrl.searchParams.set("workspace", "garage");
+          currentUrl.hash = destination.hash;
+          window.history.replaceState(event.state, "", currentUrl);
+        }
+      }
+      reviewOpenRef.current = opening;
+      setReviewOpen(opening);
+    };
+    window.addEventListener("popstate", onPopstate, true);
+    return () => window.removeEventListener("popstate", onPopstate, true);
+  }, []);
+
+  useEffect(() => {
+    if (!reviewOpen) return;
+    const sheet = reviewRef.current;
+    if (!sheet) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () => Array.from(sheet.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex="0"]',
+    )).filter((element) => !element.closest('[hidden]') && !Array.from(sheet.querySelectorAll("details:not([open])")).some(
+      (details) => details.contains(element) && element !== details.querySelector("summary"),
+    ));
+    focusable()[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeReview();
+      }
+      if (event.key !== "Tab") return;
+      const targets = focusable();
+      const first = targets[0];
+      const last = targets.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !sheet.contains(document.activeElement))) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !sheet.contains(document.activeElement))) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    const containFocus = (event: FocusEvent) => {
+      if (!sheet.contains(event.target as Node)) focusable()[0]?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", containFocus);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", containFocus);
+      reviewReturnFocus.current?.focus({ preventScroll: true });
+    };
+  }, [closeReview, reviewOpen]);
+
+  useEffect(() => () => window.clearTimeout(shareTimer.current), []);
 
   useEffect(() => {
     if (!changeNotice) return;
@@ -213,19 +306,17 @@ export function App() {
   }, []);
 
   const bodySource = activeVehicleModelSource();
-  // Hotspots are markers on a picture, so they follow the picture. On the
-  // authored still they would otherwise sit at the R2's coordinates, on a
-  // differently shaped car, describing a body that is not being drawn.
+  // Only describe a selection as rendered once that body is on screen.
   const showingConfiguredBody = renderedBody?.representsConfiguredVehicle ?? false;
   const anchors = showingConfiguredBody ? anchorsFor(bodySource) : SCENE_MANIFEST.anchors;
-  const hotspotBasis = showingConfiguredBody
-    ? bodySource.hotspotBasis
-    : "the authored still of the licensed reference vehicle";
+  const paintPresentation = renderedBody?.id === bodySource.id
+    ? `selection rendered on ${bodySource.hotspotBasis}`
+    : renderedBody?.id === "unavailable" ? "vehicle preview unavailable" : "vehicle preview loading";
   const hotspots: VehicleHotspot[] = [
     {
       id: "paint",
       label: "Exterior finish",
-      detail: `${paintOption?.label ?? "Representative finish"} · selection rendered on ${hotspotBasis}`,
+      detail: `${paintOption?.label ?? "Representative finish"} · ${paintPresentation}`,
       anchor: anchors.bodyPaint,
       accuracy: "representative",
     },
@@ -274,15 +365,23 @@ export function App() {
   ]);
 
   const handleShare = async () => {
+    if (sharePending.current) return;
+    sharePending.current = true;
+    window.clearTimeout(shareTimer.current);
     const url = applyShareStateToHistory(catalog, configuratorStore.getState().domain, {
       mode: "replace",
     });
+    setShareUrl(url);
+    setSharedBuild({ revision, workspace });
+    setShareStatus("copying");
     try {
       await navigator.clipboard.writeText(url);
       setShareStatus("copied");
-      window.setTimeout(() => setShareStatus("idle"), 1_800);
+      shareTimer.current = window.setTimeout(() => setShareStatus("idle"), 2_800);
     } catch {
-      window.history.replaceState(null, "", url);
+      setShareStatus("failed");
+    } finally {
+      sharePending.current = false;
     }
   };
 
@@ -301,7 +400,7 @@ export function App() {
 
   return (
     <main className="configurator-shell" data-workspace={workspace}>
-      <header className="configurator-header">
+      <header className="configurator-header" inert={reviewOpen}>
         <a className="configurator-header__brand" href="../" aria-label="AutoLab home">
           <span className="configurator-header__mark" aria-hidden="true">A</span>
           <span className="configurator-header__wordmark">
@@ -344,13 +443,14 @@ export function App() {
             </span>
           )}
           {canUndo && (
-            <button className="header-action" type="button" onClick={handleUndo}>
+            <button className="header-action" type="button" onClick={handleUndo} aria-label="Undo agent changes">
               <Undo2 aria-hidden="true" /> <span>Undo agent</span>
             </button>
           )}
-          <button className="header-action" type="button" onClick={() => void handleShare()}>
-            {shareStatus === "copied" ? <Copy aria-hidden="true" /> : <Share2 aria-hidden="true" />}
-            <span>{shareStatus === "copied" ? "Link copied" : "Share"}</span>
+          <button className="header-action" type="button" onClick={() => void handleShare()}
+            aria-label={visibleShareStatus === "copied" ? "Link copied" : "Share build"} disabled={visibleShareStatus === "copying"}>
+            {visibleShareStatus === "copied" ? <Copy aria-hidden="true" /> : <Share2 aria-hidden="true" />}
+            <span>{visibleShareStatus === "copied" ? "Link copied" : "Share"}</span>
           </button>
           <ToolStatus status={siteTools} />
         </div>
@@ -358,7 +458,15 @@ export function App() {
 
       <ToolActivityStrip />
 
-      <div className="autolab-surfaces">
+      {visibleShareStatus === "failed" && !reviewOpen && (
+        <div className="share-fallback" role="status">
+          <label>Copy this build link<input aria-label="Build link" readOnly value={shareUrl} onFocus={(event) => event.target.select()} /></label>
+          <button type="button" aria-label="Dismiss build link" onClick={() => setShareStatus("idle")}><X aria-hidden="true" /></button>
+        </div>
+      )}
+      <span className="visually-hidden" role="status">{visibleShareStatus === "copied" ? "Build link copied" : visibleShareStatus === "failed" ? "Copy unavailable. Select the build link to copy it manually." : ""}</span>
+
+      <div className="autolab-surfaces" inert={reviewOpen}>
         <section
           className="configurator-workspace"
           data-active={workspace === "configure" || undefined}
@@ -374,6 +482,12 @@ export function App() {
             paint={paint}
             wheel={wheel}
             interior={interior}
+            headerAside={
+              <div className="configuration-facts" aria-label="Current vehicle total">
+                <small>Vehicle total</small>
+                <strong aria-live="polite" aria-atomic="true">{formatCurrency(resolved.price.vehicleTotal)}</strong>
+              </div>
+            }
             accessories={{ towHitch: Boolean(resolved.specs.tow_hitch) }}
             mode={canvasMode}
             viewPreset={viewPreset}
@@ -392,11 +506,6 @@ export function App() {
             }
           />
 
-          <div className="configuration-facts" aria-label="Current configuration quick facts">
-            <span><small>Vehicle total</small><strong>{formatCurrency(resolved.price.vehicleTotal)}</strong></span>
-            <span><small>Range</small><strong>{String(resolved.specs.range_mi ?? "—")} mi</strong></span>
-            <span><small>Interior</small><strong>{interiorOption?.label ?? "—"}</strong></span>
-          </div>
         </div>
 
         <aside className="configurator-rail" aria-label="Configuration choices">
@@ -484,7 +593,13 @@ export function App() {
                   source: "human",
                 });
               }}
-              onReviewBuild={() => setReviewOpen(true)}
+              onReviewBuild={openReview}
+              onViewVehicle={() => {
+                viewportRef.current?.scrollIntoView({
+                  behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                  block: "start",
+                });
+              }}
             />
           </div>
         </aside>
@@ -509,19 +624,21 @@ export function App() {
             className="review-layer__scrim"
             type="button"
             aria-label="Close build review"
-            onClick={() => setReviewOpen(false)}
+            tabIndex={-1}
+            onClick={closeReview}
           />
-          <aside className="review-sheet" role="dialog" aria-modal="true" aria-labelledby="review-title">
+          <aside className="review-sheet" ref={reviewRef} role="dialog" aria-modal="true" aria-labelledby="review-title">
             <header>
               <div>
                 <span>Configuration / Rev {revision}</span>
                 <h2 id="review-title">Review your RX2</h2>
               </div>
-              <button type="button" onClick={() => setReviewOpen(false)} aria-label="Close build review">
+              <button type="button" onClick={closeReview} aria-label="Close build review">
                 <X aria-hidden="true" />
               </button>
             </header>
 
+            <div className="review-sheet__body">
             <div className="review-sheet__specs">
               <span><strong>{String(resolved.specs.range_mi ?? "—")} mi</strong><small>Est. range</small></span>
               <span><strong>{resolved.delivery?.window ?? "TBD"}</strong><small>Delivery</small></span>
@@ -552,15 +669,27 @@ export function App() {
               )}
             </div>
 
+            <details className="buyer-disclosure review-sheet__buyer">
+              <summary>Buyer details</summary>
+              <BuyerContextPanel result={resolved} instanceId="review-buyer" onChange={(patch) => {
+                configuratorMutations.setBuyerContext({
+                  expectedRevision: configuratorStore.getState().domain.revision, patch, source: "human",
+                });
+              }} />
+            </details>
             <IncentiveSummary catalog={catalog} incentives={resolved.incentives} />
 
-            <footer>
+            <div className="review-sheet__notes">
               <p>Independent buyer-side estimate. Verify pricing, availability, taxes, and eligibility with the seller.</p>
               {catalog.product.disclaimer && (
                 <p className="review-sheet__disclaimer">{catalog.product.disclaimer}</p>
               )}
-              <button type="button" onClick={() => void handleShare()}>
-                <Share2 aria-hidden="true" /> {shareStatus === "copied" ? "Build link copied" : "Copy build link"}
+            </div>
+            </div>
+            <footer>
+              {visibleShareStatus === "failed" && <label className="review-sheet__share-link">Copy this build link<input aria-label="Build link" readOnly value={shareUrl} onFocus={(event) => event.target.select()} /></label>}
+              <button type="button" onClick={() => void handleShare()} disabled={visibleShareStatus === "copying"}>
+                <Share2 aria-hidden="true" /> {visibleShareStatus === "copied" ? "Build link copied" : visibleShareStatus === "copying" ? "Copying link…" : "Copy build link"}
               </button>
             </footer>
           </aside>

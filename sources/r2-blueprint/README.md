@@ -14,7 +14,7 @@ then open <http://127.0.0.1:8765/>. three.js (r170) is loaded from jsdelivr, and
 
 ## Controls
 
-- **TOUR** — a 54-second sequence of tool calls with captions; click TOUR or press T to start. Any key, canvas press, sheet click or other tool call interrupts it. See [docs/TOUR.md](docs/TOUR.md) for tools and held capture links.
+- **TOUR** — a 30-second sequence of tool calls with captions; click TOUR or press T to start. Manual interaction or a scene-changing tool call interrupts it; reads and context sync do not. See [docs/TOUR.md](docs/TOUR.md) for tools and held capture links.
 - **VIEW** — ISO · 3/4 F · 3/4 R · SIDE · FRONT · TOP. Elevations are true orthographic projections; the camera blends projection matrices during the eased transition. Dimension lines and the view title fade in once the camera settles. ISO auto-orbits slowly until you drag.
 - Drag to orbit, scroll to zoom (dragging out of an elevation blends back to perspective).
 - Hover a part (or a KEY TO ITEMS row) for the orange highlight and tooltip.

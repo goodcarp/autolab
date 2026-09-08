@@ -40,27 +40,35 @@
   function renderFit(fit) {
     const table = document.getElementById("fit-table"), kicker = document.getElementById("fit-kicker");
     const line = document.getElementById("selftest-line"), wb = document.getElementById("selftest-wheelbase"), story = document.getElementById("fit-story");
-    const pad = (t, w) => String(t).padEnd(w);
-    const rows = fit.rows.map((r) => {
-      const dev = r.deviation_mm === null || r.deviation_mm === undefined ? "—" : `${r.deviation_mm > 0 ? "+" : ""}${fmt(r.deviation_mm, 1)}mm`;
-      const text = `${r.status === "out" ? "!" : " "}${pad(r.dimension, 21)}${pad(fmt(r.expected_m), 11)}${pad(fmt(r.measured_m), 11)}${pad(dev, 10)}±${fmt(r.tolerance_mm, 1)}mm`;
-      return r.status === "out" ? `<span class="miss">${esc(text)}</span>` : esc(text);
-    });
+    const names = {
+      length_m: "Length", widthOverBody_m: "Body width", widthOverMirrors_m: "Width over mirrors",
+      height_m: "Height", wheelbase_m: "Wheelbase", frontTrack_m: "Front track", rearTrack_m: "Rear track",
+      frontOverhang_m: "Front overhang", rearOverhang_m: "Rear overhang",
+    };
     const s = fit.summary;
-    const worst = s.worst ? ` (${s.worst.dimension ?? s.worst})` : "";
-    const summary = `${s.within}/${s.compared} within tolerance · mean ${fmt(s.meanDeviation_mm, 2)}mm · worst ${fmt(s.worstDeviation_mm, 1)}mm${worst}`;
-    const ext = Object.entries(fit.extremes || {}).map(([axis, v]) => `  ${axis}  ${pad(`min ${fmt(v.min.value_m)} m  ${v.min.part}`, 40)}max ${fmt(v.max.value_m)} m  ${v.max.part}`);
-    if (table) table.innerHTML = `<code>${esc(pad("dimension", 22) + pad("expected", 11) + pad("measured", 11) + pad("dev", 10) + "tol")}\n${"-".repeat(62)}\n${rows.join("\n")}\n${"-".repeat(62)}\n${esc(summary)}\n\nextremes, so an out-of-tolerance row names a part:\n${esc(ext.join("\n"))}</code>`;
-    if (kicker) kicker.textContent = `npm run fit · measured against ${fit.spec} · model r2-blueprint ${fit.model?.commit ?? ""} · assembled ${(fit.measuredAt || "").slice(0, 10)}`;
-    if (line && fit.selftest?.passed) line.textContent = `${fit.selftest.passed}/${fit.selftest.total} passed · gate ${fit.selftest.gate}`;
+    const out = fit.rows.filter((r) => r.status === "out");
+    const dimensionName = (r) => names[r.dimension] || r.dimension;
+    const rows = fit.rows.map((r) => {
+      const dev = r.deviation_mm == null ? "—" : `${r.deviation_mm > 0 ? "+" : ""}${fmt(r.deviation_mm, 1)}`;
+      const state = r.status === "out" ? "Outside tolerance" : r.status === "within" ? "Within tolerance" : "Not compared";
+      return `<tr><td>${esc(dimensionName(r))}<span class="fit-badge${r.status === "out" ? " miss" : ""}">${state}</span></td><td data-label="Expected (m)">${esc(fmt(r.expected_m))}</td><td data-label="Measured (m)">${esc(fmt(r.measured_m))}</td><td data-label="Deviation (mm)">${esc(dev)}</td><td data-label="Tolerance (mm)">±${esc(fmt(r.tolerance_mm, 1))}</td></tr>`;
+    });
+    if (table) table.innerHTML = `<table><thead><tr><th scope="col">Dimension</th><th scope="col">Expected (m)</th><th scope="col">Measured (m)</th><th scope="col">Deviation (mm)</th><th scope="col">Tolerance (mm)</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    const extremes = document.getElementById("fit-extremes");
+    if (extremes) extremes.innerHTML = `<dl class="extremes">${Object.entries(fit.extremes || {}).map(([axis, v]) => `<div><dt>${esc(axis.toUpperCase())} extremes</dt><dd>Min ${esc(fmt(v.min.value_m))} m · ${esc(v.min.part)}<br>Max ${esc(fmt(v.max.value_m))} m · ${esc(v.max.part)}</dd></div>`).join("")}</dl>`;
+    if (kicker) kicker.textContent = `Model ${fit.model?.commit ?? "this assembly"} · measured ${(fit.measuredAt || "").slice(0, 10) || "at assembly"} · ${fit.spec}`;
+    document.getElementById("fit-within").textContent = `${s.within}/${s.compared}`;
+    document.getElementById("fit-deviation").innerHTML = `${esc(fmt(s.meanDeviation_mm, 2))} <small>mm</small>`;
+    document.getElementById("fit-calibration").textContent = fit.selftest ? `${fit.selftest.passed}/${fit.selftest.total}` : "—";
+    document.getElementById("fit-status").textContent = out.length
+      ? `${out.length} ${out.length === 1 ? "dimension needs" : "dimensions need"} review. Largest deviation: ${fmt(s.worstDeviation_mm, 1)} mm. Open the report to inspect each measurement.`
+      : `All ${s.compared} measured dimensions are within tolerance. Largest deviation: ${fmt(s.worstDeviation_mm, 1)} mm.`;
+    if (line && fit.selftest) line.textContent = `${fit.selftest.passed}/${fit.selftest.total} passed · gate ${fit.selftest.gate}`;
     const wbRow = fit.rows.find((r) => r.dimension === "wheelbase_m");
     if (wb && wbRow) wb.textContent = `measured ${fmt(wbRow.measured_m)} m against ${fmt(wbRow.expected_m)} m`;
-    if (story) {
-      const out = fit.rows.filter((r) => r.status === "out");
-      story.textContent = out.length
-        ? `${s.within} of ${s.compared} published dimensions are within tolerance on this assembly (mean deviation ${fmt(s.meanDeviation_mm, 2)} mm). Out: ${out.map((r) => `${r.dimension} by ${fmt(r.deviation_mm, 1)} mm`).join(", ")}. The extremes below name the part that owns each end of the envelope, so a miss has an owner, not a mystery. Read from out/fit.json, written when the site was assembled.`
-        : `All ${s.compared} published dimensions are within tolerance on this assembly: mean deviation ${fmt(s.meanDeviation_mm, 2)} mm, worst ${fmt(s.worstDeviation_mm, 1)} mm. The extremes below still name the part that owns each end of the envelope. Read from out/fit.json, written when the site was assembled.`;
-    }
+    if (story) story.textContent = out.length
+      ? `Outside tolerance: ${out.map((r) => `${dimensionName(r)} by ${fmt(r.deviation_mm, 1)} mm`).join(", ")}. The extremes name the part at each end of the envelope, so the next edit starts with a specific component.`
+      : `Every measured dimension is within tolerance on this assembly. The extremes still name the part at each end of the envelope, so future changes can be traced to a specific component.`;
   }
   function liveReport() {
     if (!live) return REPORT;
@@ -84,12 +92,27 @@
     const summary = document.getElementById("aperture-summary");
     if (summary) {
       const failing = rep.apertures.filter((a) => a.status === "FAIL");
-      const named = failing.flatMap((a) => Object.values(a.poses.flatMap((p) => p.offenders).reduce((m, o) => { if (!m[o.part] || (o.inset_mm ?? 0) > (m[o.part].inset_mm ?? 0)) m[o.part] = o; return m; }, {})).map((o) => `${o.part} ${fmt(o.inset_mm, 0)} mm inside the ${a.aperture} outline`));
-      summary.innerHTML = `On this assembly the gate (band ${rep.band_mm} mm behind the skin, edge margin ${rep.edge_mm} mm) ${failing.length ? `names ${failing.length} of ${rep.apertures.filter((a) => a.gated !== false).length} gated openings for the author to judge: ${esc(named.join("; "))}.` : "passes every gated opening."} Everything else that meets an opening does so within the edge margin. The full report is <a href="out/apertures.json">out/apertures.json</a>, and an agent can read it with <code>get_aperture_report</code>.`;
+      const gated = rep.apertures.filter((a) => a.gated !== false).length;
+      summary.innerHTML = `${failing.length ? `${failing.length} of ${gated} checked openings have findings to review.` : `All ${gated} checked openings pass.`} The gate measures within ${esc(rep.band_mm)} mm of the skin, beyond a ${esc(rep.edge_mm)} mm edge margin. <a href="out/apertures.json">Read the full report</a>.`;
+
     }
   }
-  fetch(new URL("out/apertures.json", location.href)).then((r) => (r.ok ? r.json() : null)).then((rep) => { if (rep) renderApertures(rep); }).catch(() => {});
-  const fitReady = fetch(new URL("out/fit.json", location.href)).then((r) => (r.ok ? r.json() : null)).then((fit) => { if (fit && fit.rows) { live = fit; renderFit(fit); } }).catch(() => {});
+  fetch(new URL("out/apertures.json", location.href)).then((r) => {
+    if (!r.ok) throw new Error("Report unavailable");
+    return r.json();
+  }).then(renderApertures).catch(() => {
+    document.getElementById("aperture-summary").textContent = "The opening report could not be loaded. Reload this page to try again.";
+  });
+  const fitReady = fetch(new URL("out/fit.json", location.href)).then((r) => {
+    if (!r.ok) throw new Error("Report unavailable");
+    return r.json();
+  }).then((fit) => {
+    if (!fit?.rows || !fit.summary) throw new Error("Report incomplete");
+    live = fit;
+    renderFit(fit);
+  }).catch(() => {
+    document.getElementById("fit-status").textContent = "The measured report could not be loaded. Reload this page to try again, or open the report file below.";
+  });
 
   const INSTRUMENTS = [...document.querySelectorAll("#instruments tbody tr")].map((tr) => ({
     command: tr.children[0].textContent.trim(),
@@ -166,6 +189,5 @@
     const timer = setInterval(async () => { if ((await tryRegister()) || Date.now() - started > 12000) clearInterval(timer); }, 400);
   })();
   renderSheet();
-  chip.addEventListener("click", () => { const open = sheet.hidden; sheet.hidden = !open; chip.setAttribute("aria-expanded", String(open)); });
-  document.getElementById("sheet-close").addEventListener("click", () => { sheet.hidden = true; chip.setAttribute("aria-expanded", "false"); });
+  window.AutoLabUI.bindToolsSheet();
 })();

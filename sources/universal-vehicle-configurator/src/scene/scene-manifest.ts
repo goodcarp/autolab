@@ -16,11 +16,10 @@ export type SceneAssetMode = "live_3d" | "authored_2_5d";
  * This described the whole experience when the licensed Volvo EX30 was the only
  * body. It is not any more: the live vehicle is a code-native R2, registered in
  * vehicle-model-source.ts, which carries its own title, attribution, credit and
- * hotspot anchors. What remains here is the licensed asset itself — still the
- * source of the authored stills shown while the live body loads, still the
- * fallback when WebGL is unavailable, and still selectable with
- * ?model=licensed-glb. Nothing in here should be read as describing what is on
- * screen by default.
+ * hotspot anchors. What remains here is the optional licensed reference asset,
+ * selectable with ?model=licensed-glb, and its archived still metadata. The
+ * configurator uses neutral loading and unavailable states, never these stills
+ * as a substitute for the requested body.
  */
 export const SCENE_MANIFEST = {
   id: "openx-volvo-ex30-2024-reference",
@@ -60,7 +59,7 @@ export const SCENE_MANIFEST = {
   wheelPresentation: "material_only" as WheelPresentation,
   labels: {
     visualAccuracy: "Licensed reference geometry — not R2 geometry",
-    // Shown while the live R2 is loading, and if it cannot run at all.
+    // Historical reference still metadata; not a loading or failure placeholder.
     fallbackNotice: "Authored still of the licensed reference vehicle",
     wheelAccuracy: "Representative wheel treatment",
     affiliation: "Licensed EX30 reference · not an R2",

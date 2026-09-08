@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260908">
 <script type="importmap">
 {
   "imports": {
@@ -29,6 +29,7 @@
 <link rel="modulepreload" href="src/webmcp.js">
 <link rel="modulepreload" href="src/geom.js">
 <link rel="modulepreload" href="src/tour.js">
+<link rel="modulepreload" href="src/discovery.js">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f6fa'/%3E%3Cpath d='M16 4 28 16 16 28 4 16Z' fill='none' stroke='%231c2b4f' stroke-width='2'/%3E%3Cpath d='M16 11 21 16 16 21 11 16Z' fill='%23c94b31'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -57,9 +58,9 @@
       <div class="hdr-sub" id="hdr-left-sub"></div>
       <nav class="header-tools" aria-label="Guide tools and home">
         <button id="agent-chip" type="button" aria-expanded="false" aria-controls="agent-tools">MANUAL MODE</button>
-        <a href="../" title="AutoLab home">◂ AUTOLAB</a>
-        <a href="../configure/" title="Shop: the vehicle configurator">SHOP</a>
-        <a href="../engine/" title="The AutoLab 3D Creation Engine">ENGINE</a>
+        <a href="../" data-site-link="" title="AutoLab home">◂ AUTOLAB</a>
+        <a href="../configure/" data-site-link="configure/" title="Shop: the vehicle configurator">SHOP</a>
+        <a href="../engine/" data-site-link="engine/" title="The AutoLab 3D Creation Engine">ENGINE</a>
       </nav>
     </div>
   </header>
@@ -87,6 +88,40 @@
   <section class="panel" id="controls">
     <div class="ctl-row"><span class="ctl-label">VIEW</span><div class="ctl-btns" id="view-btns"></div></div>
     <div class="ctl-row"><span class="ctl-label">MOTION</span><div class="ctl-btns" id="motion-btns"></div></div>
+  </section>
+
+  <nav id="primary-controls" aria-label="Drawing controls">
+    <button class="btn compact-only" type="button" data-sheet="views" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">VIEWS</button>
+    <button class="btn compact-only" type="button" data-sheet="parts" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">PARTS</button>
+    <button class="btn compact-only" type="button" data-sheet="more" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">MORE</button>
+    <button class="btn" id="reset-btn" type="button" aria-label="Reset view and vehicle">RESET</button>
+  </nav>
+
+  <dialog id="compact-sheet" aria-labelledby="compact-sheet-title" aria-modal="false">
+    <div class="compact-sheet-header"><h2 id="compact-sheet-title">VIEWS</h2><button id="compact-sheet-close" type="button" class="panel-min" aria-label="Close drawing controls">×</button></div>
+    <div id="compact-views" class="compact-section"><div class="compact-grid" id="compact-view-btns"></div></div>
+    <div id="compact-parts" class="compact-section" hidden><div id="compact-key-grid"></div></div>
+    <div id="compact-more" class="compact-section" hidden>
+      <div class="compact-grid" id="compact-motion-btns"></div>
+      <div class="compact-grid compact-secondary"><button class="btn" id="compact-cards-btn" type="button" aria-pressed="false">ANNOTATIONS</button><button class="btn" id="compact-agent-btn" type="button">AGENT TOOLS</button></div>
+    </div>
+  </dialog>
+  <p id="selected-part" role="status" hidden></p>
+
+  <section id="demo-discovery" aria-label="Explore the car" hidden>
+    <p id="demo-discovery-hint">Tap the doors, lights or wheels. Drag to explore.</p>
+    <div class="demo-action-row">
+      <button id="demo-replay" type="button">Replay tour</button>
+      <button id="demo-reset" type="button">Reset</button>
+      <button id="demo-options-toggle" type="button" aria-expanded="false" aria-controls="demo-options">Controls</button>
+    </div>
+    <div id="demo-options" hidden>
+      <button type="button" data-demo-action="open" aria-pressed="false">Open doors</button>
+      <button type="button" data-demo-action="lights" aria-pressed="false">Lights</button>
+      <button type="button" data-demo-action="drive" aria-pressed="false">Spin wheels</button>
+    </div>
+    <p class="sr-only" id="demo-description">Interactive car. Drag or use arrow keys to orbit. Pinch, scroll, or use brackets to zoom. Tap doors to open them, lights to switch them on, or wheels to spin them. Keyboard shortcuts: O for doors, L for lights, D for wheels, R to reset, T to replay the tour.</p>
+    <p class="sr-only" id="demo-status" role="status"></p>
   </section>
 
   <section class="panel" id="titleblock">

@@ -135,16 +135,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* Only the healthy live composite hides the authored frames. While the GLB is
-   still downloading the authored art stays up, so the stage is never empty;
-   .vc-live-layer starts at opacity 0 and fades in over it, so there is no
-   doubled silhouette during the handoff. */
-.vehicle-canvas[data-renderer="live_3d"] .vc-angle-view,
-.vehicle-canvas[data-renderer="live_3d"] .vc-profile-view {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .vehicle-canvas[data-renderer="live_3d"] .vc-hotspot {
   pointer-events: auto;
 }
@@ -373,18 +363,6 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(2%) scale(0.97);
-}
-
-.vc-interior-view__fallback-vehicle {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.vehicle-canvas[data-renderer="live_3d"] .vc-interior-view__fallback-vehicle {
-  display: none;
 }
 
 .vehicle-canvas:not([data-preset="angle"]) .vc-angle-view,
@@ -789,43 +767,6 @@
   opacity: 0.72;
 }
 
-.vc-interior-view__caption {
-  position: absolute;
-  z-index: 13;
-  right: 1.2rem;
-  top: calc(5.4rem + clamp(2.9rem, 4.4vw, 3.7rem) + 0.45rem);
-  bottom: auto;
-  display: grid;
-  justify-items: end;
-  gap: 0.18rem;
-  color: #eef5f0;
-  text-align: right;
-}
-
-.vc-interior-view__caption > span,
-.vc-interior-view__caption small {
-  display: flex;
-  align-items: center;
-  gap: 0.34rem;
-  color: rgba(229, 241, 233, 0.56);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.47rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.vc-interior-view__caption svg {
-  width: 0.7rem;
-  height: 0.7rem;
-}
-
-.vc-interior-view__caption strong {
-  max-width: 11rem;
-  font-size: clamp(0.92rem, 1.3vw, 1.15rem);
-  font-weight: 540;
-  letter-spacing: -0.03em;
-}
-
 .vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"][data-mode="showroom"] .vc-stage {
   color: #ecf4ee;
   border-color: rgba(184, 206, 191, 0.15);
@@ -884,18 +825,6 @@
 
 .vehicle-canvas:not([data-renderer="live_3d"])[data-preset="interior"] .vc-view-picker__thumbnail {
   background: #151b17;
-}
-
-/* On the live path the stage stays light, so the caption authored for the dark
-   cabin mock has to flip to ink or it is invisible over the bodywork. */
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption {
-  color: rgba(23, 33, 29, 0.9);
-  text-shadow: 0 1px 2px rgba(250, 249, 245, 0.75);
-}
-
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption > span,
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption small {
-  color: rgba(23, 33, 29, 0.62);
 }
 
 /* Layered compositor: a near-white render plus an alpha mask of the paintable
@@ -1376,12 +1305,12 @@
 .vc-asset-fallback {
   position: absolute;
   z-index: 10;
-  inset: 18% 17%;
+  inset: 5rem 1rem 7rem;
   display: grid;
   place-items: center;
   align-content: center;
   gap: 0.35rem;
-  color: rgba(29, 42, 35, 0.64);
+  color: #46534d;
   text-align: center;
 }
 
@@ -1396,29 +1325,26 @@
 }
 
 .vc-asset-fallback > span:last-child {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
 }
 
-.vc-asset-fallback__outline {
-  position: absolute;
-  inset: 18% 8%;
+.vc-asset-fallback button {
+  min-height: 44px;
+  margin-top: 0.65rem;
+  padding: 0.65rem 1rem;
   border: 1px solid currentColor;
-  border-radius: 45% 50% 18% 20% / 55% 58% 28% 32%;
-  opacity: 0.22;
+  border-radius: 0.6rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
 }
 
-.vc-asset-fallback__outline span {
-  position: absolute;
-  bottom: -8%;
-  width: 18%;
-  aspect-ratio: 1;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  background: inherit;
+.vc-asset-fallback button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
 }
-
-.vc-asset-fallback__outline span:first-child { left: 14%; }
-.vc-asset-fallback__outline span:last-child { right: 13%; }
 
 .vehicle-canvas[data-mode="blueprint"] .vc-asset-fallback {
   color: rgba(214, 248, 255, 0.64);
@@ -1587,24 +1513,6 @@
   background: rgba(103, 122, 109, 0.3);
 }
 
-/*
- * The palette caption sits over the cabin itself on the live path, where its
- * unbacked type lands on upholstery of roughly its own value. A soft scrim
- * keeps it readable without putting a panel over the seat it is describing.
- */
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption {
-  padding: 0.5rem 0.72rem;
-  border-radius: 0.65rem;
-  background: linear-gradient(200deg, rgba(9, 13, 11, 0.72), rgba(9, 13, 11, 0.5));
-  backdrop-filter: blur(6px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption > span,
-.vehicle-canvas[data-renderer="live_3d"][data-preset="interior"] .vc-interior-view__caption small {
-  color: rgba(230, 241, 234, 0.78);
-}
-
 /* A photographic backdrop for the live studio; guides belong to Blueprint. */
 .vehicle-canvas[data-renderer="live_3d"][data-mode="showroom"] .vc-environment__grid,
 .vehicle-canvas[data-renderer="live_3d"][data-mode="showroom"] .vc-environment__orbit,
@@ -1613,6 +1521,26 @@
 }
 /* Focus hotspots are agent-addressable through present_vehicle; the floating rings cluttered the showroom. */
 .vc-hotspots { display: none; }
+
+/* Loading and unavailable states contain no vehicle image or reference silhouette. */
+.vc-loading { position: absolute; z-index: 12; inset: 5rem 1rem 7rem; display: flex; justify-content: center; align-items: center; gap: 0.7rem; color: #46534d; font-size: 0.875rem; }
+.vehicle-canvas[data-mode="blueprint"] .vc-loading,
+.vehicle-canvas[data-preset="interior"] .vc-loading,
+.vehicle-canvas[data-preset="interior"] .vc-asset-fallback { color: #dfece5; }
+.vc-loading svg { width: 1.2rem; height: 1.2rem; animation: vc-loading-turn 1.2s linear infinite; }
+@keyframes vc-loading-turn { to { transform: rotate(360deg); } }
+.vehicle-canvas[data-reduced-motion] .vc-loading svg { animation: none; }
+
+/* Camera controls stay legible and do not imply a different vehicle model. */
+.vehicle-canvas .vc-stage .vc-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(27rem, calc(100% - 1.5rem)); gap: 0.35rem; left: 0.75rem; right: auto; bottom: 0.75rem; }
+.vehicle-canvas .vc-stage .vc-view-picker > button { display: flex; flex-direction: column; align-items: center; justify-content: center; width: auto; min-width: 0; min-height: 58px; padding: 0.35rem 0.15rem; gap: 0.2rem; color: #334139; background: #ffffffed; }
+.vehicle-canvas .vc-stage .vc-view-picker > button[aria-pressed="true"] { color: #fff; border-color: #23342b; background: #23342b; box-shadow: none; }
+.vehicle-canvas .vc-stage .vc-view-picker > button:focus-visible { outline: 2px solid #42635b; outline-offset: 2px; }
+.vehicle-canvas .vc-stage .vc-view-picker > button > span:last-child { font-family: var(--font-sans, sans-serif); font-size: 0.8125rem; letter-spacing: 0; text-transform: none; text-align: center; }
+.vc-view-picker__icon { display: flex; align-items: center; justify-content: center; }
+.vc-view-picker__icon svg { width: 1.125rem; height: 1.125rem; }
+.vehicle-canvas .vc-footer { bottom: 5.1rem; }
+.vehicle-canvas[data-preset="interior"] .vc-footer { display: none; }
 
 /* Phones: the HUD's micro-labels are set for a desk and shrink below legibility at 390 px; a floor. */
 @media (max-width: 640px) {

@@ -155,7 +155,7 @@
 }
 
 .config-group--paint .config-group__options {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
 }
 
 .config-option {
@@ -213,23 +213,50 @@
 
 .config-option__heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: 0.35rem 0.75rem;
 }
 
 .config-option__heading strong {
   min-width: 0;
+  flex: 1 1 8rem;
+  overflow-wrap: anywhere;
   font-size: 0.88rem;
   font-weight: 610;
   line-height: 1.24;
   letter-spacing: -0.025em;
 }
 
+.config-group--build .config-option__heading strong {
+  flex-basis: auto;
+}
+
 .config-option__price {
-  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.3rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.7rem;
-  white-space: nowrap;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.config-option__amount {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.config-option__price-basis {
+  flex-basis: 100%;
+  color: var(--rail-muted);
+  font-size: 0.65rem;
+  line-height: 1.3;
 }
 
 .config-option__price abbr {
@@ -340,13 +367,12 @@
   display: block;
 }
 
-.config-group--paint .config-option__heading strong,
-.config-group--paint .config-option__price {
+.config-group--paint .config-option__heading strong {
   display: block;
 }
 
 .config-group--paint .config-option__heading strong {
-  padding-right: 1.25rem;
+  padding-right: 0;
   font-size: 0.75rem;
 }
 
@@ -420,6 +446,67 @@
   width: 1.35rem;
   height: 1.35rem;
   stroke-width: 1.5;
+}
+
+.config-group--towing .config-option {
+  display: block;
+  min-height: 0;
+}
+
+.config-group--towing .config-option__heading {
+  display: block;
+  padding-right: 2rem;
+}
+
+.config-group--towing .config-option__price {
+  width: fit-content;
+  margin-top: 0.35rem;
+}
+
+.config-group--towing .config-option__capability {
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  background: transparent;
+}
+
+.config-group--towing .config-option__check {
+  display: none;
+}
+
+.config-group--towing .config-option[data-secondary] {
+  margin-top: 0.2rem;
+  border: 0;
+  border-top: 1px solid var(--rail-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.config-option__eligibility,
+.config-option__other-builds,
+.config-option__explore {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.config-option__eligibility {
+  margin-top: 0.45rem;
+  color: var(--rail-muted);
+}
+
+.config-option__other-builds {
+  margin-bottom: 0.5rem;
+  color: var(--rail-muted);
+}
+
+.config-option__explore {
+  margin-top: 0.6rem;
+  color: var(--rail-green);
+  font-weight: 650;
 }
 
 .compatibility-guide {
@@ -879,10 +966,6 @@
     margin-left: 1.8rem;
   }
 
-  .config-group--paint .config-group__options {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .config-option {
     min-height: 4.9rem;
     padding: 0.82rem;
@@ -949,4 +1032,61 @@
   .configurator-total > p {
     font-size: max(0.6rem, 10px);
   }
+}
+
+
+.config-group__toggle {
+  width: 100%; min-height: 44px; display: flex; align-items: center; gap: 0.85rem;
+  padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.config-group__toggle > span:nth-child(2) { display: grid; min-width: 0; flex: 1; gap: 0.35rem; }
+.config-group__toggle strong { font: inherit; }
+.config-group__toggle small { font-size: 0.78rem; color: var(--rail-muted); letter-spacing: 0; line-height: 1.45; }
+.config-group__toggle > svg { width: 1rem; height: 1rem; flex: none; }
+.config-group__toggle[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.config-group__toggle:focus-visible, .buyer-disclosure > summary:focus-visible { outline: 2px solid var(--rail-green, #36564c); outline-offset: 4px; }
+.buyer-disclosure { border-bottom: 1px solid var(--rail-line, rgba(17, 20, 17, 0.13)); }
+.buyer-disclosure > summary {
+  min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 1rem; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+}
+.buyer-disclosure > summary svg { width: 1rem; height: 1rem; }
+.buyer-disclosure[open] > summary svg { transform: rotate(180deg); }
+.config-group__intro, .config-option__description, .buyer-context > p, .configurator-warnings p { font-size: 0.8rem; }
+.config-option__meta, .config-option__meta > span, .config-option__impact { font-size: 0.65rem; }
+.config-option__price { font-size: 0.8rem; }
+.config-group--paint .config-option__heading strong { font-size: 0.82rem; }
+.config-option__price abbr, .buyer-context__label, .buyer-context label small, .configurator-total > p { font-size: 0.65rem; }
+.buyer-context__segments strong, .buyer-context__checks > label > span:not(.buyer-context__checkmark) { font-size: 0.8rem; }
+.buyer-context__field select { min-height: 44px; font-size: 1rem; }
+.configurator-total__price button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 980px) {
+  .uvc-configurator { height: auto; min-height: 0; }
+  .configurator-scroll { overflow: visible; }
+  .config-group { padding: 1.25rem 1rem; }
+  .config-group legend { padding: 0; }
+  .config-group__intro { margin: 1rem 0; }
+  .configurator-shell .configurator-total {
+    position: fixed; z-index: 35; left: 0; right: 0; bottom: 0;
+    padding: 0.7rem 1rem max(0.7rem, env(safe-area-inset-bottom));
+  }
+  .configurator-total__consequences { margin-bottom: 0.4rem; font-size: 0.7rem; }
+  .configurator-total__price small { font-size: 0.65rem; }
+  .configurator-total > p { font-size: 0.6rem; }
+}
+@media (max-width: 560px) {
+  .config-option__heading { flex-wrap: wrap; gap: 0.35rem 0.75rem; }
+  .config-option__wheel, .config-option__interior, .config-option__capability { width: 2.6rem; height: 2.6rem; }
+  .configurator-total__price button { font-size: 0.8rem; }
+  .configurator-head__specs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .configurator-head__specs span { font-size: 0.6rem; }
+}
+
+.configurator-total__preview { display: none; }
+@media (max-width: 980px) {
+  .configurator-total__preview {
+    display: inline-flex; min-height: 44px; align-items: center; padding: 0; border: 0;
+    color: var(--rail-green); background: transparent; font: inherit; font-weight: 650; cursor: pointer;
+  }
+  .configurator-total__consequences { align-items: center; gap: 0.3rem 0.7rem; margin-block: -0.4rem 0; }
 }

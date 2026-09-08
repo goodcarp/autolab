@@ -7,6 +7,25 @@ import { easeInOut, lerp } from './geom.js';
 
 const D2R = Math.PI / 180;
 
+export function fitPresetFrame(p, aspect, fitScale = 1, tyOffset = 0, fov = 30, fitHeight = 0) {
+  // A width-only fit pushes the camera through the model in short, wide viewports.
+  // The height floor includes the vehicle plus clear space above and below it.
+  const hh = Math.max(p.fitW / Math.max(aspect, 0.01), fitHeight) * fitScale / 2;
+  return {
+    dist: hh / Math.tan(fov * D2R / 2),
+    ty: (p.groundFrac !== undefined ? (p.groundFrac - 0.5) * 2 * hh : p.ty) + tyOffset,
+  };
+}
+
+export function presentationFit(view, explode, open) {
+  const q34 = view === 'q34f' || view === 'q34r';
+  const elevation = view === 'front' || view === 'side';
+  return {
+    fitScale: 1 + (q34 ? 0.95 : 0.56) * explode + (q34 ? 0.20 : 0.10) * open,
+    tyOffset: (elevation ? 0.60 : 1.08) * explode,
+  };
+}
+
 export const PRESETS = {
   iso:   { az: 52,  el: 22,   fitW: 6.6,  ortho: 0, up: [0, 1, 0],  drift: true,  ty: 0.72 },
   q34f:  { az: 68,  el: 16,   fitW: 6.0,  ortho: 0, up: [0, 1, 0],  drift: false, ty: 0.75 },
@@ -19,7 +38,7 @@ export const PRESETS = {
 export class Rig {
   constructor() {
     this.fov = 30; this.near = 0.5; this.far = 80;
-    this.aspect = 1.6; this.fitScale = 1; this.tyOffset = 0; this._orthoFade = false;
+    this.aspect = 1.6; this.fitScale = 1; this.fitHeight = 0; this.tyOffset = 0; this._orthoFade = false;
     // tx/tz offset the orbit target off the vehicle centreline. Presets never use them, but framing
     // one component does: orbiting the origin at close range puts the camera inside the body.
     this.cur = { az: 52, el: 22, dist: 9.0, ortho: 0, up: new THREE.Vector3(0, 1, 0), ty: 0.72, tx: 0, tz: 0 };
@@ -29,10 +48,11 @@ export class Rig {
     this._P = new THREE.Matrix4(); this._Po = new THREE.Matrix4(); this._Pp = new THREE.Matrix4();
   }
   frame(p, aspect) {
-    const hw = p.fitW * this.fitScale / 2, hh = hw / aspect;
-    const dist = hh / Math.tan(this.fov * D2R / 2);
-    const ty = (p.groundFrac !== undefined ? (p.groundFrac - 0.5) * 2 * hh : p.ty) + this.tyOffset;
-    return { dist, ty };
+    return fitPresetFrame(p, aspect, this.fitScale, this.tyOffset, this.fov, this.fitHeight);
+  }
+  setViewport(aspect, fitHeight = 0) {
+    this.aspect = aspect; this.fitHeight = fitHeight;
+    if (this.view && this.to && !this.userZoom) Object.assign(this.to, this.frame(PRESETS[this.view], aspect));
   }
   goTo(name, dur = 1.15) {
     const p = PRESETS[name]; if (!p) return;
@@ -53,7 +73,15 @@ export class Rig {
     if (this.cur.ortho > 0) { this._orthoFade = true; }
   }
   orbit(dx, dy) { this.cur.az -= dx * 0.35; this.cur.el = Math.max(2, Math.min(86, this.cur.el + dy * 0.3)); }
-  zoom(f) { this.userZoom = true; const cl = (d) => Math.max(3.5, Math.min(22, d * f)); this.cur.dist = cl(this.cur.dist); if (this.from && this.to) { this.from.dist = cl(this.from.dist); this.to.dist = cl(this.to.dist); } }
+  zoom(f, fitViewport = false) {
+    this.userZoom = true;
+    // Pointer zoom must be able to back away from a portrait preset whose natural
+    // distance exceeds the tool API's 22m range; otherwise zooming out jumps inward.
+    const max = fitViewport ? Math.max(22, this.frame(PRESETS.iso, this.aspect).dist * 1.5) : 22;
+    const cl = d => Math.max(3.5, Math.min(max, d * f));
+    this.cur.dist = cl(this.cur.dist);
+    if (this.from && this.to) { this.from.dist = cl(this.from.dist); this.to.dist = cl(this.to.dist); }
+  }
   update(dt) {
     if (this.from && this.to) {
       this.t = Math.min(1, this.t + dt / this.dur);

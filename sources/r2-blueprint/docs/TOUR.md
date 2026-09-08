@@ -1,8 +1,11 @@
 # The tour
 
-TOUR (or T) starts nine six-second steps: ISO overview, headlamps with lights,
+TOUR (or T) starts nine steps: ISO overview, headlamps with lights,
 side elevation with dimensions, structural battery, front drive unit, open panels,
-exploded assembly, drive with lights, and reset. The complete tour takes about 54 seconds.
+exploded assembly, drive with lights, and reset. The complete tour takes about
+30 seconds. Most stops last three seconds; battery
+and drive unit last three and a half seconds, and openings and exploded assembly
+each last four seconds. Dwell includes tool execution and camera transitions.
 TOUR remains reachable when the other sheet cards are hidden. The caption card uses the
 sheet's type and ink, and the selected part uses the existing highlight/key-row path.
 
@@ -70,7 +73,7 @@ Edit `CONFIG.tour` in `src/config.js`. A step is an ordered record:
 {
   id: 'battery', title: 'STRUCTURAL BATTERY PACK',
   caption: 'The structural battery pack is a stressed floor member.',
-  dwell: 6000, // milliseconds, including action execution
+  dwell: 3500, // milliseconds, including action execution
   actions: [
     { name: 'reset', args: {} },
     { name: 'set_motion', args: { motion: 'panels', on: true } },
@@ -82,8 +85,9 @@ Edit `CONFIG.tour` in `src/config.js`. A step is an ordered record:
 
 Use exact tool names and arguments, explicit `on` values, and enough setup to make the
 step work when entered directly. `panels: on:true` means dissolve the shell. Use
-`highlight_part` to make its KEY FEATURES row hot. Keep at most nine steps, each around
-5–7 seconds and the total below one minute. Larger `frame_part.margin` values pull
+`highlight_part` to make its KEY FEATURES row hot. Keep nine steps, each 3–4 seconds,
+with a 30-second total. Reserve four seconds for the more complex openings and
+exploded assembly; captions should fit a quick read. Larger `frame_part.margin` values pull
 back; check the actual capture before settling on a pose.
 
 Caption provenance for the current tour: steps 1/9 use `CONFIG.title`; step 2 uses
@@ -91,11 +95,12 @@ Caption provenance for the current tour: steps 1/9 use `CONFIG.title`; step 2 us
 step 5 uses `driveUnitF.desc`; step 6 uses `hood.desc`; step 7 uses `roofGlass.desc`;
 step 8 uses `CONFIG.instr`. No new vehicle figures are introduced. New numerical
 captions must use an existing part description or SPEC as returned by
-`get_specification` (call it before starting; it interrupts an active tour).
+`get_specification` (reads do not interrupt an active tour).
 
 Run `node --test src/tour.test.js` after editing. Its injected clock/scheduler cover
 start, advance, stop, from-index, interruption mid-step, stale callbacks, hold and
-failure, plus the real dispatcher's three external surfaces. `start(fromIndex)` is
+failure, plus the authored 30-second timeline and the real dispatcher's three
+external surfaces. `start(fromIndex)` is
 zero-based internally and resolves after the first step's actions. A scheduler may
 return a cancellation function; a run token also protects callbacks that cannot be
 cancelled. Infinite dwell is reserved for the held capture copy of the steps.

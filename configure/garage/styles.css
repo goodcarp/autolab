@@ -4,8 +4,8 @@
   --ink:#1c2b4f;
   --ink-2:#3b4a6b;
   --ink-soft:#7c8aa6;
-  --grid:#d3dbe9;
-  --grid-major:#bcc7db;
+  --grid:#e7ebf2;
+  --grid-major:#d8dfeb;
   --accent:#c94b31;
   --dim:#2f7d76;
   --btn-active:#1c2b4f;
@@ -14,6 +14,7 @@
   --minor:14px;
   --major:70px;
 }
+
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--paper);overflow:hidden;font-family:var(--mono);color:var(--ink);
   -webkit-font-smoothing:antialiased;user-select:none}
@@ -115,10 +116,18 @@ header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;p
 .vt-sub{font-size:10px;letter-spacing:.14em;color:var(--ink-soft);margin-top:5px}
 
 #tooltip{position:absolute;pointer-events:none;background:rgba(244,246,250,.96);border:1.5px solid var(--accent);padding:6px 12px 7px 12px;
-  opacity:0;transition:opacity .15s ease;box-shadow:0 0 0 3px rgba(244,246,250,.7);z-index:5}
+  width:max-content;max-width:min(280px,calc(100% - 16px));opacity:0;box-shadow:0 0 0 3px rgba(244,246,250,.7);z-index:5}
 #tooltip.show{opacity:1}
 .tt-name{font-size:11.5px;font-weight:600;letter-spacing:.2em;color:var(--accent)}
-.tt-desc{font-size:10px;letter-spacing:.06em;color:var(--ink-soft);margin-top:3px;white-space:nowrap}
+.tt-desc{font-size:10px;line-height:1.4;letter-spacing:.06em;color:var(--ink-soft);margin-top:3px;white-space:normal}
+#tooltip.compact{width:max-content;max-width:min(176px,calc(100% - 16px));padding:6px 8px;border-width:1px;box-shadow:none}
+#tooltip.compact .tt-name{font-size:11px;line-height:1.35;letter-spacing:.04em;overflow-wrap:anywhere}
+#tooltip.compact .tt-desc{font-size:10px;line-height:1.4;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+#part-pointer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none;overflow:hidden;fill:none;stroke:var(--accent);stroke-width:1}
+#part-pointer.show{display:block}
+#part-pointer .part-pointer__point{fill:var(--accent)}
+#part-pointer .part-pointer__badge{fill:var(--paper)}
+#part-pointer text{fill:var(--accent);stroke:none;font:600 10px var(--mono);text-anchor:middle}
 
 #fallback[hidden]{display:none}
 #fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink);background:var(--paper);z-index:50;text-align:center;padding:40px}
@@ -318,3 +327,113 @@ body.nav-off .header-tools a{display:none}
   #tour-btn{height:34px}
   #tour-card{bottom:26px;left:22px;width:calc(100vw - 44px)}
 }
+
+/* Primary actions stay reachable while the drawing panels are tucked away. */
+#primary-controls{position:absolute;right:92px;top:44px;z-index:7;display:flex;gap:6px}
+#primary-controls .btn{height:44px;min-width:76px}
+#hdr-right{right:200px}
+.compact-only{display:none}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.key-item{font-family:var(--mono);text-align:left;background:transparent;border:0;padding:0;width:100%;letter-spacing:0}
+#compact-sheet{position:fixed;inset:auto 16px max(16px,env(safe-area-inset-bottom));margin:0 auto;padding:0;width:560px;max-width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--grid-major);border-radius:14px;background:var(--paper);color:var(--ink);box-shadow:0 10px 32px #1c2b4f18;z-index:20;overscroll-behavior:contain}
+#compact-sheet[aria-modal="true"]::backdrop{background:#e7ebf270;backdrop-filter:blur(3px)}
+.compact-sheet-header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px 0 16px;background:var(--paper);border-bottom:1px solid var(--grid-major);z-index:1}
+.compact-sheet-header h2{font-size:11px;letter-spacing:.12em;margin:0}
+.compact-sheet-header .panel-min{width:44px;height:44px;border:0;background:transparent;font-size:24px}
+.compact-section{padding:12px 16px}
+.compact-section[hidden],#selected-part[hidden]{display:none}
+.compact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.compact-grid .btn{min-width:0;min-height:44px;width:100%;font-size:11px;line-height:1.3;letter-spacing:.02em;padding:6px 4px;white-space:normal;overflow:visible;border:1px solid var(--grid-major);border-radius:7px}
+.compact-grid .btn.toggled,.compact-grid .btn.active{border-color:var(--ink)}
+#compact-sheet[aria-modal="false"]{width:440px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 68px);max-height:calc(100dvh - 104px)}
+#compact-sheet[aria-modal="false"] .compact-sheet-header{display:none}
+#compact-sheet[aria-modal="false"] .compact-section{padding:12px}
+#compact-more:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#compact-motion-btns,#compact-more .compact-secondary{display:contents}
+#compact-more .btn{min-height:44px}
+@media (max-width:360px){#compact-sheet .compact-grid .btn{font-size:10px;letter-spacing:0}}
+#compact-key-grid .key-item{min-height:48px;height:auto;padding:8px 0;border-bottom:1px solid var(--grid);font-size:12px;white-space:normal;line-height:1.5;gap:12px}
+#compact-key-grid .key-item:last-child{border-bottom:0}
+#compact-key-grid .num{width:26px;height:26px}
+#selected-part{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+#tooltip{max-width:min(280px,calc(100% - 16px))}
+.tt-desc{white-space:normal;line-height:1.45}
+body.cards-off #overlay{opacity:0}
+body.cards-off #controls .ctl-row{visibility:hidden}
+body.cards-off #tour-btn{visibility:visible}
+
+/* A compact sheet reserves real space for navigation and a four-action toolbar. */
+@media (max-width:980px),(max-height:520px){
+  :root{--minor:28px;--major:140px;--tour-space:0px}
+  #stage{inset:112px 16px 100px}
+  #hdr-left{top:20px;left:20px;right:20px;gap:10px;align-items:center}
+  #hdr-left>div:last-child{min-width:0;flex:1}
+  .hdr-title{font-size:11px;letter-spacing:.1em;line-height:1.5}
+  #hdr-left .logo{width:20px;height:20px;margin:0 8px 0 0;align-self:flex-start}
+  #hdr-left .logo span{width:8px;height:8px}
+  #hdr-left .hdr-sub,#hdr-right,#key,#instr,#titleblock,#controls,#cards-toggle{display:none}
+  body.cards-off #hdr-left .logo,body.cards-off #hdr-left .hdr-title{visibility:visible}
+  .header-tools{gap:6px;margin-top:7px;flex-wrap:nowrap}
+  .header-tools a{min-height:44px;font-size:10px;padding:6px 9px;display:inline-flex;align-items:center;border-color:var(--grid-major);letter-spacing:.06em;white-space:nowrap}
+  .header-tools #agent-chip{display:none}
+  #primary-controls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));padding:7px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;border:1px solid var(--grid-major);border-radius:10px;background:var(--paper);box-shadow:0 4px 18px #1c2b4f0a}
+  #primary-controls .btn{display:block;min-width:0;height:44px;font-size:11px;letter-spacing:.04em;border:0;border-radius:5px;background:transparent}
+  #primary-controls .btn:hover,#primary-controls .btn[aria-expanded="true"]{background:var(--paper-2)}
+  #primary-controls #reset-btn{background:var(--ink);color:var(--paper)}
+  #hint{display:block;bottom:4px;max-width:100%;width:max-content;font-size:9px;letter-spacing:.08em;white-space:nowrap;background:var(--paper);padding:4px 8px;border-radius:4px}
+  #viewtitle{bottom:26px;max-width:100%;width:max-content}
+  .vt-name{font-size:11px;letter-spacing:.14em}.vt-sub{display:none}.vt-rule{width:96px}
+  .frame,.zone{display:none}
+  #tour-card{left:16px;right:16px;top:100px;bottom:auto;width:auto;max-width:none;max-height:35dvh;overflow:auto;margin:0;padding:10px 12px;border-color:var(--grid-major);pointer-events:auto}
+  .tour-title{font-size:12px;letter-spacing:.08em;margin-top:4px}.tour-caption{margin:4px 0;font-size:11px}.tour-hint{font-size:8px}
+  body.tour-active #stage{top:calc(112px + var(--tour-space,0px))}
+  #agent-tools{left:16px;right:16px;top:104px;width:auto;max-width:none;max-height:calc(100dvh - 190px)}
+  #agent-tools .panel-min{height:44px;width:44px;font-size:22px}
+  #agent-tools-list{grid-template-columns:1fr;gap:3px;font-size:11px}
+  #agent-tools-list dd{margin-bottom:10px}
+}
+@media (max-height:520px) and (min-width:641px){
+  :root{--landscape-controls-width:clamp(288px,39vw,360px)}
+  #hdr-left{top:12px;left:18px;right:18px}
+  #hdr-left>div:last-child{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .header-tools{margin-top:0}
+  /* Reserve the controls column even when its tray is closed, so trying a
+     combination of actions never moves the vehicle underneath the pointer. */
+  #stage{inset:72px calc(var(--landscape-controls-width) + 36px) 18px 18px}
+  #primary-controls{left:auto;right:18px;transform:none;width:var(--landscape-controls-width);bottom:10px}
+  #compact-sheet[aria-modal="false"]{left:auto;right:18px;bottom:78px;width:var(--landscape-controls-width);max-height:calc(100dvh - 150px);margin:0}
+  #hint{font-size:8px;bottom:0}
+  #tour-card{left:18px;right:calc(var(--landscape-controls-width) + 36px);top:68px;max-height:32dvh}
+  body.tour-active #stage{top:calc(72px + var(--tour-space,0px))}
+}
+
+/* The host provides the My Car navigation and controls; only its drawing occupies this frame. */
+body.framed #hdr-left,body.framed #hdr-right,body.framed #controls,body.framed #key,body.framed #instr,body.framed #titleblock,body.framed #cards-toggle,body.framed #primary-controls,body.framed #selected-part,body.framed .frame,body.framed .zone,body.framed #hint,body.framed #viewtitle{display:none}
+body.framed #stage{inset:0}
+body.framed #tour-card{left:12px;right:12px;top:8px;bottom:auto;width:auto;max-width:none;max-height:36dvh;overflow:auto;margin:0;padding:10px 12px;pointer-events:auto}
+body.framed.tour-active #stage{top:var(--tour-space,0px)}
+@media (prefers-reduced-motion:reduce){.btn,.panel,#overlay{transition:none}}
+
+/* The Home exhibit shares its page's white surface and only reveals discovery
+   controls once the short guided sequence ends or the visitor interrupts it. */
+html:has(body.demo),body.demo{background:#fff;background-image:none}
+body.demo{--paper:#fff;--paper-2:#f7f7f7;--ink:#202020;--ink-soft:#737373}
+body.demo #hdr-left,body.demo #hdr-right,body.demo #controls,body.demo #key,body.demo #instr,body.demo #titleblock,body.demo #cards-toggle,body.demo #primary-controls,body.demo #selected-part,body.demo .frame,body.demo .zone,body.demo #hint,body.demo #viewtitle,body.demo #tooltip,body.demo #overlay,body.demo #agent-tools{display:none}
+body.demo #stage{inset:0}
+body.demo.tour-active #stage{top:var(--tour-space,0px)}
+body.demo.demo-exploring #stage{bottom:var(--demo-space,88px)}
+body.demo #tour-card{left:16px;right:16px;top:0;bottom:auto;max-height:38dvh;width:auto;max-width:none;padding:10px 4px 6px;background:#fff;border:0;box-shadow:none;text-align:center}
+body.demo #tour-card .tour-step,body.demo #tour-card .tour-hint{display:none}
+body.demo #tour-card .tour-title{margin:0;font-size:12px;line-height:1.4;letter-spacing:.06em}
+body.demo #tour-card .tour-caption{margin:5px auto 0;max-width:540px;color:#737373;font-size:11px;line-height:1.45}
+#demo-discovery{display:none}
+body.demo #demo-discovery:not([hidden]){position:absolute;left:12px;right:12px;bottom:4px;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;z-index:8}
+#demo-discovery-hint{max-width:100%;margin:0;font-size:11px;line-height:1.55;text-align:center;color:#737373;letter-spacing:0}
+.demo-action-row{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+#demo-discovery button{font:inherit;font-size:11px;letter-spacing:0;line-height:1.3;color:#333;background:transparent;border:0;border-radius:5px;min-height:44px;padding:8px;cursor:pointer}
+#demo-discovery button:hover{background:#f5f5f5}
+#demo-discovery button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#demo-discovery button[aria-pressed="true"]{background:#242424;color:#fff}
+#demo-options:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(100%,360px)}
+#demo-discovery #demo-options-toggle{color:#737373}
+@media (max-width:360px){.demo-action-row{gap:6px}#demo-discovery-hint{font-size:10px}}

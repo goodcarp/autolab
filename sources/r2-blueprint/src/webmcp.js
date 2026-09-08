@@ -322,7 +322,7 @@ export function installWebMCP(ctx) {
     {
       name: 'start_tour',
       title: 'Start the guided tour',
-      description: 'Start the 54-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly. Any call that moves the scene (views, motions, camera, framing, highlighting, annotations, reset), and any click or key on the drawing, stops it where it is; reads and the host\'s context sync do not.',
+      description: 'Start the 30-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly. Any call that moves the scene (views, motions, camera, framing, highlighting, annotations, reset), and any click or key on the drawing, stops it where it is; reads and the host\'s context sync do not.',
       inputSchema: { type: 'object', additionalProperties: false, properties: { from: { type: 'integer', minimum: 1, maximum: Math.max(1, config.tour?.length ?? 1) } } },
       annotations: SAFE_ACTION,
       run: ({ from = 1 }) => {
@@ -696,7 +696,15 @@ export function installWebMCP(ctx) {
     return t.run(input);
   };
 
-  // 1. window.r2 — always present, so automation never depends on an origin trial being enabled
+  // The Home demo uses the tour's dispatcher privately. It has no public tool API,
+  // message bridge, registration watcher or hidden agent-tools UI.
+  if (ctx.internalOnly) return {
+    call,
+    callTour: (name, args) => call(name, args, tourSource),
+    dispose() {},
+  };
+
+  // 1. window.r2 — present on full Garage surfaces regardless of browser support
   const api = {
     tools: TOOLS.map(({ name, title, description, inputSchema, annotations }) => (
       { name, title, description, inputSchema, annotations }

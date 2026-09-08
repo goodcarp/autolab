@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleGauge,
   Clock3,
@@ -9,8 +10,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useId, useMemo, useRef, useState } from "react";
-import { findCompatibleAlternatives } from "../../domain/alternatives";
+import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import type {
   BuyerContextInput,
   Catalog,
@@ -28,6 +28,7 @@ import {
   trimBuildLabel,
 } from "./compatibility-copy";
 import "./configurator.css";
+import { rescueSelection } from "./selection-rescue";
 
 const usd = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -101,6 +102,7 @@ export interface VehicleConfiguratorProps {
   onBuyerContextChange: (patch: BuyerContextInput) => void;
   onInvalidSelection?: (meta: InvalidSelectionMeta) => void;
   onReviewBuild?: (result: ResolveResult) => void;
+  onViewVehicle?: () => void;
   className?: string;
 }
 
@@ -131,6 +133,9 @@ function selectionForOption(
 ): string[] {
   const current = selectedIds(result, group.id);
   if (group.select === "one") return [option.id];
+  // These are two prices for the same hitch, each tied to a different trim.
+  // Choosing the other package replaces it; adding both can never be valid.
+  if (group.id === "towing") return current.includes(option.id) ? [] : [option.id];
   return current.includes(option.id)
     ? current.filter((id) => id !== option.id)
     : [...current, option.id];
@@ -181,16 +186,13 @@ function impactLabel(projection: OptionProjection): string[] {
   if (!projection.candidate.valid) return ["Needs a paired change"];
 
   const labels: string[] = [];
-  if (projection.priceDelta !== 0) {
-    labels.push(`${projection.priceDelta > 0 ? "+" : "−"}${usd.format(Math.abs(projection.priceDelta))}`);
-  }
   if (projection.rangeDelta !== null && projection.rangeDelta !== 0) {
     labels.push(`${projection.rangeDelta > 0 ? "+" : "−"}${Math.abs(projection.rangeDelta)} mi`);
   }
   if (projection.deliveryChanged && projection.candidate.delivery) {
     labels.push(projection.candidate.delivery.window);
   }
-  return labels.length > 0 ? labels : ["Compatible"];
+  return labels;
 }
 
 function describeAlternative(
@@ -319,7 +321,7 @@ function OptionVisual({ groupId, option, selected }: { groupId: string; option: 
   if (groupId === "towing") {
     return (
       <span className="config-option__capability" aria-hidden="true">
-        <Route />
+        {selected ? <Check /> : <Route />}
       </span>
     );
   }
@@ -333,6 +335,9 @@ interface ConfigurationGroupProps {
   projections: Map<string, OptionProjection>;
   onChoose: (group: CatalogGroup, option: CatalogOption) => void;
   fieldsetId: string;
+  collapsible: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
 function ConfigurationGroup({
@@ -342,28 +347,68 @@ function ConfigurationGroup({
   projections,
   onChoose,
   fieldsetId,
+  collapsible,
+  expanded,
+  onToggle,
 }: ConfigurationGroupProps) {
   const activeIds = selectedIds(result, group.id);
+  const isTowing = group.id === "towing";
+  const orderedOptions = isTowing
+    ? [...options].sort((a, b) => Number(!projections.get(a.id)?.candidate.valid) - Number(!projections.get(b.id)?.candidate.valid))
+    : options;
+  const selectedLabel = options.filter((option) => activeIds.includes(option.id))
+    .map((option) => isTowing ? `Tow package · ${optionPrice(option)}` : trimBuildLabel(option.label)).join(", ") || "None";
   return (
-    <fieldset className={joinClassNames("config-group", `config-group--${group.id}`)} aria-describedby={`${fieldsetId}-intro`}>
+    <fieldset className={joinClassNames("config-group", `config-group--${group.id}`)} aria-label={group.label} aria-describedby={expanded ? `${fieldsetId}-intro` : undefined}>
       <legend>
+        {collapsible ? (
+          <button className="config-group__toggle" type="button" aria-label={`${group.label} options`}
+            aria-expanded={expanded} aria-controls={`${fieldsetId}-choices`} onClick={onToggle}>
+            <span className="config-group__number" aria-hidden="true" />
+            <span><strong>{group.label}</strong><small>{selectedLabel}</small></span>
+            <ChevronDown aria-hidden="true" />
+          </button>
+        ) : <>
         <span className="config-group__number" aria-hidden="true" />
         <span>{group.label}</span>
+        </>}
       </legend>
+      <div id={`${fieldsetId}-choices`} hidden={collapsible && !expanded}>
       <p id={`${fieldsetId}-intro`} className="config-group__intro">
         {groupIntro(group.id)}
       </p>
       <div className="config-group__options">
-        {options.map((option) => {
+        {orderedOptions.map((option) => {
           const selected = activeIds.includes(option.id);
           const projection = projections.get(option.id);
-          const impacts = projection && !selected ? impactLabel(projection) : [];
-          const hasEstimate = option.price.confidence === "estimated";
+          const impacts = projection && !selected && !isTowing ? impactLabel(projection) : [];
+          const otherBuild = isTowing && !selected && !projection?.candidate.valid;
+          const launchPackage = option.id === "towing.launch_included";
+          const towingNote = launchPackage
+            ? otherBuild ? "Requires Performance with Launch Package." : "Included with your Performance Launch Package."
+            : otherBuild ? "Requires Standard or Premium. Availability unconfirmed." : "Availability unconfirmed.";
+          const description = isTowing ? "Hitch + towing software" : option.copy?.short;
+          // One price per choice: a valid alternative previews the actual total
+          // change; a selected or paired-change choice retains its catalog quote.
+          const comparesCurrent = !isTowing && !selected && projection?.candidate.valid;
+          const priceLabel = comparesCurrent
+            ? projection.priceDelta === 0 ? "No price change"
+              : `${projection.priceDelta > 0 ? "+" : "−"}${usd.format(Math.abs(projection.priceDelta))}`
+            : optionPrice(option);
+          const priceBasis = isTowing ? null : comparesCurrent
+            ? projection.priceDelta === 0 ? null : "vs current"
+            : option.price.mode === "delta" && option.price.amount !== 0 ? "option price" : null;
+          const hasEstimate = option.price.confidence === "estimated"
+            || Boolean(comparesCurrent && options.some((current) =>
+              activeIds.includes(current.id) && current.price.confidence === "estimated"
+              && !projection.candidate.selections[group.id]?.includes(current.id)));
+          const accessiblePrice = `${hasEstimate ? "Estimated " : ""}${priceLabel}${priceBasis ? ` ${priceBasis}` : ""}`;
           return (
             <label
               className="config-option"
               data-selected={selected || undefined}
               data-kind={group.id}
+              data-secondary={otherBuild || undefined}
               data-invalid={projection && !projection.candidate.valid && !selected ? true : undefined}
               key={option.id}
             >
@@ -373,25 +418,31 @@ function ConfigurationGroup({
                 value={option.id}
                 checked={selected}
                 onChange={() => onChoose(group, option)}
-                aria-label={`${option.label}, ${optionPrice(option)}`}
+                aria-label={`${option.label}, ${accessiblePrice}`}
+                aria-describedby={isTowing ? `${fieldsetId}-${option.id}-eligibility` : undefined}
               />
               <OptionVisual groupId={group.id} option={option} selected={selected} />
               <span className="config-option__body">
+                {otherBuild && <span className="config-option__other-builds">Other builds</span>}
                 <span className="config-option__heading">
-                  <strong>{group.id === "build" ? trimBuildLabel(option.label) : option.label}</strong>
+                  <strong>{isTowing ? "Tow package" : group.id === "build" ? trimBuildLabel(option.label) : option.label}</strong>
                   <span className="config-option__price">
-                    {hasEstimate && <abbr title="Estimated">Est.</abbr>} {optionPrice(option)}
+                    {hasEstimate && <abbr title="Estimated">Est.</abbr>}
+                    <span className="config-option__amount">{priceLabel}</span>
+                    {priceBasis && <small className="config-option__price-basis">{priceBasis}</small>}
                   </span>
                 </span>
-                {option.copy?.short && <span className="config-option__description">{option.copy.short}</span>}
-                <span className="config-option__meta">
-                  <span data-orderability={option.orderability}>{orderabilityLabel(option)}</span>
+                {description && <span className="config-option__description">{description}</span>}
+                {isTowing && <span className="config-option__eligibility" id={`${fieldsetId}-${option.id}-eligibility`}>{towingNote}</span>}
+                {otherBuild && <span className="config-option__explore">View compatible build</span>}
+                {!isTowing && (option.orderability !== "orderable_now" || impacts.length > 0) && <span className="config-option__meta">
+                  {option.orderability !== "orderable_now" && <span data-orderability={option.orderability}>{orderabilityLabel(option)}</span>}
                   {impacts.map((impact) => (
                     <span key={impact} className="config-option__impact">
                       {impact}
                     </span>
                   ))}
-                </span>
+                </span>}
               </span>
               <span className="config-option__check" aria-hidden="true">
                 {selected ? <Check /> : <ChevronRight />}
@@ -399,6 +450,7 @@ function ConfigurationGroup({
             </label>
           );
         })}
+      </div>
       </div>
     </fieldset>
   );
@@ -413,6 +465,7 @@ interface CompatibilityGuideProps {
 
 function CompatibilityGuide({ blocked, catalog, onApply, onDismiss }: CompatibilityGuideProps) {
   const errors = blocked.candidate.violations.filter((violation) => violation.severity === "error");
+  const isTowing = blocked.option.group === "towing";
   return (
     <aside className="compatibility-guide" role="alert" aria-label="Compatibility guidance">
       <button className="compatibility-guide__close" type="button" onClick={onDismiss} aria-label="Dismiss compatibility guidance">
@@ -421,9 +474,11 @@ function CompatibilityGuide({ blocked, catalog, onApply, onDismiss }: Compatibil
       <span className="compatibility-guide__kicker">
         <AlertTriangle aria-hidden="true" /> One more choice
       </span>
-      <h3>{trimBuildLabel(blocked.option.label)} needs a companion change.</h3>
+      <h3>{isTowing ? "This tow package requires a different build." : `${trimBuildLabel(blocked.option.label)} needs a companion change.`}</h3>
       <ul className="compatibility-guide__reasons">
-        {errors.map((violation: DomainViolation) => (
+        {isTowing ? <li>{blocked.option.id === "towing.launch_included"
+          ? "The included package is part of the Performance Launch Package."
+          : "The standalone package requires a Standard or Premium build. Availability is unconfirmed."}</li> : errors.map((violation: DomainViolation) => (
           <li key={`${violation.rule}-${violation.option ?? violation.group ?? "build"}`}>
             {readableCompatibilityReason(violation, catalog)}
           </li>
@@ -441,7 +496,7 @@ function CompatibilityGuide({ blocked, catalog, onApply, onDismiss }: Compatibil
                 onClick={() => onApply(alternative)}
               >
                 <span>
-                  <strong>{label}</strong>
+                  <strong>{isTowing ? `Switch to ${label}` : label}</strong>
                   <small>
                     {alternative.priceDelta === 0
                       ? "No price change"
@@ -467,7 +522,7 @@ interface BuyerContextPanelProps {
   instanceId: string;
 }
 
-function BuyerContextPanel({ result, onChange, instanceId }: BuyerContextPanelProps) {
+export function BuyerContextPanel({ result, onChange, instanceId }: BuyerContextPanelProps) {
   const crossShops = result.buyerContext.crossShopIds;
   return (
     <fieldset className="buyer-context" aria-describedby={`${instanceId}-buyer-intro`}>
@@ -620,10 +675,12 @@ export function VehicleConfigurator({
   onBuyerContextChange,
   onInvalidSelection,
   onReviewBuild,
+  onViewVehicle,
   className,
 }: VehicleConfiguratorProps) {
   const instanceId = useId().replace(/:/g, "");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const collapsible = useSyncExternalStore(subscribeToStackedLayout, isStackedLayout, () => false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>("build");
   const [blocked, setBlocked] = useState<BlockedAttempt | null>(null);
   const result = useMemo(
     () => resolve(catalog, selections, buyerContext),
@@ -661,24 +718,25 @@ export function VehicleConfigurator({
       // Keep the choice the person actually made and resolve the build around
       // it. Alternatives that change the clicked group back would undo the
       // pick, so they are never a rescue.
-      const rescues = findCompatibleAlternatives(
-        catalog,
-        projection.candidate.selections,
-        result.buyerContext,
-        5,
-      ).filter((alternative) => !alternative.changedGroups.includes(group.id));
-
-      const rescue = rescues[0];
-      if (rescue) {
+      const rescue = rescueSelection(catalog, projection.candidate, group.id);
+      if (rescue && group.id !== "towing") {
         applyAlternative(rescue, group.id);
         return;
       }
+      const rescued = rescue ? resolve(catalog, rescue.selections, result.buyerContext) : null;
+      const rescuedRange = valueAsNumber(rescued?.specs.range_mi);
+      const currentRange = valueAsNumber(result.specs.range_mi);
 
-      // Genuinely unreachable: explain in place, without moving the scroll.
+      // A towing exploration must not silently replace the person's trim.
+      // Keep the existing compatibility choice explicit, with its real delta.
       const attempted: BlockedAttempt = {
         option,
         candidate: projection.candidate,
-        alternatives: [],
+        alternatives: rescue && rescued ? [{
+          ...rescue,
+          priceDelta: rescued.price.vehicleTotal - result.price.vehicleTotal,
+          rangeDelta: rescuedRange !== null && currentRange !== null ? rescuedRange - currentRange : null,
+        }] : [],
         resolutionKey,
       };
       setBlocked(attempted);
@@ -708,7 +766,9 @@ export function VehicleConfigurator({
     const companionChanges = changedGroups
       .filter((groupId) => groupId !== primaryGroup)
       .flatMap((groupId) =>
-        (patch.set[groupId] ?? []).map((optionId) =>
+        (patch.set[groupId] ?? []).length === 0
+          ? [`${catalog.groups.find((group) => group.id === groupId)?.label ?? groupId} to None`]
+          : (patch.set[groupId] ?? []).map((optionId) =>
           trimBuildLabel(
             catalog.options.find((candidateOption) => candidateOption.id === optionId)?.label ??
               optionId,
@@ -754,8 +814,8 @@ export function VehicleConfigurator({
         </div>
       </header>
 
-      <div ref={scrollRef} className="configurator-scroll">
-        {activeBlocked && (
+      <div className="configurator-scroll">
+        {activeBlocked && activeBlocked.option.group !== "towing" && (
           <CompatibilityGuide
             blocked={activeBlocked}
             catalog={catalog}
@@ -775,7 +835,14 @@ export function VehicleConfigurator({
                 projections={projections}
                 onChoose={chooseOption}
                 fieldsetId={`${instanceId}-${group.id}`}
+                collapsible={collapsible}
+                expanded={!collapsible || expandedGroup === group.id}
+                onToggle={() => setExpandedGroup((current) => current === group.id ? null : group.id)}
               />
+              {group.id === "towing" && activeBlocked?.option.group === "towing" && (
+                <CompatibilityGuide blocked={activeBlocked} catalog={catalog}
+                  onApply={applyAlternative} onDismiss={() => setBlocked(null)} />
+              )}
             </div>
           );
         })}
@@ -790,7 +857,9 @@ export function VehicleConfigurator({
           </div>
         )}
 
-        <BuyerContextPanel
+        <details className="buyer-disclosure">
+          <summary>Tune the guidance <ChevronDown aria-hidden="true" /></summary>
+          <BuyerContextPanel
           result={result}
           onChange={(patch) => {
             setBlocked(null);
@@ -798,10 +867,12 @@ export function VehicleConfigurator({
           }}
           instanceId={instanceId}
         />
+        </details>
       </div>
 
       <footer className="configurator-total" aria-label="Current build summary">
         <div className="configurator-total__consequences">
+          {onViewVehicle && <button className="configurator-total__preview" type="button" onClick={onViewVehicle}>View vehicle</button>}
           <span>
             <CircleGauge aria-hidden="true" />
             {range === null ? "Range pending" : `${range} mi estimated range`}
@@ -819,6 +890,7 @@ export function VehicleConfigurator({
           <button
             type="button"
             aria-label={`Review ${usd.format(result.price.vehicleTotal)} RX2 build`}
+            disabled={!result.valid || !onReviewBuild}
             onClick={() => onReviewBuild?.(result)}
           >
             Review build <ArrowRight aria-hidden="true" />
@@ -832,4 +904,15 @@ export function VehicleConfigurator({
       </footer>
     </section>
   );
+}
+
+function isStackedLayout() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 980px)").matches;
+}
+
+function subscribeToStackedLayout(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => undefined;
+  const media = window.matchMedia("(max-width: 980px)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
 }

@@ -1,5 +1,5 @@
-import { Check, ChevronDown, CircleDashed, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, CircleDashed, Copy, X } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ConfiguratorSiteToolsStatus } from "../webmcp/configurator-tools";
 
 const TOOL_SUMMARIES: Record<string, string> = {
@@ -40,16 +40,25 @@ function statusLabel(status: ConfiguratorSiteToolsStatus) {
 export function ToolStatus({ status }: { status: ConfiguratorSiteToolsStatus }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
+  const [copyError, setCopyError] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const copyTimer = useRef<number | undefined>(undefined);
+  const panelId = useId();
   const ready = status.state === "ready";
 
   useEffect(() => {
     if (!open) return;
+    closeRef.current?.focus();
     const onDown = (event: MouseEvent) => {
       if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -59,13 +68,18 @@ export function ToolStatus({ status }: { status: ConfiguratorSiteToolsStatus }) 
     };
   }, [open]);
 
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
+
   const copyPrompt = async (prompt: string, index: number) => {
+    window.clearTimeout(copyTimer.current);
+    setCopyError(false);
     try {
       await navigator.clipboard.writeText(prompt);
       setCopied(index);
-      window.setTimeout(() => setCopied(null), 1_600);
+      copyTimer.current = window.setTimeout(() => setCopied(null), 1_600);
     } catch {
       setCopied(null);
+      setCopyError(true);
     }
   };
 
@@ -73,9 +87,12 @@ export function ToolStatus({ status }: { status: ConfiguratorSiteToolsStatus }) 
     <div className="tool-status" ref={wrapRef} aria-live="polite">
       <button
         className="header-action"
+        ref={triggerRef}
         type="button"
         data-state={status.state}
         aria-expanded={open}
+        aria-label={statusLabel(status)}
+        aria-controls={panelId}
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
       >
@@ -85,7 +102,12 @@ export function ToolStatus({ status }: { status: ConfiguratorSiteToolsStatus }) 
       </button>
 
       {open && (
-        <div className="tool-status__panel" role="dialog" aria-label="Agent tools on this page">
+        <div id={panelId} className="tool-status__panel" role="dialog" aria-label="Agent tools on this page">
+          <button ref={closeRef} className="tool-status__close" type="button" aria-label="Close agent tools" onClick={() => {
+            setOpen(false);
+            triggerRef.current?.focus();
+          }}><X aria-hidden="true" /></button>
+          {copyError && <p className="tool-status__lede" role="status">Copy unavailable. Select the prompt text to copy it manually.</p>}
           {ready ? (
             <>
               <p className="tool-status__lede">

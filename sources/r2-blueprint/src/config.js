@@ -43,26 +43,27 @@ export const CONFIG = {
     { id: 'run', label: 'RUN', toggle: true }, { id: 'drive', label: 'DRIVE', toggle: true }, { id: 'lights', label: 'LIGHTS', toggle: true },
     { id: 'panels', label: 'PANELS', toggle: true }, { id: 'explode', label: 'EXPLODE', toggle: true }, { id: 'open', label: 'OPEN', toggle: true },
   ],
-  // Dwell is milliseconds. Each step is self-contained for start_tour({from}) and captures.
+  // Thirty seconds total; dwell includes actions and camera transitions.
+  // Each step is self-contained for start_tour({from}) and held captures.
   // Caption sources: existing CONFIG titles/keyItems/viewTitles/instr and vehicle part desc.
   tour: [
-    { id: 'overview', title: 'ISO OVERVIEW', caption: 'Hudian RX2. Dual-motor AWD, launch edition.', dwell: 6000,
+    { id: 'overview', title: 'ISO OVERVIEW', caption: 'Hudian RX2. Dual-motor AWD, launch edition.', dwell: 3000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'iso' } }, { name: 'set_annotations', args: { visible: true } }] },
-    { id: 'headlamps', title: 'STADIUM HEADLAMPS', caption: 'Vertical LED stadium rings with three matrix modules.', dwell: 6000,
+    { id: 'headlamps', title: 'STADIUM HEADLAMPS', caption: 'Vertical LED stadium rings with three matrix modules.', dwell: 3000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'q34f' } }, { name: 'set_motion', args: { motion: 'lights', on: true } }, { name: 'highlight_part', args: { part: 'headlamps' } }] },
-    { id: 'side', title: 'SIDE ELEVATION', caption: 'Side elevation. Datum condition, wheels straight ahead.', dwell: 6000,
+    { id: 'side', title: 'SIDE ELEVATION', caption: 'Side elevation. Datum condition, wheels straight ahead.', dwell: 3000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'side' } }, { name: 'set_annotations', args: { visible: true } }] },
-    { id: 'battery', title: 'STRUCTURAL BATTERY PACK', caption: 'The structural battery pack is a stressed floor member.', dwell: 6000,
+    { id: 'battery', title: 'STRUCTURAL BATTERY PACK', caption: 'The structural battery pack is a stressed floor member.', dwell: 3500,
       actions: [{ name: 'reset', args: {} }, { name: 'set_motion', args: { motion: 'panels', on: true } }, { name: 'frame_part', args: { part: 'battery', azimuth_deg: 52, elevation_deg: 28, margin: 0.7 } }, { name: 'highlight_part', args: { part: 'battery' } }] },
-    { id: 'drive-unit', title: 'FRONT DRIVE UNIT', caption: 'Permanent-magnet motor with integrated inverter and reducer.', dwell: 6000,
+    { id: 'drive-unit', title: 'FRONT DRIVE UNIT', caption: 'Permanent-magnet motor with integrated inverter and reducer.', dwell: 3500,
       actions: [{ name: 'reset', args: {} }, { name: 'set_motion', args: { motion: 'panels', on: true } }, { name: 'frame_part', args: { part: 'driveUnitF', azimuth_deg: 68, elevation_deg: 25, margin: 1.8 } }, { name: 'highlight_part', args: { part: 'driveUnitF' } }] },
-    { id: 'open', title: 'EVERYTHING OPEN', caption: 'Hood, liftgate, all four doors and the charge-port door swing open. The power clamshell hood over the frunk is hinged at the cowl.', dwell: 6000,
+    { id: 'open', title: 'EVERYTHING OPEN', caption: 'Hood, liftgate, four doors and charge-port door swing open.', dwell: 4000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'q34f' } }, { name: 'set_motion', args: { motion: 'open', on: true } }, { name: 'highlight_part', args: { part: 'hood' } }] },
-    { id: 'explode', title: 'EXPLODED ASSEMBLY', caption: 'Every component separated along its assembly axis. Highlighted: the fixed glass roof panel with four flush accessory ports.', dwell: 6000,
+    { id: 'explode', title: 'EXPLODED ASSEMBLY', caption: 'Components separate along assembly axes. Highlighted: the fixed glass roof.', dwell: 4000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'iso' } }, { name: 'set_motion', args: { motion: 'explode', on: true } }, { name: 'highlight_part', args: { part: 'roofGlass' } }] },
-    { id: 'drive', title: 'DRIVE', caption: 'Wheel speed, road speed and steering angle are shown in telemetry.', dwell: 6000,
+    { id: 'drive', title: 'DRIVE', caption: 'Wheel speed, road speed and steering angle appear in telemetry.', dwell: 3000,
       actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'q34f' } }, { name: 'set_motion', args: { motion: 'drive', on: true } }, { name: 'set_motion', args: { motion: 'lights', on: true } }, { name: 'highlight_part', args: { part: 'wheelFR' } }] },
-    { id: 'reset', title: 'ISO OVERVIEW', caption: 'Hudian RX2. Dual-motor AWD, launch edition.', dwell: 6000,
+    { id: 'reset', title: 'ISO OVERVIEW', caption: 'Hudian RX2. Dual-motor AWD, launch edition.', dwell: 3000,
       actions: [{ name: 'reset', args: {} }] },
   ],
   viewTitles: {
@@ -71,3 +72,15 @@ export const CONFIG = {
     top: ['TOP VIEW', 'Scale 1:24 · viewed from above · mirrors deployed'],
   },
 };
+
+// Shared by pointer controls, keyboard shortcuts and the WebMCP dispatcher. The PANELS
+// action means "dissolve the shell", while st.panels records the shell's visibility.
+export function toggleMotionState(st, motion) {
+  const fields = { run: 'run', drive: 'drive', lights: 'lights', panels: 'panels', explode: 'explodeOn', open: 'openOn' };
+  const field = fields[motion];
+  if (!field) return {};
+  st[field] = !st[field];
+  if (motion === 'run' && !st.run) st.drive = false;
+  if (motion === 'drive' && st.drive) st.run = true;
+  return { run: st.run, drive: st.drive, lights: st.lights, panels: !st.panels, explode: st.explodeOn, open: st.openOn };
+}

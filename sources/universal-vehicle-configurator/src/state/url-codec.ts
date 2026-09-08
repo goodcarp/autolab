@@ -74,6 +74,7 @@ export interface DecodedShareState {
 export interface BrowserHistoryTarget {
   location: { href: string; search: string };
   history: {
+    state?: unknown;
     pushState(data: unknown, unused: string, url?: string | URL | null): void;
     replaceState(data: unknown, unused: string, url?: string | URL | null): void;
   };
@@ -346,6 +347,7 @@ export function decodeShareState(
   const knownKeys = new Set([
     "v",
     "catalog",
+    "workspace",
     ...catalog.groups.map((group) => group.id),
     ...Object.values(SAFE_CONTEXT_QUERY_KEYS),
   ]);
@@ -476,11 +478,13 @@ export function applyShareStateToHistory(
 ): string {
   const target = options.target ?? window;
   const url = new URL(target.location.href);
+  const workspace = url.searchParams.get("workspace");
   url.search = encodeShareState(catalog, domain, options);
+  if (workspace === "garage") url.searchParams.set("workspace", "garage");
   if ((options.mode ?? "replace") === "push") {
-    target.history.pushState(null, "", url);
+    target.history.pushState(target.history.state ?? null, "", url);
   } else {
-    target.history.replaceState(null, "", url);
+    target.history.replaceState(target.history.state ?? null, "", url);
   }
   return url.toString();
 }

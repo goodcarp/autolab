@@ -537,9 +537,11 @@
 }
 
 .configurator-viewport {
-  --quick-facts-bottom: 5.2rem;
-  --quick-facts-height: 3.55rem;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
   min-width: 0;
   padding: 0.8rem 0.4rem 0.8rem 0.8rem;
   scroll-margin-top: 4.25rem;
@@ -846,48 +848,33 @@
 }
 
 .configuration-facts {
-  position: absolute;
-  z-index: 14;
-  right: 1.7rem;
-  bottom: var(--quick-facts-bottom);
-  display: flex;
-  align-items: stretch;
-  border: 1px solid rgba(16, 18, 16, 0.1);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 1rem 2.5rem rgba(25, 31, 26, 0.08);
-  backdrop-filter: blur(18px);
+  flex: none;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0;
+  color: inherit;
+  text-align: right;
 }
 
 .configurator-viewport[data-has-focus-card] .vc-focus-card {
-  bottom: calc(var(--quick-facts-bottom) + var(--quick-facts-height) + 0.8rem);
-}
-
-.configuration-facts > span {
-  min-width: 7rem;
-  display: grid;
-  gap: 0.18rem;
-  padding: 0.68rem 0.8rem;
-}
-
-.configuration-facts > span + span {
-  border-left: 1px solid rgba(16, 18, 16, 0.09);
+  bottom: 5.4rem;
 }
 
 .configuration-facts small {
-  color: var(--ink-muted);
+  color: inherit;
+  opacity: 0.7;
   font-family: var(--font-mono);
-  font-size: 0.46rem;
-  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .configuration-facts strong {
-  max-width: 10rem;
-  overflow: hidden;
-  font-size: 0.72rem;
-  font-weight: 650;
-  text-overflow: ellipsis;
+  font-size: clamp(0.95rem, 1.3vw, 1.05rem);
+  font-weight: 580;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
   white-space: nowrap;
 }
 
@@ -912,8 +899,11 @@
 
 .review-sheet {
   height: 100dvh;
-  overflow: auto;
-  padding: 1.2rem;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 0 1.2rem;
   background: #faf9f5;
   box-shadow: -2rem 0 6rem rgba(8, 16, 12, 0.18);
   animation: review-sheet-in 360ms cubic-bezier(0.2, 0.82, 0.2, 1);
@@ -924,7 +914,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.35rem 0 1.25rem;
+  padding: 1.2rem 0 1rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .review-sheet > header span {
@@ -943,8 +934,9 @@
 }
 
 .review-sheet > header button {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
   display: grid;
   place-items: center;
   padding: 0;
@@ -1076,13 +1068,13 @@
   background: #f4f3ee;
 }
 
-.incentives__bucket > header {
+.incentives__bucket > summary {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
 }
 
-.incentives__bucket > header svg {
+.incentives__bucket > summary svg {
   width: 0.95rem;
   height: 0.95rem;
   flex: none;
@@ -1095,13 +1087,13 @@
   color: var(--ink-muted);
 }
 
-.incentives__bucket > header strong {
+.incentives__bucket > summary strong {
   display: block;
   font-size: 0.72rem;
   font-weight: 680;
 }
 
-.incentives__bucket > header small {
+.incentives__bucket > summary small {
   display: block;
   margin-top: 0.1rem;
   color: var(--ink-muted);
@@ -1223,10 +1215,12 @@
 .review-sheet > footer {
   display: grid;
   gap: 0.9rem;
-  margin-top: 1.25rem;
+  margin: 0;
+  padding: 0.85rem 0 max(0.85rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
 }
 
-.review-sheet > footer p {
+.review-sheet__notes p {
   margin: 0;
   color: var(--ink-muted);
   font-size: 0.61rem;
@@ -1283,12 +1277,10 @@
   }
 
   .configurator-viewport {
-    --quick-facts-bottom: 4.6rem;
-    --quick-facts-height: 3.4rem;
-    position: sticky;
+    position: relative;
     z-index: 10;
-    top: 4.25rem;
-    height: min(56dvh, 34rem);
+    top: auto;
+    height: min(58dvh, 34rem);
     padding: 0.55rem;
     background: #f5f4f0;
   }
@@ -1338,13 +1330,6 @@
     padding-inline: 0.35rem;
   }
 
-  .configuration-facts {
-    right: 1rem;
-  }
-
-  .configuration-facts > span {
-    min-width: 5.5rem;
-  }
 }
 
 @media (max-width: 720px) and (min-width: 561px) {
@@ -1476,11 +1461,9 @@
   }
 
   .configurator-viewport {
-    --quick-facts-bottom: 4.75rem;
-    --quick-facts-height: 3.25rem;
-    top: 4rem;
-    height: 48dvh;
-    min-height: 21rem;
+    top: auto;
+    height: 54dvh;
+    min-height: 23rem;
     scroll-margin-top: 4rem;
   }
 
@@ -1562,20 +1545,6 @@
     width: calc(100% - 2rem);
   }
 
-  .configuration-facts {
-    left: auto;
-    right: 1rem;
-  }
-
-  .configuration-facts > span {
-    min-width: 5.25rem;
-    flex: none;
-    padding: 0.55rem 0.6rem;
-  }
-
-  .configuration-facts > span:last-child {
-    display: none;
-  }
 
   .review-layer {
     grid-template-columns: 1fr;
@@ -1587,7 +1556,7 @@
 
   .review-sheet {
     width: 100%;
-    padding: 1rem;
+    padding: 0 1rem;
   }
 }
 
@@ -1604,8 +1573,266 @@
 }
 
 @media (max-width: 640px) {
-  .configuration-facts small,
   .configurator-head__model > span {
     font-size: max(0.55rem, 10px);
+  }
+}
+
+
+/* The transparent live total shares the vehicle HUD's upper row. */
+.configurator-viewport > .vehicle-canvas {
+  flex: 1;
+  height: 0;
+  min-height: 0;
+}
+.configurator-viewport .vc-stage { min-height: 0; }
+.configurator-viewport .vc-hud__identity { min-width: 0; }
+.review-sheet__body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-bottom: 1rem;
+}
+.review-sheet__buyer { margin-top: 1.2rem; }
+.review-sheet .buyer-context {
+  --rail-ink: #111411;
+  --rail-muted: #696d65;
+  --rail-green: #36564c;
+  --rail-line: rgba(17, 20, 17, 0.13);
+  padding: 1rem;
+}
+.review-sheet__notes { margin-top: 1.25rem; }
+.review-sheet__notes p,
+.incentives__head p,
+.incentives__why,
+.incentives__note { font-size: 0.8rem; line-height: 1.55; }
+.review-sheet__choices strong,
+.incentives__label { font-size: 0.85rem; }
+.review-sheet__choices span,
+.review-sheet__specs small,
+.review-sheet__math small,
+.incentives__meta { font-size: 0.65rem; }
+.incentives__bucket > summary { cursor: pointer; min-height: 44px; align-items: center; }
+.incentives__bucket > summary strong { font-size: 0.85rem; }
+.incentives__bucket > summary small { font-size: 0.72rem; }
+.incentives__count { color: var(--ink-muted); font-weight: 400; margin-left: 0.3rem; }
+.share-fallback {
+  position: fixed;
+  z-index: 70;
+  top: 4.75rem;
+  right: 1rem;
+  width: min(24rem, calc(100vw - 2rem));
+  display: flex;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--white);
+  box-shadow: var(--shadow-soft);
+}
+.share-fallback label, .review-sheet__share-link { display: grid; gap: 0.5rem; min-width: 0; flex: 1; font-size: 0.8rem; }
+.share-fallback input, .review-sheet__share-link input {
+  width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; font: inherit;
+}
+.share-fallback button, .tool-status__close {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--white); cursor: pointer;
+}
+.share-fallback svg, .tool-status__close svg { width: 1rem; height: 1rem; }
+.tool-status__close { margin: 0 0 0.5rem auto; }
+.tool-status__lede, .tool-status__tools small, .tool-status__how small { font-size: 0.8rem; }
+.tool-status__tools code, .tool-status__how code { font-size: 0.7rem; }
+.tool-status__prompts button { min-height: 44px; font-size: 0.8rem; }
+.configurator-header button:focus-visible,
+.review-sheet :is(button, summary, a, input):focus-visible,
+.tool-status__panel button:focus-visible {
+  outline: 2px solid var(--technical); outline-offset: 3px;
+}
+.header-action:disabled, .review-sheet > footer button:disabled { cursor: progress; opacity: 0.65; }
+@media (max-width: 980px) {
+  .configurator-header { position: sticky; top: 0; }
+  .configurator-rail { padding-bottom: calc(10rem + env(safe-area-inset-bottom)); }
+  .configurator-rail__inner { backdrop-filter: none; }
+  .configurator-header__actions > span.header-action { display: none; }
+}
+@media (max-width: 560px) {
+  .configurator-header { padding-inline: 0.4rem; gap: 0.25rem; }
+  .configurator-header__actions { gap: 0.2rem; }
+  .lifecycle-switch button { padding-inline: 0.45rem; font-size: 0.7rem; }
+  .lifecycle-switch svg { display: none; }
+  .tool-status > button [data-chevron] { display: none; }
+  .review-sheet > header h2 { font-size: 1.85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .review-sheet, .configuration-change { animation: none; }
+  .lifecycle-switch button { transition: none; }
+}
+
+/* Keep the vehicle in view while a narrow screen scrolls through its choices.
+   The header and activity strip keep their natural heights; the remaining
+   viewport belongs to the preview and one independently scrolling rail. */
+@media (max-width: 980px) {
+  body:has(.configurator-shell[data-workspace="configure"]) {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .configurator-shell[data-workspace="configure"] {
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .configurator-shell[data-workspace="configure"] > .configurator-header,
+  .configurator-shell[data-workspace="configure"] > .tool-activity-strip {
+    flex: none;
+  }
+
+  .configurator-shell[data-workspace="configure"] > .autolab-surfaces {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .configurator-workspace {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 40%) minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .configurator-viewport {
+    height: 100%;
+    min-height: 0;
+    scroll-margin-top: 0;
+  }
+
+  .configurator-rail {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 0.55rem;
+    scroll-padding-block: 0.75rem 8rem;
+    overscroll-behavior-y: contain;
+  }
+
+  .configurator-rail__inner,
+  .configurator-rail__inner > .uvc-configurator {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .configurator-rail__inner > .uvc-configurator {
+    display: block;
+  }
+
+  .configurator-rail .configurator-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .configurator-rail .configurator-head__model h2 {
+    font-size: 2.4rem;
+  }
+
+  .configurator-rail .configurator-head__model p {
+    margin-top: 0.4rem;
+    max-width: 8rem;
+    font-size: 0.75rem;
+  }
+
+  .configurator-rail .configurator-head__specs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-self: center;
+  }
+
+  .configurator-rail .configurator-head__specs strong {
+    font-size: 1.1rem;
+  }
+
+  .configurator-rail .configurator-head__specs span {
+    font-size: 0.6rem;
+    letter-spacing: 0;
+  }
+
+  .configurator-shell .configurator-total {
+    position: sticky;
+    inset: auto 0 0;
+    padding: 0.65rem 1rem max(0.65rem, env(safe-area-inset-bottom));
+  }
+
+  /* The preview remains visible, so it no longer needs a return shortcut. */
+  .configurator-shell .configurator-total__preview {
+    display: none;
+  }
+}
+
+/* A short portrait keeps more room for choices. Header/specs scroll with those
+   choices instead of becoming another fixed bar above them. */
+@media (max-width: 559px) and (max-height: 700px) {
+  .configurator-workspace {
+    grid-template-rows: minmax(0, 35%) minmax(0, 1fr);
+  }
+}
+
+/* Landscape phones use their width to preserve a useful vehicle preview and
+   full-size option controls, rather than stacking two shallow panels. */
+@media (min-width: 560px) and (max-width: 980px) and (max-height: 600px) {
+  .configurator-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .configurator-viewport {
+    padding-right: 0.3rem;
+  }
+
+  .configurator-rail {
+    padding: 0.55rem 0.55rem 0 0.3rem;
+  }
+
+  .configurator-rail .configurator-head {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .configurator-rail .configurator-head__model h2 {
+    font-size: 2rem;
+  }
+
+  .configurator-shell .configurator-total {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* Give long trim/spec labels their own rows when either the phone or a
+   landscape choices column is narrow. The RX2 cluster remains intact. */
+@media (max-width: 380px), (min-width: 560px) and (max-width: 700px) and (max-height: 600px) {
+  .configurator-rail .configurator-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .configurator-rail .configurator-head__model {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.75rem;
+  }
+
+  .configurator-rail .configurator-head__model > span {
+    grid-column: 1 / -1;
+  }
+
+  .configurator-rail .configurator-head__model p {
+    max-width: none;
+    margin: 0;
+    text-align: right;
   }
 }

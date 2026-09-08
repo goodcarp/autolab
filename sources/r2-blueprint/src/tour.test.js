@@ -66,15 +66,54 @@ test('tool failure stops the tour and does not schedule further actions', async 
   await assert.rejects(h.tour.start(), /failed/); assert.deepEqual(h.stopped, ['error']);
   assert.equal(h.pending.length, 0);
 });
-test('authored tour is at most nine steps, under sixty seconds, and uses tool calls', () => {
-  assert.ok(CONFIG.tour.length <= 9);
-  assert.ok(CONFIG.tour.reduce((n, s) => n + s.dwell, 0) < 60000);
+test('authored tour keeps nine readable stops within thirty seconds', () => {
+  assert.equal(CONFIG.tour.length, 9);
+  assert.equal(CONFIG.tour.reduce((n, s) => n + s.dwell, 0), 30000);
   assert.equal(new Set(CONFIG.tour.map(s => s.id)).size, CONFIG.tour.length);
   for (const step of CONFIG.tour) {
-    assert.ok(step.dwell >= 5000 && step.dwell <= 7000);
+    assert.ok(step.dwell >= 3000 && step.dwell <= 4000);
     assert.ok(step.caption && step.title && step.actions.length);
     for (const action of step.actions) assert.ok(['set_view', 'set_motion', 'frame_part', 'highlight_part', 'set_annotations', 'reset', 'orbit_camera', 'set_camera'].includes(action.name));
   }
+  for (const id of ['open', 'explode']) assert.equal(CONFIG.tour.find(step => step.id === id).dwell, 4000);
+});
+
+test('the authored sequence reaches its final reset and completes at thirty seconds', async () => {
+  const h = harness({ steps: CONFIG.tour });
+  await h.tour.start();
+  let deadline = 0;
+  for (const step of CONFIG.tour) {
+    assert.equal(h.tour.state().id, step.id);
+    assert.equal(h.tour.state().running, true);
+    deadline += step.dwell;
+    assert.equal(h.pending[0].at, deadline);
+    await h.tick();
+  }
+  assert.equal(deadline, 30000);
+  assert.equal(h.tour.state().running, false);
+  assert.equal(h.tour.state().id, 'reset');
+  assert.deepEqual(h.calls, CONFIG.tour.flatMap(step => step.actions.map(action => [action.name, action.args])));
+  assert.deepEqual(h.stopped, ['complete']);
+  assert.equal(h.pending.length, 0);
+});
+
+test('the shorter dwell includes awaited action execution rather than adding it to the tour', async () => {
+  let elapsed = 0;
+  const h = harness({ steps: CONFIG.tour, now: () => elapsed, call: async () => { elapsed += 200; } });
+  await h.tour.start();
+  assert.equal(h.pending[0].at, 3000 - 3 * 200);
+});
+
+test('a held authored step still finishes its actions without advancing on the faster schedule', async () => {
+  const h = harness({ steps: CONFIG.tour.map(step => ({ ...step, dwell: Infinity })) });
+  await h.tour.start(6);
+  assert.equal(h.tour.state().id, 'explode');
+  assert.equal(h.tour.state().running, true);
+  assert.deepEqual(h.calls, CONFIG.tour[6].actions.map(action => [action.name, action.args]));
+  assert.equal(h.pending.length, 0);
+  h.tour.stop('pointer');
+  assert.equal(h.tour.state().running, false);
+  assert.deepEqual(h.stopped, ['pointer']);
 });
 
 test('WebMCP dispatcher preserves tour calls and interrupts on external calls across surfaces', async (t) => {

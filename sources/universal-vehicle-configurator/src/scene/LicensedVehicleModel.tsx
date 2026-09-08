@@ -16,8 +16,7 @@ import {
   disposeLicensedVehicleBlueprintEdges,
   disposeLicensedVehicleMaterials,
 } from "./licensed-vehicle-mapping";
-
-const MODEL_URL = `${import.meta.env.BASE_URL}models/openx-volvo-ex30-2024.glb`;
+import { LICENSED_VEHICLE_MODEL_URL } from "./vehicle-model-source";
 
 function ConfiguredTowHitch({ focused }: Readonly<{ focused: boolean }>) {
   return (
@@ -71,7 +70,7 @@ export function LicensedVehicleModel({
   onReady,
 }: LicensedVehicleModelProps) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene: sourceScene } = useGLTF(MODEL_URL, false, true);
+  const { scene: sourceScene } = useGLTF(LICENSED_VEHICLE_MODEL_URL, false, true);
   const scene = useMemo(
     () => cloneLicensedVehicleScene(sourceScene as Group),
     [sourceScene],

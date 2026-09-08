@@ -1,0 +1,31 @@
+/* Give the drawing its own unobstructed viewport; furniture never floats over it. */
+.owner-guide .owner-guide__actions { min-width: 0; }
+.owner-guide.owner-guide[data-active] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 0; padding: 0; background: #f4f6fa; animation: none; }
+.owner-guide .owner-guide__identity { position: static; min-width: 0; width: auto; padding: 0.65rem 1rem; border: 0; border-bottom: 1px solid #d7dce4; border-radius: 0; transform: none; background: #fafbfdf5; box-shadow: none; text-align: left; }
+.owner-guide .owner-guide__identity strong { margin: 0; font-size: 0.95rem; }
+.owner-guide .owner-guide__identity p { display: block; margin: 0.2rem 0 0; max-width: none; color: #546073; font-size: 0.75rem; }
+.owner-guide__drawing { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+.owner-guide .owner-guide__frame { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+.owner-guide .owner-guide__actions { position: static; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.4rem; width: auto; padding: 0.65rem max(0.75rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid #d7dce4; border-radius: 0; transform: none; background: #fafbfd; box-shadow: none; }
+.owner-guide .owner-guide__actions button { min-height: 44px; min-width: 0; justify-content: center; gap: 0.35rem; padding: 0.45rem; font-size: 0.875rem; border-radius: 0.55rem; background: #fff; }
+.owner-guide .owner-guide__actions button svg { width: 1rem; height: 1rem; flex: none; }
+.owner-guide .owner-guide__actions button[aria-pressed="true"] { background: #23304e; border-color: #23304e; color: white; }
+.owner-guide .owner-guide__actions button:focus-visible { outline: 2px solid #23304e; outline-offset: 2px; }
+.owner-guide .owner-guide__actions output { position: static; grid-column: 1 / -1; width: auto; height: auto; clip: auto; overflow: visible; padding: 0.1rem 0; font-family: var(--font-sans, sans-serif); font-size: 0.75rem; text-align: center; text-transform: none; white-space: normal; color: #546073; }
+.owner-guide__connection { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 1rem; padding: 1.5rem; background: #f4f6fa; text-align: center; }
+.owner-guide__connection p { max-width: 26rem; margin: 0; font-size: 1rem; }
+.owner-guide__connection > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.owner-guide__connection button { min-height: 44px; border: 1px solid #738097; border-radius: 0.55rem; padding: 0.6rem 0.85rem; color: #23304e; background: white; cursor: pointer; }
+@media (max-width: 640px) {
+  .owner-guide .owner-guide__identity { padding: 0.6rem 0.85rem; }
+  .owner-guide .owner-guide__actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .owner-guide .owner-guide__actions button { font-size: 0.8rem; }
+  .owner-guide .owner-guide__actions .owner-guide__reset { grid-column: 2 / 4; }
+}
+@media (min-width: 641px) and (max-height: 560px) {
+  .owner-guide.owner-guide[data-active] { grid-template-columns: minmax(0, 1fr) 210px; grid-template-rows: auto minmax(0, 1fr); }
+  .owner-guide .owner-guide__identity { grid-column: 1 / -1; padding-block: 0.4rem; }
+  .owner-guide .owner-guide__actions { grid-column: 2; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; border-top: 0; border-left: 1px solid #d7dce4; padding: 0.5rem; }
+  .owner-guide .owner-guide__actions button { flex-direction: column; font-size: 0.75rem; }
+  .owner-guide .owner-guide__actions .owner-guide__reset { grid-column: 1 / -1; flex-direction: row; }
+}

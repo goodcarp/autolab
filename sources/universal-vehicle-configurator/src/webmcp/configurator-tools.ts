@@ -1707,7 +1707,7 @@ export function createConfiguratorToolDefinitions(
     name: CONFIGURATOR_TOOL_NAMES[17],
     title: "Run the digital twin's guided tour",
     description:
-      "Open AutoLab Garage and start (or stop) the twin's guided tour: nine stops over about fifty-four seconds, each a tool call on the drawing, with a caption card. The tour shows the overview, the headlamps lit, the side elevation with dimensions, the structural battery with the shell dissolved, the front drive unit, everything open, the exploded assembly, drive with lights, and the reset. Any other twin tool call, or any click or key on the drawing, stops it where it is. Pass from to start at a later stop.",
+      "Open AutoLab Garage and start (or stop) the twin's guided tour: nine stops over about thirty seconds, each a tool call on the drawing, with a caption card. The tour shows the overview, the headlamps lit, the side elevation with dimensions, the structural battery with the shell dissolved, the front drive unit, everything open, the exploded assembly, drive with lights, and the reset. A scene-changing twin tool call, or a click or key on the drawing, stops it where it is. Read-only calls and configurator context sync do not interrupt it. Pass from to start at a later stop.",
     inputSchema: {
       type: "object",
       properties: {

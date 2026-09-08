@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { CONFIG } from './config.js';
+import { CONFIG, toggleMotionState } from './config.js';
 
 // No WebGL is needed to inspect declarations or exercise browser registration.
 const source = (await readFile(new URL('./webmcp.js', import.meta.url), 'utf8'))
@@ -28,6 +28,26 @@ function sheet(overrides = {}) {
   return { st, rig, ui, overlay: { setView() {} }, setView(v) { st.view = v; rig.view = v; }, motion() {}, select() {}, config: CONFIG,
     vehicle: { order: [], parts: {}, SPEC: { length: 4.715 } }, tourState: () => ({ running: false, step: 0, of: CONFIG.tour.length }), startTour: () => ({ running: true }), stopTour: (why) => { stopped.push(why); return { running: false }; }, stopped, ...overrides };
 }
+
+test('reset restores every motion after repeated demonstrations and reports the resulting state', async t => {
+  browser(t);
+  const ctx = sheet(); const selected = [];
+  ctx.motion = motion => toggleMotionState(ctx.st, motion);
+  ctx.select = part => selected.push(part);
+  const api = installWebMCP(ctx);
+  for (const motion of ['drive', 'lights', 'panels', 'explode', 'open']) await api.call('set_motion', { motion, on: true });
+  await api.call('set_view', { view: 'front' });
+  const expected = { run: true, drive: false, lights: false, panels: false, explode: false, open: false };
+  const first = await api.call('reset');
+  assert.deepEqual(first.motions, expected);
+  assert.equal(first.view, 'iso');
+  assert.equal(first.annotations_visible, true);
+  assert.equal(selected.at(-1), null);
+  assert.equal(ctx.st.panels, true, 'the shell is visible again');
+  assert.deepEqual((await api.call('reset')).motions, expected, 'reset is idempotent');
+  assert.deepEqual((await api.call('get_state')).motions, expected);
+  api.dispose();
+});
 
 test('all 19 tools have closed schemas, titles and complete annotations; the tour rides the dispatcher', async t => {
   browser(t);
@@ -65,6 +85,25 @@ test('framed: no browser registration, registration resolves false, the bridge s
   assert.equal(await api.registration, false);
   assert.equal(registerTool.mock.callCount(), 0);
   assert.equal(api.framed, true);
+  api.dispose();
+});
+
+test('Home demo keeps its tour dispatcher private without registration, bridge or tools UI', async t => {
+  const registerTool = t.mock.fn(async () => {});
+  browser(t, { modelContext: { registerTool } });
+  const listen = t.mock.fn(); window.addEventListener = listen;
+  const ctx = sheet({ internalOnly: true });
+  const renderTools = t.mock.fn(); ctx.ui.setAgentTools = renderTools;
+  const api = installWebMCP(ctx);
+  assert.equal(window.r2, undefined);
+  assert.equal(listen.mock.callCount(), 0);
+  assert.equal(renderTools.mock.callCount(), 0);
+  assert.equal(registerTool.mock.callCount(), 0);
+  await api.callTour('set_view', { view: 'side' });
+  assert.equal(ctx.st.view, 'side');
+  assert.deepEqual(ctx.stopped, [], 'tour calls still use the private non-interrupting dispatcher');
+  t.mock.timers.tick(13000); await flush();
+  assert.equal(registerTool.mock.callCount(), 0, 'no registration watcher was started');
   api.dispose();
 });
 
@@ -118,6 +157,7 @@ test('the watch expires at 12 seconds without an API', async t => {
 });
 
 test('failed registration retries only the tools that failed', async t => {
+  t.mock.method(console, 'warn', () => {});
   let fail = true;
   const registerTool = t.mock.fn(async (tool) => { if (fail && tool.name === 'measure') throw new Error('flaky'); });
   browser(t, { modelContext: { registerTool } });

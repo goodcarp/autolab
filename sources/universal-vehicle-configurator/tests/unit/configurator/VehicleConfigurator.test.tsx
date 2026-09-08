@@ -17,7 +17,7 @@ import {
 
 const catalog = catalogData as unknown as Catalog;
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function ConfiguratorHarness() {
   const [selections, setSelections] = useState<SelectionInput>(() => resolve(catalog).selections);
@@ -76,10 +76,71 @@ describe("VehicleConfigurator", () => {
     expect(forestGreenCard).not.toBeNull();
     expect(within(forestGreenCard as HTMLElement).getByText("Late 2026")).toBeVisible();
 
-    const standardRwd = screen.getByRole("radio", { name: /RX2 Standard RWD, From/i });
+    const standardRwd = screen.getByRole("radio", { name: /RX2 Standard RWD,/i });
     const standardRwdCard = standardRwd.closest("label");
     expect(standardRwdCard).not.toBeNull();
     expect(within(standardRwdCard as HTMLElement).getByText("Needs a paired change")).toBeVisible();
+  });
+
+  it("shows each option's price once without duplicating it in the impact badges", () => {
+    render(<ConfiguratorHarness />);
+
+    for (const group of catalog.groups) {
+      const family = screen.getByRole("group", { name: group.label });
+      const inputs = within(family).getAllByRole(group.select === "one" ? "radio" : "checkbox");
+      for (const input of inputs) {
+        const card = input.closest("label") as HTMLElement;
+        // The existing Standard RWD description also mentions its entry price;
+        // this checks the pricing UI without changing that catalog copy.
+        const amounts = card.querySelector(".config-option__heading")?.textContent?.match(/\$[\d,]+/g) ?? [];
+        expect(amounts.length, input.getAttribute("aria-label") ?? "option").toBeLessThanOrEqual(1);
+        expect(card.querySelector(".config-option__impact")?.textContent ?? "").not.toMatch(/\$/);
+      }
+    }
+
+    const paint = screen.getByRole("radio", { name: /Glacier White, Estimated \+\$1,000 vs current/i });
+    expect(within(paint.closest("label") as HTMLElement).getByText("+$1,000")).toBeVisible();
+    expect((paint.closest("label") as HTMLElement).querySelector(".config-option__meta")).toBeNull();
+    expect(screen.queryByText("Compatible", { exact: true })).not.toBeInTheDocument();
+    const wheels = screen.getByRole("radio", { name: /20.*Black Sand All-Terrain/i });
+    expect(within(wheels.closest("label") as HTMLElement).getByText("−23 mi")).toBeVisible();
+  });
+
+  it("distinguishes a selected option's cost from the cost to change the current build", () => {
+    render(<ConfiguratorHarness />);
+    fireEvent.click(screen.getByRole("radio", { name: /Glacier White/i }));
+
+    expect(screen.getByRole("radio", {
+      name: /Glacier White, Estimated \+\$1,000 option price/i,
+    })).toBeChecked();
+    expect(screen.getByRole("radio", {
+      name: /Rockaway Blue, Estimated No price change/i,
+    })).not.toBeChecked();
+
+    // Returning to the included color removes an estimated charge, so the
+    // saving must retain that uncertainty even though Silver itself is verified.
+    const silver = screen.getByRole("radio", {
+      name: /Orchard Beach Silver, Estimated −\$1,000 vs current/i,
+    });
+    const silverCard = silver.closest("label") as HTMLElement;
+    expect(within(silverCard).getByText("Est.")).toBeVisible();
+    expect(within(silverCard).getByText("−$1,000")).toBeVisible();
+    fireEvent.click(silver);
+    expect(screen.getByRole("radio", { name: /Orchard Beach Silver, Included/i })).toBeChecked();
+    const summary = screen.getByRole("contentinfo", { name: "Current build summary" });
+    expect(within(summary).getByText("$59,485")).toBeVisible();
+  });
+
+  it("quotes the catalog price when a choice requires companion changes", () => {
+    render(<ConfiguratorHarness />);
+
+    // Its default wheel combination is invalid, so a raw single-option delta
+    // cannot promise the total after compatible wheels are selected as well.
+    const standard = screen.getByRole("radio", { name: /RX2 Standard RWD, From/i });
+    const card = standard.closest("label") as HTMLElement;
+    expect(within(card).getByText("Needs a paired change")).toBeVisible();
+    expect(within(card).queryByText("vs current")).not.toBeInTheDocument();
+    expect(card.querySelector(".config-option__heading")?.textContent?.match(/\$[\d,]+/g)).toHaveLength(1);
   });
 
   it("lets the buyer configure all five vehicle families and keeps the total coherent", () => {
@@ -144,12 +205,12 @@ describe("VehicleConfigurator", () => {
     render(<InvalidHarness />);
     // Standard RWD is invalid with the default 21" wheels. The buyer should not
     // be sent back up the rail to make a second, different decision.
-    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD,/i }));
 
     expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
     expect(onInvalidSelection).not.toHaveBeenCalled();
 
-    expect(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Standard RWD,/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /19.*Machined Graphite/i })).toBeChecked();
     expect(screen.getByText("275 mi estimated range")).toBeVisible();
 
@@ -186,7 +247,7 @@ describe("VehicleConfigurator", () => {
     expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
 
     // The companion change must be computed from the agent's build.
-    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD, From/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD,/i }));
     const [patch, meta] = onSelectionPatch.mock.calls.at(-1) ?? [];
     expect(patch.set.build).toEqual(["build.standard_rwd"]);
     expect(meta.candidate.valid).toBe(true);
@@ -233,6 +294,121 @@ describe("VehicleConfigurator", () => {
       valid: true,
       price: expect.objectContaining({ vehicleTotal: 59_485 }),
     }));
+  });
+
+  it("keeps towing selected when a trim change also needs compatible wheels", () => {
+    render(<ConfiguratorHarness />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Launch Package — included/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Standard RWD,/i }));
+    expect(screen.getByRole("radio", { name: /RX2 Standard RWD,/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /19.*Machined Graphite/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /hitch \+ tow software/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Launch Package — included/i })).not.toBeChecked();
+    expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
+
+    // Returning to Performance must swap the package instead of losing towing.
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Performance/i }));
+    expect(screen.getByRole("checkbox", { name: /Launch Package — included/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /hitch \+ tow software/i })).not.toBeChecked();
+  });
+
+  it("removes paid towing on a second click and restores its price", () => {
+    render(<ConfiguratorHarness />);
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Premium/i }));
+    const summary = screen.getByRole("contentinfo", { name: "Current build summary" });
+    const priceBefore = within(summary).getByText(/\$[\d,]+/, { selector: "strong" }).textContent;
+    const tow = screen.getByRole("checkbox", { name: /hitch \+ tow software/i });
+    fireEvent.click(tow);
+    expect(tow).toBeChecked();
+    expect(within(summary).getByText(/\$[\d,]+/, { selector: "strong" }).textContent).not.toBe(priceBefore);
+    fireEvent.click(tow);
+    expect(tow).not.toBeChecked();
+    expect(within(summary).getByText(/\$[\d,]+/, { selector: "strong" }).textContent).toBe(priceBefore);
+  });
+
+  it("shows the applicable towing package first with concise price and eligibility", () => {
+    render(<ConfiguratorHarness />);
+    const towing = screen.getByRole("group", { name: "Towing" });
+    expect(within(towing).getAllByText("Tow package", { selector: "strong" })).toHaveLength(2);
+    expect(within(towing).getAllByText("Hitch + towing software")).toHaveLength(2);
+    expect(within(towing).queryByText("Needs a paired change")).not.toBeInTheDocument();
+    expect(within(towing).queryByText("Explore only")).not.toBeInTheDocument();
+    const included = within(towing).getAllByRole("checkbox")[0];
+    expect(included).toHaveAccessibleName(/Launch Package — included.*Included/);
+    expect(included).toHaveAccessibleDescription("Included with your Performance Launch Package.");
+    expect(included).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole("radio", { name: /RX2 Premium/i }));
+    const paid = within(towing).getAllByRole("checkbox")[0];
+    expect(paid).toHaveAccessibleName(/hitch \+ tow software.*Estimated \+\$3,450/);
+    expect(paid).toHaveAccessibleDescription("Availability unconfirmed.");
+    expect(included).toHaveAccessibleDescription("Requires Performance with Launch Package.");
+    expect(within(towing).getByText("Other builds")).toBeVisible();
+  });
+
+  it("reviews a different towing build before explicitly switching trims and packages", () => {
+    render(<ConfiguratorHarness />);
+    const included = screen.getByRole("checkbox", { name: /Launch Package — included/i });
+    const paid = screen.getByRole("checkbox", { name: /hitch \+ tow software/i });
+    const summary = screen.getByRole("contentinfo", { name: "Current build summary" });
+    fireEvent.click(included);
+    fireEvent.click(paid);
+    expect(included).toBeChecked();
+    expect(paid).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Performance/i })).toBeChecked();
+    expect(within(summary).getByText("$59,485")).toBeVisible();
+    const guidance = screen.getByRole("alert", { name: "Compatibility guidance" });
+    expect(within(guidance).getByText("The standalone package requires a Standard or Premium build. Availability is unconfirmed.")).toBeVisible();
+    // Quote the complete change from the current build, including the package,
+    // rather than only the trim delta from an invalid intermediate build.
+    fireEvent.click(within(guidance).getByRole("button", { name: /Switch to Premium.*−\$550/i }));
+    expect(paid).toBeChecked();
+    expect(included).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Performance/i })).not.toBeChecked();
+    expect(within(summary).getByText("$58,935")).toBeVisible();
+    fireEvent.click(included);
+    expect(included).not.toBeChecked();
+    expect(paid).toBeChecked();
+    fireEvent.click(within(screen.getByRole("alert", { name: "Compatibility guidance" }))
+      .getByRole("button", { name: /Switch to Performance.*\+\$550/i }));
+    expect(included).toBeChecked();
+    expect(paid).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /RX2 Performance/i })).toBeChecked();
+    expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
+  });
+
+  it("dismisses another build's towing explanation without changing the current build", () => {
+    const onSelectionPatch = vi.fn();
+    render(<VehicleConfigurator catalog={catalog} selections={resolve(catalog).selections}
+      onSelectionPatch={onSelectionPatch} onBuyerContextChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /hitch \+ tow software/i }));
+    expect(onSelectionPatch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss compatibility guidance" }));
+    expect(screen.queryByRole("alert", { name: "Compatibility guidance" })).not.toBeInTheDocument();
+    expect(onSelectionPatch).not.toHaveBeenCalled();
+    expect(screen.getByRole("radio", { name: /RX2 Performance/i })).toBeChecked();
+  });
+
+  it("exposes one mobile family at a time and retains the selection in its collapsed header", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    render(<ConfiguratorHarness />);
+    expect(screen.getByRole("button", { name: "Build options" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("radio", { name: /Glacier White/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Paint options" }));
+    expect(screen.getByRole("button", { name: "Build options" })).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("radio", { name: /Glacier White/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Wheels options" }));
+    expect(screen.getByRole("button", { name: "Paint options" })).toHaveTextContent("Glacier White");
+    expect(screen.getByRole("contentinfo", { name: "Current build summary" })).toHaveTextContent("$60,485");
+  });
+
+  it("disables review if a supplied build is invalid or there is no review handler", () => {
+    const props = { catalog, onSelectionPatch: vi.fn(), onBuyerContextChange: vi.fn() };
+    const view = render(<VehicleConfigurator {...props} selections={resolve(catalog).selections} />);
+    expect(screen.getByRole("button", { name: /Review.*RX2 build/ })).toBeDisabled();
+    view.rerender(<VehicleConfigurator {...props} onReviewBuild={vi.fn()}
+      selections={{ ...resolve(catalog).selections, build: ["build.standard_rwd"] }} />);
+    expect(screen.getByRole("button", { name: /Review.*RX2 build/ })).toBeDisabled();
   });
 });
 

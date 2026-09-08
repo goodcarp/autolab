@@ -10,55 +10,51 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/site.css">
-<style>
-  .fig{border:1.5px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff}
-  .fig img{display:block;width:100%;background:#fff}
-  .fig figcaption{padding:12px 16px;font-size:14px;color:#333;border-top:1px solid var(--rule)}
-  .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-  .fit{font-family:var(--mono);font-size:14px}
-  .fit .miss{color:#b3261e;font-weight:500}
-td.miss{color:#c94b31;font-weight:600}
-td.info{color:#666}
-  .hero h1{font-size:clamp(40px,7vw,96px)}
-  .kicker{font:500 14px var(--mono);color:var(--mute)}
-</style>
+
 </head>
-<body>
+<body class="engine-page">
 <header class="top">
   <a class="brand" href="../" aria-label="AutoLab by AutoMoto home">
     <img class="brand-mark" src="../assets/brand/autolab-mark.svg" alt="" width="44" height="41">
     <span class="brand-word">AutoLab <small>by AutoMoto <sup>©</sup></small></span>
   </a>
-  <nav class="nav" aria-label="Experiences">
+  <nav class="nav" id="site-navigation" aria-label="Experiences">
     <a href="../configure/">Configure</a>
     <a href="../garage/">Garage</a>
     <a href="./" aria-current="page">Engine</a>
-    <a href="https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" rel="noopener">GitHub</a>
+    <a href="https://github.com/goodcarp/autolab" rel="noopener">GitHub</a>
   </nav>
   <button class="chip" id="chip" type="button" aria-live="polite" aria-expanded="false" aria-controls="tools-sheet">
     <span class="dot" aria-hidden="true"></span><span id="chip-label">Manual mode</span>
   </button>
+  <button class="nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
 </header>
 
 <section class="hero">
   <p class="eyebrow">AutoLab 3D Creation Engine</p>
   <h1>One weird trick to rule (and measure)<br>them all.</h1>
-  <p class="lede">Instruments and ideas for Node.js geometry + an agent-first spatial reasoning framework for code-native 3D model creation with large language models.</p>
+  <p class="lede">Measure a 3D model directly. Compare its geometry with published dimensions, find the part behind each miss, and give an AI agent a precise path from measurement to edit.</p>
+  <figure class="fig engine-preview"><img src="out/profile-overlay.svg" alt="Side profile of the model overlaid on the calibrated reference drawing, with fitted knots marked" fetchpriority="high"><figcaption><b>Profile overlay.</b> The model's outline (ink) against the calibrated reference drawing (dashed), knots in red. Roofline within a millimetre for most of the car.</figcaption></figure>
   <div class="cta">
     <a class="btn primary" href="https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine" rel="noopener">Source and instructions</a>
-    <a class="btn" href="docs/README.md">README</a>
-    <a class="btn ghost" href="docs/LEARNINGS.md">Learnings</a>
+    <a class="btn" href="https://github.com/goodcarp/autolab/blob/main/sources/autolab-3d-creation-engine/README.md">README</a>
+    <a class="btn ghost" href="https://github.com/goodcarp/autolab/blob/main/sources/autolab-3d-creation-engine/docs/LEARNINGS.md">Learnings</a>
   </div>
 </section>
 
 <section>
   <div class="sec-h"><span class="num">01</span><h2>One command to rule them all</h2></div>
   <p class="kicker" id="fit-kicker">npm run fit · measured against specs/rivian-r2.json · model r2-blueprint (this assembly)</p>
-  <pre class="fit" id="fit-table"><code>dimension             expected   measured   dev       tol
---------------------------------------------------------------
- (the measured rows are read from out/fit.json when this page loads;
-  open that file directly if scripts are off)
---------------------------------------------------------------</code></pre>
+  <div class="fit-summary" id="fit-summary" aria-live="polite">
+    <div><span class="metric" id="fit-within">—</span><span>Dimensions within tolerance</span></div>
+    <div><span class="metric" id="fit-deviation">—</span><span>Mean deviation</span></div>
+    <div><span class="metric" id="fit-calibration">—</span><span>Calibration checks passed</span></div>
+  </div>
+  <p id="fit-status" class="report-status" role="status">Loading the measured report…</p>
+  <details class="report-details">
+    <summary>Full measurement report</summary>
+    <div class="table-wrap" id="fit-table"><p>The measured rows are read from <a href="out/fit.json">out/fit.json</a> when this page loads.</p></div>
+    <div id="fit-extremes"></div>
   <div class="cols" style="margin-top:28px">
     <div>
       <h3>The miss has a name</h3>
@@ -73,31 +69,42 @@ td.info{color:#666}
       <p>The first bounding box returned 2.151 m wide against a 1.905 m spec. Both are right: 2.151 is width over mirrors. So every number here carries the parts it was taken from, and width is reported over body and over mirrors separately.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <section>
-  <div class="sec-h"><span class="num">02</span><h2>Drawn to scale, made from mesh</h2></div>
+  <details class="section-disclosure">
+  <summary class="sec-h"><span class="num">02</span><h2>Drawn to scale, made from mesh</h2></summary>
   <div class="figs">
-    <figure class="fig"><img src="out/profile-overlay.svg" alt="Side profile of the model overlaid on the calibrated reference drawing, with fitted knots marked" loading="lazy"><figcaption><b>Profile overlay.</b> The model's outline (ink) against the calibrated reference drawing (dashed), knots in red. Roofline within a millimetre for most of the car.</figcaption></figure>
+
     <figure class="fig"><img src="out/section-x0.svg" alt="Cross-section of the vehicle at x = 0 on a millimetre grid" loading="lazy"><figcaption><b>Section at x = 0.</b> A plane slice of the actual triangles, chained into loops, on a millimetre grid for laying over a drawing.</figcaption></figure>
     <figure class="fig"><img src="out/section-cowl.svg" alt="Cross-section at the cowl" loading="lazy"><figcaption><b>Section at the cowl.</b> Where the windscreen meets the hood; the station that was 111 mm wrong for four rounds of visual review.</figcaption></figure>
     <figure class="fig"><img src="out/section-xneg1p2.svg" alt="Cross-section at x = -1.2 m" loading="lazy"><figcaption><b>Section at x = −1.2 m.</b> Through the rear doors and the structural battery.</figcaption></figure>
   </div>
+  </details>
 </section>
 
 <section>
   <div class="sec-h"><span class="num">03</span><h2>The aperture gate</h2></div>
   <div class="prose">
-    <p>Five defects in a row shipped on this model and were found by eye: a belt rail across both door openings, a body crease inside the rear door opening, a deck band across the cargo opening, a C-pillar overhanging a door opening, a charge-port light through the flank. Every capture had rendered the doors shut, and nothing measured a panel line. The instrument that could have caught all five is now in the engine: it closes every panel, takes the panel's projected footprint, and at four open fractions reports any fixed geometry within 50 mm of the skin and more than 65 mm inside that footprint, by part, inset and depth. Four fixtures of those defect classes fail at 176 to 454 mm inside.</p>
-    <p id="aperture-summary">On the current model four openings carry survivors, three distinct findings for the author to judge: the rear door frames reach about 158 mm over the B-pillar above the belt line; the fender top runs 76 mm under the hood's side edge; the load floor's rear lip sits 156 mm inside the liftgate outline (which is how SUVs are built, and listed because the instrument cannot know that). Everything else that meets an opening does so within 65 mm of its edge. The full report is <a href="out/apertures.json">out/apertures.json</a>, and an agent can read it with <code>get_aperture_report</code>.</p>
+    <p>Opening a door should reveal the space behind it. The aperture gate measures whether fixed geometry intrudes into a door, hood or liftgate opening, then names the parts that need a closer look.</p>
+    <p id="aperture-summary" class="report-status" role="status">Loading the opening checks…</p>
   </div>
+  <details class="report-details">
+    <summary>Opening-by-opening report</summary>
+    <p class="fine">The gate checks four open positions. Geometry well inside an opening is flagged for the author to judge; parts at the edge are listed separately. A flagged finding may be intentional vehicle structure.</p>
   <div class="table-wrap">
   <table id="apertures">
     <thead><tr><th>Opening</th><th>Result</th><th>Survivors (part, mm inside the outline, mm behind the skin)</th><th>Touching the edge</th></tr></thead>
     <tbody><tr><td colspan="4">Read from out/apertures.json when this page loads.</td></tr></tbody>
   </table>
   </div>
-  <div class="sec-h"><span class="num">04</span><h2>The instruments</h2></div>
+  </details>
+</section>
+
+<section>
+  <details class="section-disclosure">
+  <summary class="sec-h"><span class="num">04</span><h2>The instruments</h2></summary>
   <div class="table-wrap">
   <table id="instruments">
     <thead><tr><th>Command</th><th>Question it answers</th></tr></thead>
@@ -131,6 +138,7 @@ td.info{color:#666}
       <p>One command per question, structured output, every number with its landmarks and its tolerance, errors that carry the recovery, and a write path that refuses a dirty working tree because two agents once shared one. It's the loop an LLM can actually run: <em>build → measure → diff in millimetres → edit → repeat</em>, with no picture in it.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <footer class="foot">
@@ -141,11 +149,12 @@ td.info{color:#666}
   <p class="fine">Apache license. All Rights Reserved 2026. Model example is an independent reconstruction fitted to published dimensions, not manufacturer CAD. Courtesy Hudson Intelligence Labs and Yutani Corporation.</p>
 </footer>
 
-<div class="sheet" id="tools-sheet" hidden>
-  <div class="sheet-h"><b>Agent tools on this page</b><button type="button" id="sheet-close" aria-label="Close">×</button></div>
+<div class="sheet" id="tools-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-h"><b id="sheet-title">Agent tools on this page</b><button type="button" id="sheet-close" aria-label="Close">×</button></div>
   <div id="sheet-body"></div>
 </div>
 
+<script src="../assets/site.js" defer></script>
 <script src="engine.js" defer></script>
 </body>
 </html>

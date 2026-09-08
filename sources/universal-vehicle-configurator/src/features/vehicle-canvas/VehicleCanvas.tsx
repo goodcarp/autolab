@@ -1,5 +1,7 @@
 import {
   Armchair,
+  Camera,
+  Car,
   CircleDot,
   Crosshair,
   ImageOff,
@@ -22,7 +24,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { SCENE_MANIFEST, type NormalizedAnchor } from "../../scene/scene-manifest";
+import type { NormalizedAnchor } from "../../scene/scene-manifest";
 import type { RenderedBodyDescriptor as RenderedBody } from "../../webmcp/configurator-tools";
 import {
   DEFAULT_VEHICLE_MODEL_SOURCE,
@@ -32,11 +34,9 @@ import {
   type VehicleModelSourceId,
 } from "../../scene/vehicle-model-source";
 import { detectWebGLSupport, type WebGLSupport } from "../../scene/webgl-support";
-import { LayeredVehicleFrame } from "./LayeredVehicleFrame";
-import { LAYERED_SOURCES } from "./layered-sources";
 import "./vehicle-canvas.css";
 
-const LiveVehicleViewport = lazy(() => import("../../scene/LiveVehicleViewport"));
+const createLiveVehicleViewport = () => lazy(() => import("../../scene/LiveVehicleViewport"));
 
 export type VehicleCanvasMode = "showroom" | "blueprint";
 export type VehicleViewPreset = "angle" | "profile" | "wheel" | "interior";
@@ -111,6 +111,8 @@ export type VehicleCanvasProps = Readonly<{
   activeHotspotId?: VehicleHotspotId | null;
   hotspots?: readonly VehicleHotspot[];
   className?: string;
+  /** A compact summary in the reserved viewer header. */
+  headerAside?: ReactNode;
   onModeChange?: (mode: VehicleCanvasMode) => void;
   onViewPresetChange?: (preset: VehicleViewPreset) => void;
   onHotspotChange?: (hotspotId: VehicleHotspotId | null) => void;
@@ -119,6 +121,12 @@ export type VehicleCanvasProps = Readonly<{
 }>;
 
 type LiveRendererStatus = "loading" | "ready" | "failed";
+type LiveRendererAttempt = {
+  source: VehicleModelSourceId;
+  attempt: number;
+  status: LiveRendererStatus;
+  Viewport: ReturnType<typeof createLiveVehicleViewport>;
+};
 
 class LiveSceneBoundary extends Component<
   Readonly<{ children: ReactNode; onFailure: (reason: string) => void }>,
@@ -171,19 +179,15 @@ const DEFAULT_ACCESSORIES: VehicleAccessorySelection = {
 const PRESETS: readonly Readonly<{
   id: VehicleViewPreset;
   label: string;
-  image?: string;
 }>[] = [
-  { id: "angle", label: "Angle", image: SCENE_MANIFEST.fallback.showroomSrc },
-  { id: "profile", label: "Profile", image: SCENE_MANIFEST.fallback.sideSrc },
-  { id: "wheel", label: "Wheel", image: SCENE_MANIFEST.fallback.wheelInsetSrc },
+  { id: "angle", label: "Angle" },
+  { id: "profile", label: "Profile" },
+  { id: "wheel", label: "Wheel" },
   { id: "interior", label: "Interior" },
 ];
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
-
-const assetUrl = (path: string) =>
-  `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
 
 const accuracyLabel = (accuracy: VehicleVisualAccuracy | undefined) =>
   accuracy === "exact" ? "Exact selection" : "Representative visualization";
@@ -203,30 +207,6 @@ function usePrefersReducedMotion() {
   return reducedMotion;
 }
 
-function WheelFace({
-  wheel,
-  position,
-}: Readonly<{
-  wheel: VehicleWheelSelection;
-  position: "front" | "rear";
-}>) {
-  return (
-    <span
-      className={`vc-wheel vc-wheel--${position}`}
-      data-wheel-style={wheel.style ?? "aero"}
-      aria-hidden="true"
-      style={{ "--wheel-scale": clamp(wheel.diameterInches / 21, 0.9, 1.12) } as CSSProperties}
-    >
-      <span className="vc-wheel__tire">
-        <span className="vc-wheel__face">
-          <img src={assetUrl(SCENE_MANIFEST.fallback.wheelInsetSrc)} alt="" />
-          <span className="vc-wheel__aero" />
-        </span>
-      </span>
-    </span>
-  );
-}
-
 function InteriorView({ interior }: Readonly<{ interior: VehicleInteriorSelection }>) {
   return (
     <div
@@ -235,36 +215,21 @@ function InteriorView({ interior }: Readonly<{ interior: VehicleInteriorSelectio
       data-interior-tone={interior.tone ?? "dark"}
       aria-label={`${interior.label} representative interior material preview`}
     >
-      <img
-        className="vc-interior-view__fallback-vehicle"
-        src={assetUrl(SCENE_MANIFEST.fallback.showroomSrc)}
-        alt=""
-        aria-hidden="true"
-      />
-
       <div className="vc-material-sample" aria-hidden="true">
         <span className="vc-material-sample__surface" />
         <span className="vc-material-sample__stitch" />
-      </div>
-      <div className="vc-interior-view__caption">
-        <span><Armchair aria-hidden="true" /> Interior palette</span>
-        <strong>{interior.label}</strong>
-        <small>Representative cabin · not a manufacturer interior</small>
       </div>
     </div>
   );
 }
 
-function AssetFallback() {
+function AssetFallback({ onRetry }: Readonly<{ onRetry?: () => void }>) {
   return (
     <div className="vc-asset-fallback" role="status">
-      <div className="vc-asset-fallback__outline" aria-hidden="true">
-        <span />
-        <span />
-      </div>
       <ImageOff aria-hidden="true" />
       <strong>Vehicle view unavailable</strong>
       <span>Configuration controls remain active.</span>
+      {onRetry && <button type="button" onClick={onRetry}>Retry preview</button>}
     </div>
   );
 }
@@ -284,6 +249,7 @@ export function VehicleCanvas({
   activeHotspotId,
   hotspots,
   className = "",
+  headerAside,
   onModeChange,
   onViewPresetChange,
   onHotspotChange,
@@ -298,27 +264,13 @@ export function VehicleCanvas({
   const [liveCameraResetRevision, setLiveCameraResetRevision] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [webglSupport] = useState<WebGLSupport>(() => detectWebGLSupport());
-  const [liveStatus, setLiveStatus] = useState<LiveRendererStatus>(
-    webglSupport === "supported" ? "loading" : "failed",
-  );
-  const [assetStates, setAssetStates] = useState({
-    angle: "loading" as const as VehicleAssetStatus,
-    profile: "loading" as const as VehicleAssetStatus,
-    blueprint: "loading" as const as VehicleAssetStatus,
-  });
+  const stage = useRef<HTMLDivElement>(null);
   const pointer = useRef({ id: -1, clientX: 0, clientY: 0, panX: 0, panY: 0 });
   const reducedMotion = usePrefersReducedMotion();
 
   const currentMode = mode ?? internalMode;
   const currentPreset = viewPreset ?? internalPreset;
   const currentHotspot = activeHotspotId === undefined ? internalHotspot : activeHotspotId;
-  const authoredAsset = currentMode === "blueprint"
-    ? assetStates.blueprint
-    : currentPreset === "interior"
-      ? "ready"
-      : currentPreset === "angle"
-        ? assetStates.angle
-        : assetStates.profile;
   // A ?model= override makes the seam switchable without a rebuild, which is
   // how the code-native R2 gets compared against the licensed GLB.
   const activeModelSource: VehicleModelSourceId = useMemo(() => {
@@ -326,43 +278,43 @@ export function VehicleCanvas({
     return REQUESTED_VEHICLE_MODEL_SOURCE ?? DEFAULT_VEHICLE_MODEL_SOURCE;
   }, [modelSource]);
 
-  const liveViewRequested = true;
-  const liveRendererActive = liveViewRequested
-    && webglSupport === "supported"
-    && liveStatus === "ready";
-  const activeAsset = liveRendererActive ? "ready" : authoredAsset;
+  // A source change starts a fresh render attempt immediately. Late ready or
+  // failure callbacks from the previous body must never describe its replacement.
+  const initialStatus: LiveRendererStatus = webglSupport === "supported" ? "loading" : "failed";
+  const [renderer, setRenderer] = useState<LiveRendererAttempt>(() => ({
+    source: activeModelSource,
+    attempt: 0,
+    status: initialStatus,
+    Viewport: createLiveVehicleViewport(),
+  }));
+  if (renderer.source !== activeModelSource) {
+    setRenderer({
+      source: activeModelSource,
+      attempt: renderer.attempt + 1,
+      status: initialStatus,
+      Viewport: createLiveVehicleViewport(),
+    });
+  }
+  const LiveVehicleViewport = renderer.Viewport;
+  const liveStatus = renderer.source === activeModelSource ? renderer.status : initialStatus;
+  const liveRendererActive = liveStatus === "ready";
+  const liveLoading = liveStatus === "loading";
+  const activeAsset: VehicleAssetStatus = liveRendererActive ? "ready" : liveLoading ? "loading" : "fallback";
 
-  // Only offer the control when the body on screen can actually open, and when
-  // a live renderer is there to open it — over an authored still it would be a
-  // control that visibly does nothing.
+  // Controls that need a vehicle are available only after its renderer is ready.
   const canOpenBody = resolveVehicleModelSource(activeModelSource).hasOpenableBody
     && currentMode === "showroom"
     && liveRendererActive;
   const bodyIsOpen = canOpenBody && bodyOpen;
 
-  // The HUD must describe whatever is actually on screen, not a fixed asset.
-  const modelAttribution = liveRendererActive
-    ? resolveVehicleModelSource(activeModelSource).attribution
-    : SCENE_MANIFEST.labels.affiliation;
-  // The title has to move with the attribution. While the authored still is up
-  // it is the licensed reference on screen; once the live body takes over it is
-  // not, and calling it one would be the exact provenance claim this
-  // configurator exists to get right.
   const activeBody = resolveVehicleModelSource(activeModelSource);
   const bodyAnchors = anchorsFor(activeBody);
+  const modelAttribution = liveRendererActive ? activeBody.attribution : "";
   const modelTitle = liveRendererActive
     ? activeBody.sceneTitle
-    : "Licensed compact-SUV reference";
+    : liveLoading ? `Preparing ${activeBody.sceneTitle}` : "Vehicle view unavailable";
 
-  /**
-   * What is actually drawing, not what was requested.
-   *
-   * Until a renderer reports ready — no WebGL, the lazy scene still loading, or
-   * a caught failure — the screen is an authored still of the licensed
-   * reference, which is a different car and cannot open its doors. Publishing
-   * the requested body in that window tells an agent the opposite of the truth,
-   * which is the one thing this descriptor exists to prevent.
-   */
+  // Loading and failure never substitute a photograph of a different vehicle.
   const renderedBody = useMemo<RenderedBody>(() => (liveRendererActive
     ? {
       id: activeBody.id,
@@ -371,16 +323,20 @@ export function VehicleCanvas({
       basis: activeBody.credit.text.replace(/^Model:\s*/u, ""),
       canOpen: activeBody.hasOpenableBody,
     }
-    // A distinct id, not "licensed-glb": the still is not that live source, and
-    // reusing the id would make a deliberate ?model=licensed-glb session
-    // indistinguishable from a renderer that failed.
-    : {
-      id: "authored-still",
-      label: "Licensed compact-SUV reference",
+    : liveLoading ? {
+      id: "loading",
+      label: "Vehicle loading",
       representsConfiguredVehicle: false,
-      basis: "Authored still of the licensed compact-SUV reference, not the configured vehicle.",
+      basis: "The live vehicle is loading; no vehicle is displayed yet.",
       canOpen: false,
-    }), [activeBody, liveRendererActive]);
+    }
+    : {
+      id: "unavailable",
+      label: "Vehicle view unavailable",
+      representsConfiguredVehicle: false,
+      basis: "The live vehicle could not be displayed; no vehicle is on screen.",
+      canOpen: false,
+    }), [activeBody, liveRendererActive, liveLoading]);
 
   useEffect(() => {
     onRenderedBodyChange?.(renderedBody);
@@ -455,11 +411,25 @@ export function VehicleCanvas({
   }, []);
 
   const handleLiveReady = useCallback(() => {
-    setLiveStatus("ready");
-  }, []);
+    setRenderer((current) => current.source === activeModelSource
+      && current.attempt === renderer.attempt && current.status === "loading"
+      ? { ...current, status: "ready" } : current);
+  }, [activeModelSource, renderer.attempt]);
 
   const handleLiveFailure = useCallback(() => {
-    setLiveStatus("failed");
+    setRenderer((current) => current.source === activeModelSource
+      && current.attempt === renderer.attempt && current.status !== "failed"
+      ? { ...current, status: "failed" } : current);
+  }, [activeModelSource, renderer.attempt]);
+
+  const retryLivePreview = useCallback(() => {
+    setRenderer((current) => ({
+      ...current,
+      attempt: current.attempt + 1,
+      status: "loading",
+      Viewport: createLiveVehicleViewport(),
+    }));
+    stage.current?.focus();
   }, []);
 
   const handleLiveInteraction = useCallback(() => {
@@ -568,19 +538,6 @@ export function VehicleCanvas({
     }
   }, [currentMode, resetView, selectMode]);
 
-  const setAssetState = useCallback((
-    key: "angle" | "profile" | "blueprint",
-    state: VehicleAssetStatus,
-  ) => {
-    setAssetStates((current) => current[key] === state ? current : { ...current, [key]: state });
-  }, []);
-
-  const accuracy = currentPreset === "wheel"
-    ? wheel.accuracy ?? "representative"
-    : currentPreset === "interior"
-      ? interior.accuracy ?? "representative"
-      : paint.accuracy ?? "representative";
-
   return (
     <section
       className={`vehicle-canvas ${className}`.trim()}
@@ -591,14 +548,16 @@ export function VehicleCanvas({
       data-interior={interior.id}
       data-tow-hitch={accessories.towHitch || undefined}
       data-asset-status={activeAsset}
-      data-renderer={liveRendererActive ? "live_3d" : "authored_2_5d"}
+      data-renderer={liveRendererActive ? "live_3d" : liveLoading ? "loading" : "unavailable"}
       data-live-status={liveStatus}
       data-reduced-motion={reducedMotion || undefined}
       style={canvasStyle}
       aria-label="Interactive vehicle configurator"
+      aria-busy={liveLoading}
     >
       <div
         className="vc-stage"
+        ref={stage}
         role="application"
         aria-roledescription="interactive vehicle viewport"
         aria-label={`${modelTitle}. ${paint.label}. ${wheel.label}. ${interior.label}.`}
@@ -628,7 +587,7 @@ export function VehicleCanvas({
 
         {webglSupport === "supported" && liveStatus !== "failed" && (
           <div className="vc-live-layer" aria-hidden="true">
-            <LiveSceneBoundary onFailure={handleLiveFailure}>
+            <LiveSceneBoundary key={`${activeModelSource}:${renderer.attempt}`} onFailure={handleLiveFailure}>
               <Suspense fallback={null}>
                 <LiveVehicleViewport
                   paint={{ id: paint.id, color: paint.color }}
@@ -667,6 +626,7 @@ export function VehicleCanvas({
             <strong>{modelTitle}</strong>
             <span>{modelAttribution}</span>
           </div>
+          {headerAside}
           {/* The Showroom/Blueprint switch and the Open body button left the
               visible chrome for the demo. Both paths stay live for agents:
               the `mode` / `bodyOpen` props, the WebMCP presentation tools and
@@ -675,63 +635,18 @@ export function VehicleCanvas({
 
         <div className="vc-status" aria-live="polite">
           <span className="vc-status__dot" aria-hidden="true" />
-          {liveViewRequested && webglSupport !== "unsupported" && liveStatus !== "ready" && liveStatus !== "failed" && (
-            <><LoaderCircle aria-hidden="true" /> Preparing real-time vehicle</>
-          )}
+          {liveLoading && <><LoaderCircle aria-hidden="true" /> Preparing real-time vehicle</>}
           {liveRendererActive && <>Live 3D · Agent vision active</>}
-          {liveViewRequested && (webglSupport === "unsupported" || liveStatus === "failed") && (
-            <>Authored still of the licensed reference · controls still active</>
-          )}
-          {!liveViewRequested && activeAsset === "loading" && <><LoaderCircle aria-hidden="true" /> Loading authored view</>}
-          {!liveViewRequested && activeAsset === "ready" && <>{accuracyLabel(accuracy)}</>}
-          {!liveViewRequested && activeAsset === "fallback" && <>Authored still of the licensed reference · controls still active</>}
+          {liveStatus === "failed" && <>Vehicle preview unavailable · controls still active</>}
         </div>
+        {liveLoading && <div className="vc-loading" role="status">
+          <LoaderCircle aria-hidden="true" /> Preparing real-time vehicle
+        </div>}
 
+        {liveStatus === "failed" && <AssetFallback onRetry={webglSupport === "supported" ? retryLivePreview : undefined} />}
 
-        <div className="vc-object" aria-live="polite">
-          <div
-            className="vc-angle-view"
-            aria-hidden={liveRendererActive || currentPreset !== "angle" || currentMode === "blueprint"}
-          >
-            <LayeredVehicleFrame
-              className="vc-angle-view__image"
-              baseSrc={assetUrl(LAYERED_SOURCES.angle.base)}
-              maskSrc={assetUrl(LAYERED_SOURCES.angle.mask)}
-              paintColor={paint.color}
-              alt={`Licensed compact electric SUV reference from a front three-quarter angle, ${paint.label ?? "selected paint"}`}
-              onReady={() => setAssetState("angle", "ready")}
-              onError={() => setAssetState("angle", "fallback")}
-            />
-          </div>
-
-          <div
-            className="vc-profile-view"
-            aria-hidden={liveRendererActive || (currentPreset === "angle" && currentMode !== "blueprint")}
-          >
-            <LayeredVehicleFrame
-              className="vc-profile-view__base"
-              baseSrc={assetUrl(LAYERED_SOURCES.profile.base)}
-              maskSrc={assetUrl(LAYERED_SOURCES.profile.mask)}
-              paintColor={paint.color}
-              alt={`Licensed compact electric SUV reference in side profile, ${paint.label ?? "selected paint"}`}
-              onReady={() => setAssetState("profile", "ready")}
-              onError={() => setAssetState("profile", "fallback")}
-            />
-            <img
-              className="vc-profile-view__blueprint"
-              src={assetUrl(SCENE_MANIFEST.fallback.blueprintSrc)}
-              alt=""
-              aria-hidden="true"
-              onLoad={() => setAssetState("blueprint", "ready")}
-              onError={() => setAssetState("blueprint", "fallback")}
-            />
-            <WheelFace wheel={wheel} position="front" />
-            <WheelFace wheel={wheel} position="rear" />
-          </div>
-
+        {liveRendererActive && <div className="vc-object" aria-live="polite">
           {currentPreset === "interior" && <InteriorView interior={interior} />}
-
-          {authoredAsset === "fallback" && !liveRendererActive && <AssetFallback />}
 
           <div className="vc-hotspots" aria-label="Vehicle focus points">
             {resolvedHotspots.map((hotspot) => (
@@ -753,7 +668,7 @@ export function VehicleCanvas({
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
         {activeHotspot && currentPreset !== "interior" && (
           <aside className="vc-focus-card" data-hotspot={activeHotspot.id} aria-live="polite">
@@ -777,10 +692,9 @@ export function VehicleCanvas({
               aria-pressed={currentPreset === preset.id}
               onClick={() => selectPreset(preset.id)}
             >
-              <span className="vc-view-picker__thumbnail">
-                {preset.image
-                  ? <img src={assetUrl(preset.image)} alt="" />
-                  : <span className="vc-view-picker__cabin" aria-hidden="true"><i /><i /><i /></span>}
+              <span className="vc-view-picker__icon" aria-hidden="true">
+                {preset.id === "angle" ? <Camera /> : preset.id === "profile" ? <Car /> :
+                  preset.id === "wheel" ? <CircleDot /> : <Armchair />}
               </span>
               <span>{preset.label}</span>
             </button>
@@ -788,7 +702,7 @@ export function VehicleCanvas({
         </div>
 
         <footer className="vc-footer">
-          <span className="vc-drag-hint"><Move aria-hidden="true" /> {liveRendererActive ? "Drag to orbit" : "Drag to explore"}</span>
+          {liveRendererActive && <span className="vc-drag-hint"><Move aria-hidden="true" /> Drag to orbit</span>}
           <span className="vc-selection-readout">
             <span
               style={{ backgroundColor: currentPreset === "interior" ? interior.color : paint.color }}
