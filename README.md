@@ -11,7 +11,7 @@ houses the three AutoLab experiences for
 | `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 18 |
 | `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 3 |
 
-Live: **https://goodcarp.github.io/autolab/**
+Live: **https://autolab.run/**
 
 Every page publishes its tools on `document.modelContext` (falling back to
 `navigator.modelContext`) with `registerTool`, and mirrors the same functions on a

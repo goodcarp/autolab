@@ -18,6 +18,9 @@ R2="$SRC/r2-blueprint"
 ENGINE="$SRC/autolab-3d-creation-engine"
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 PNPM="${PNPM:-corepack pnpm}"
+# The public address this assembly is published at. The sources keep the URLs
+# their own standalone sites need; the assembled copies are repointed here.
+export SITE="${SITE:-https://autolab.run}"
 
 # --refresh: re-take sources/ from the committed HEAD of each working repository
 # (tracked files only), applying the public-copy exclusions. Override a source
@@ -43,6 +46,11 @@ echo "▸ configure/  <- $UVC"
 ( cd "$UVC" && $PNPM install --frozen-lockfile --silent && $PNPM build )
 rm -rf "$HERE/configure"; mkdir -p "$HERE/configure"
 rsync -a --exclude '_redirects' "$UVC/dist/" "$HERE/configure/"
+# The configurator's <head> names its own Pages site absolutely (icons, og:url, og:image,
+# twitter:image). Here the same page is served from $SITE/configure/, so the public copy
+# is rewritten; sources/ stays a faithful mirror of the commit named in SOURCES.txt.
+find "$HERE/configure" -name '*.html' -exec \
+  perl -pi -e 's{\Qhttps://goodcarp.github.io/universal-vehicle-configurator/\E}{$ENV{SITE}."/configure/"}ge' {} +
 
 echo "▸ garage/     <- $R2"
 rm -rf "$HERE/garage"; mkdir -p "$HERE/garage/docs"
