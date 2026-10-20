@@ -100,9 +100,9 @@
       title: "Agentic Owner's Guide",
       role: "ownership",
       url: url("garage/"),
-      tools: 18,
+      tools: 25,
       summary:
-        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, a guided tour an agent can start, narrate and interrupt, what is visible on the sheet by component, and surface-to-surface clearance.",
+        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, a guided tour an agent can start, narrate and interrupt, what is visible on the sheet by component, and surface-to-surface clearance. A second vehicle, the Tesla Roadster, can be driven up the wall-ride ramp.",
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint",
     },
     {
@@ -134,7 +134,7 @@
       engine: "https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine",
     },
     disclaimer:
-      "Independent and unofficial; not associated with, endorsed by, or sponsored by Rivian or any manufacturer. Geometry is an independent reconstruction fitted to published dimensions, not manufacturer CAD.",
+      "Independent and unofficial; not associated with, endorsed by, or sponsored by Rivian, Tesla or any manufacturer. Geometry is an independent reconstruction fitted to published dimensions, not manufacturer CAD.",
   };
 
   const noArgs = { type: "object", properties: {}, additionalProperties: false };

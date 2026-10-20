@@ -8,7 +8,7 @@ houses the three AutoLab experiences for
 | --- | --- | --- | --- |
 | `/` | Landing page | `index.html`, `assets/` | 3 |
 | `/configure/` | Web 4.0-enabled Vehicle Configurator (with the embedded **Garage** digital twin) | [`sources/universal-vehicle-configurator`](sources/universal-vehicle-configurator) | 18 (+19 inside Garage) |
-| `/garage/` | Agentic Owner's Guide | [`sources/r2-blueprint`](sources/r2-blueprint) | 18 |
+| `/garage/` | Agentic Owner's Guide (Hudian RX2 and Tesla Roadster) | [`sources/r2-blueprint`](sources/r2-blueprint) | 25 |
 | `/engine/` | AutoLab 3D Creation Engine | [`sources/autolab-3d-creation-engine`](sources/autolab-3d-creation-engine) | 3 |
 
 Live: **https://autolab.run/**
@@ -41,6 +41,11 @@ since then is recorded here so the state at the deadline is not misrepresented:
   parity with the other pages (`document.modelContext` first, titles,
   annotations, closed schemas, a late-injection watch), sharper descriptions for
   `measure`, `frame_part` and `set_camera`, and keyboard access.
+- Owner's Guide: a second vehicle, the Tesla Roadster (added 2026-10-19, after its
+  reveal on 2026-10-15), chosen from the tray; PLAY starts a run on the wall-ride ramp
+  you drive with keys or touch, with real-time physics and the thruster gas drawn in
+  ink; `get_vehicles`, `set_vehicle`, `start_run`, `stop_run`, `set_drive_inputs` and
+  `get_run_state`, 25 tools. The RX2 and the configurator's embedded Garage are unchanged.
 - Configurator: the `window.autolab` mirror of all 17 tools with an on-page
   agent-activity strip; the opening camera further back; a blueprint scan sweep;
   firmer contact shadows and a rim light. Geometry unchanged.
@@ -103,7 +108,7 @@ public copies and why.
 ## Independence
 
 AutoLab and AutoMoto are independent and unofficial. This project is not
-associated with, endorsed by, or sponsored by Rivian or any manufacturer. The
+associated with, endorsed by, or sponsored by Rivian, Tesla or any manufacturer. The
 vehicle geometry is an independent reconstruction fitted to published dimensions
 and photographs, not manufacturer CAD. Vehicle names and specifications are used
 nominatively to identify the products being discussed.
