@@ -7,7 +7,7 @@ const { Vector3, Mesh, BoxGeometry, Group } = await import(threeUrl);
 const source = (await readFile(new URL('./overlay.js', import.meta.url), 'utf8'))
   .replace("from 'three'", `from '${threeUrl}'`)
   .replace("from './config.js'", `from '${new URL('./config.js', import.meta.url).href}'`);
-const { Overlay } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { Overlay, clearOfBadges } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
 function anchorHarness(t) {
   const panels = new Map();
@@ -99,4 +99,30 @@ test('panel translation does not perturb the dock until an explicit panel or vie
   const opened = overlay.partTooltip(part).obstacles;
   top += 1; overlay.w += 1;
   assert.notDeepEqual(overlay.partTooltip(part).obstacles, opened);
+});
+
+test('a callout badge that lands on an earlier one steps clear of it, inside the badge area', () => {
+  const box = [30, 70, 1000, 600];
+  const apart = ([ax, ay], [bx, by]) => Math.hypot(ax - bx, ay - by) >= 30 - 1e-9;
+  // a badge clear of the others stays where it was put
+  assert.deepEqual(clearOfBadges([[100, 100]], 300, 300, box), [300, 300]);
+  // on top of another: it moves straight away from it, to just clear of it
+  const [x, y] = clearOfBadges([[500, 300]], 510, 300, box);
+  assert.deepEqual([Math.round(x), Math.round(y)], [531, 300]);
+  // exactly on another: it steps sideways, toward the middle of the area
+  assert.deepEqual(clearOfBadges([[100, 300]], 100, 300, box).map(Math.round), [131, 300]);
+  // pinned at the area's bottom edge below another: the edge stops a step down, so it goes to a side
+  const pinned = clearOfBadges([[500, 600]], 500, 600, box);
+  assert.ok(apart(pinned, [500, 600]) && pinned[1] <= 600 && pinned[1] >= 70, String(pinned));
+  // a panel beside it: the step that would land on the panel is passed over
+  const panel = [[520, 250, 700, 350]];
+  const beside = clearOfBadges([[500, 300]], 510, 300, box, panel);
+  assert.ok(apart(beside, [500, 300]) && !(beside[0] > 520 && beside[1] > 250 && beside[1] < 350), String(beside));
+  // pinned under a panel that covers every nearby spot: still clear of the other badge
+  const under = clearOfBadges([[493, 70]], 499, 70, [30, 70, 996, 610], [[-1, 61, 653, 177]]);
+  assert.ok(apart(under, [493, 70]), String(under));
+  // a crowd: every badge ends clear of every earlier one
+  const placed = [];
+  for (const [px, py] of [[400, 200], [405, 200], [400, 205], [410, 210], [400, 200]]) placed.push(clearOfBadges(placed, px, py, box));
+  for (let i = 0; i < placed.length; i++) for (let j = 0; j < i; j++) assert.ok(apart(placed[i], placed[j]), `${i}/${j}`);
 });

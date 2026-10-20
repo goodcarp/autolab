@@ -328,11 +328,29 @@ body.nav-off .header-tools a{display:none}
   #tour-card{bottom:26px;left:22px;width:calc(100vw - 44px)}
 }
 
-/* Primary actions stay reachable while the drawing panels are tucked away. */
+/* Primary actions stay reachable while the drawing panels are tucked away: the vehicle, the
+   Roadster's PLAY, and RESET; the compact tray adds VIEWS, PARTS and MORE. */
 #primary-controls{position:absolute;right:92px;top:44px;z-index:7;display:flex;gap:6px}
 #primary-controls .btn{height:44px;min-width:76px}
-#hdr-right{right:200px}
+#primary-controls .btn[hidden]{display:none}
+#hdr-right{right:280px}
+body.has-play #hdr-right{right:380px}
+@media (max-width:1380px){body.has-play #hdr-right{display:none}}
 .compact-only{display:none}
+/* The run controller's one line, under the tray on wide sheets and above it on compact ones. On
+   a wide sheet it fits the gap between the tray (bottom 88px) and the panels (top 112-116px), and
+   an open sheet or vehicle menu covers its place, so it steps aside until that closes. */
+#run-status{position:absolute;right:92px;top:90px;z-index:7;margin:0;padding:3px 9px;font-size:10.5px;line-height:14px;letter-spacing:.08em;color:var(--ink);background:var(--paper);border:1px solid var(--ink-soft)}
+#run-status[hidden]{display:none}
+#compact-sheet[open] ~ #run-status{visibility:hidden}
+#compact-vehicle-btns{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* On a wide sheet the vehicle choice is a small menu under its tray button. */
+@media (min-width:981px) and (min-height:521px){
+  #compact-sheet[aria-modal="false"][data-section="vehicles"]{inset:96px 92px auto auto;width:240px;max-height:none;margin:0;border:1.5px solid var(--ink);border-radius:0;box-shadow:0 0 0 3px rgba(244,246,250,.6)}
+  #compact-sheet[data-section="vehicles"] .compact-section{padding:8px}
+  #compact-vehicle-btns{grid-template-columns:1fr;gap:5px}
+  #compact-vehicle-btns .btn{min-height:40px;border:1.5px solid var(--ink);border-radius:0}
+}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .key-item{font-family:var(--mono);text-align:left;background:transparent;border:0;padding:0;width:100%;letter-spacing:0}
 #compact-sheet{position:fixed;inset:auto 16px max(16px,env(safe-area-inset-bottom));margin:0 auto;padding:0;width:560px;max-width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--grid-major);border-radius:14px;background:var(--paper);color:var(--ink);box-shadow:0 10px 32px #1c2b4f18;z-index:20;overscroll-behavior:contain}
@@ -376,8 +394,13 @@ body.cards-off #tour-btn{visibility:visible}
   .header-tools{gap:6px;margin-top:7px;flex-wrap:nowrap}
   .header-tools a{min-height:44px;font-size:10px;padding:6px 9px;display:inline-flex;align-items:center;border-color:var(--grid-major);letter-spacing:.06em;white-space:nowrap}
   .header-tools #agent-chip{display:none}
-  #primary-controls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));padding:7px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;border:1px solid var(--grid-major);border-radius:10px;background:var(--paper);box-shadow:0 4px 18px #1c2b4f0a}
+  #primary-controls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));padding:7px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(min-content,1fr);gap:5px;border:1px solid var(--grid-major);border-radius:10px;background:var(--paper);box-shadow:0 4px 18px #1c2b4f0a}
   #primary-controls .btn{display:block;min-width:0;height:44px;font-size:11px;letter-spacing:.04em;border:0;border-radius:5px;background:transparent}
+  #primary-controls .btn[hidden]{display:none}
+  #primary-controls .btn{padding:0 2px}
+  #primary-controls #vehicle-btn{font-size:10px;letter-spacing:0}
+  #primary-controls #play-btn.toggled{background:var(--btn-active);color:var(--paper)}
+  #run-status{left:16px;right:16px;top:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 64px);padding:3px 8px;font-size:10px;text-align:center;border-color:var(--grid-major);border-radius:6px}
   #primary-controls .btn:hover,#primary-controls .btn[aria-expanded="true"]{background:var(--paper-2)}
   #primary-controls #reset-btn{background:var(--ink);color:var(--paper)}
   #hint{display:block;bottom:4px;max-width:100%;width:max-content;font-size:9px;letter-spacing:.08em;white-space:nowrap;background:var(--paper);padding:4px 8px;border-radius:4px}
@@ -401,6 +424,7 @@ body.cards-off #tour-btn{visibility:visible}
      combination of actions never moves the vehicle underneath the pointer. */
   #stage{inset:72px calc(var(--landscape-controls-width) + 36px) 18px 18px}
   #primary-controls{left:auto;right:18px;transform:none;width:var(--landscape-controls-width);bottom:10px}
+  #run-status{left:auto;right:18px;width:var(--landscape-controls-width);bottom:76px}
   #compact-sheet[aria-modal="false"]{left:auto;right:18px;bottom:78px;width:var(--landscape-controls-width);max-height:calc(100dvh - 150px);margin:0}
   #hint{font-size:8px;bottom:0}
   #tour-card{left:18px;right:calc(var(--landscape-controls-width) + 36px);top:68px;max-height:32dvh}
@@ -408,7 +432,7 @@ body.cards-off #tour-btn{visibility:visible}
 }
 
 /* The host provides the My Car navigation and controls; only its drawing occupies this frame. */
-body.framed #hdr-left,body.framed #hdr-right,body.framed #controls,body.framed #key,body.framed #instr,body.framed #titleblock,body.framed #cards-toggle,body.framed #primary-controls,body.framed #selected-part,body.framed .frame,body.framed .zone,body.framed #hint,body.framed #viewtitle{display:none}
+body.framed #hdr-left,body.framed #hdr-right,body.framed #controls,body.framed #key,body.framed #instr,body.framed #titleblock,body.framed #cards-toggle,body.framed #primary-controls,body.framed #run-status,body.framed #selected-part,body.framed .frame,body.framed .zone,body.framed #hint,body.framed #viewtitle{display:none}
 body.framed #stage{inset:0}
 body.framed #tour-card{left:12px;right:12px;top:8px;bottom:auto;width:auto;max-width:none;max-height:36dvh;overflow:auto;margin:0;padding:10px 12px;pointer-events:auto}
 body.framed.tour-active #stage{top:var(--tour-space,0px)}
@@ -418,7 +442,7 @@ body.framed.tour-active #stage{top:var(--tour-space,0px)}
    controls once the short guided sequence ends or the visitor interrupts it. */
 html:has(body.demo),body.demo{background:#fff;background-image:none}
 body.demo{--paper:#fff;--paper-2:#f7f7f7;--ink:#202020;--ink-soft:#737373}
-body.demo #hdr-left,body.demo #hdr-right,body.demo #controls,body.demo #key,body.demo #instr,body.demo #titleblock,body.demo #cards-toggle,body.demo #primary-controls,body.demo #selected-part,body.demo .frame,body.demo .zone,body.demo #hint,body.demo #viewtitle,body.demo #tooltip,body.demo #overlay,body.demo #agent-tools{display:none}
+body.demo #hdr-left,body.demo #hdr-right,body.demo #controls,body.demo #key,body.demo #instr,body.demo #titleblock,body.demo #cards-toggle,body.demo #primary-controls,body.demo #run-status,body.demo #selected-part,body.demo .frame,body.demo .zone,body.demo #hint,body.demo #viewtitle,body.demo #tooltip,body.demo #overlay,body.demo #agent-tools{display:none}
 body.demo #stage{inset:0}
 body.demo.tour-active #stage{top:var(--tour-space,0px)}
 body.demo.demo-exploring #stage{bottom:var(--demo-space,88px)}

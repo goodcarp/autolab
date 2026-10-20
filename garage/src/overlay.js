@@ -5,9 +5,29 @@ import { CONFIG } from './config.js';
 
 const fmt = (mm) => { const s = String(Math.round(mm)); return s.length > 3 ? s.slice(0, -3) + ' ' + s.slice(-3) : s; };
 
+// Where a callout badge goes so it does not sit on an earlier one. placed holds the earlier badge
+// centres, box = [x0, y0, x1, y1] the area badges may use and panels the rectangles they keep off
+// (stage px). A badge closer than `gap` to one of them moves next to the nearest: first straight
+// away from it, then round it in widening rings, to the first spot clear of every earlier badge
+// and off the panels; where the panels leave no such spot, the first spot clear of the badges.
+export function clearOfBadges(placed, x, y, [x0, y0, x1, y1], panels = [], gap = 30) {
+  const clear = ([px, py]) => !placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < gap);
+  if (clear([x, y])) return [x, y];
+  const o = placed.reduce((a, b) => (Math.hypot(b[0] - x, b[1] - y) < Math.hypot(a[0] - x, a[1] - y) ? b : a));
+  // on its very centre there is no "away": step sideways, toward the middle of the area
+  const a0 = Math.hypot(x - o[0], y - o[1]) < 1 ? (x < (x0 + x1) / 2 ? 0 : Math.PI) : Math.atan2(y - o[1], x - o[0]);
+  const offPanels = ([px, py]) => !panels.some(([rx0, ry0, rx1, ry1]) => px > rx0 && px < rx1 && py > ry0 && py < ry1);
+  for (const strict of [true, false]) for (const r of [1, 1.5, 2, 3]) for (let i = 0; i < 12; i++) {
+    const a = a0 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * Math.PI / 6;
+    const p = [Math.max(x0, Math.min(x1, o[0] + Math.cos(a) * (gap * r + 0.5))), Math.max(y0, Math.min(y1, o[1] + Math.sin(a) * (gap * r + 0.5)))];
+    if (clear(p) && (!strict || offPanels(p))) return p;
+  }
+  return [x, y];
+}
+
 export class Overlay {
-  constructor(svg, rig, vehicle) {
-    this.svg = svg; this.rig = rig; this.v = vehicle; this.w = 1; this.h = 1;
+  constructor(svg, rig, vehicle, keyItems = CONFIG.keyItems) {
+    this.svg = svg; this.rig = rig; this.v = vehicle; this.keyItems = keyItems; this.w = 1; this.h = 1;
     this.view = 'iso'; this.dimAlpha = 0; this.dimTarget = 0; this.flashes = [];
     this.css = getComputedStyle(document.documentElement);
     this.ink = this.css.getPropertyValue('--ink').trim() || '#1c2b4f';
@@ -20,6 +40,12 @@ export class Overlay {
     this.hoverId = -1;
   }
   setSize(w, h) { this.w = w; this.h = h; this.svg.setAttribute('viewBox', `0 0 ${w} ${h}`); }
+  // Another car on the sheet: its dimensions and callouts are rebuilt, and nothing drawn for the
+  // last one (cached markup, flashes, inspected part) survives the swap.
+  setVehicle(vehicle, keyItems) {
+    this.v = vehicle; this.keyItems = keyItems; this.flashes = []; this._last = null; this.tooltipPartId = -1; this.hoverId = -1;
+    this.buildDims(); this.buildCallouts();
+  }
   setView(view) { this.view = view; this.dimTarget = 0; }
   settled(view) { this.dimTarget = 1; }
   flash(part, locals) { if (!part || !part.group.visible) return; this.flashes.push({ t: 0, part, locals, seed: Math.floor(Math.random() * 1000) }); }
@@ -61,7 +87,9 @@ export class Overlay {
     // preferred label positions relative to the anchor (CSS px); circles are pushed outside the vehicle's silhouette
     const off = { 1: [-150, -80], 2: [-170, -140], 3: [130, 120], 4: [150, 110], 5: [150, 70], 6: [-170, 70], 7: [-150, -110], 8: [-160, 120], 9: [150, -120], 10: [130, -140] };
     const offSide = { 1: [150, -150], 2: [170, -200], 3: [-150, 150], 4: [-120, 190], 5: [-190, 70], 6: [-170, 120], 7: [170, -190], 8: [190, 110], 9: [-160, -170], 10: [140, -150] };
-    this.callouts = CONFIG.keyItems.map(k => ({ n: k.n, part: this.v.parts[k.part], off: off[k.n] || [120, -100], offSide: offSide[k.n] || off[k.n] }));
+    // A key item may carry its own offsets (the Roadster's do, with offRear for the 3/4 rear view);
+    // the RX2's use the tables above.
+    this.callouts = this.keyItems.map(k => ({ n: k.n, part: this.v.parts[k.part], off: k.off || off[k.n] || [120, -100], offSide: k.offSide || offSide[k.n] || off[k.n], offRear: k.offRear }));
   }
 
   // world position of a part's anchor (accounts for explode / open / lift transforms)
@@ -87,7 +115,7 @@ export class Overlay {
     // throttled cache: a just-opened tray must affect the first visible frame.
     const stage = this.svg.getBoundingClientRect(), obstacles = [];
     const furniture = ['key', 'instr', 'titleblock', 'tour-card', 'compact-sheet', 'agent-tools',
-      'primary-controls', 'cards-toggle', 'hdr-left-title', 'hdr-left-sub', 'hdr-right', 'hint', 'viewtitle', 'tour-btn']
+      'primary-controls', 'run-status', 'cards-toggle', 'hdr-left-title', 'hdr-left-sub', 'hdr-right', 'hint', 'viewtitle', 'tour-btn']
       .map(id => document.getElementById(id));
     furniture.push(document.querySelector?.('#hdr-left .header-tools'), document.querySelector?.('#hdr-left .logo'));
     if (!document.body?.classList.contains('cards-off')) furniture.push(document.getElementById('controls'));
@@ -217,7 +245,7 @@ export class Overlay {
 
     // ---- callouts (kept during EXPLODE, all drawn at full ink in the elevations) ----
     if (st.panels) {
-      const g = [];
+      const g = [], placed = [];
       for (const c of this.callouts) {
         if (this.view === 'top' && ortho) break; // the reference draws no callouts in the top view
         const p = c.part; if (!p || !p.anchor || !p.group.visible) continue;
@@ -231,7 +259,7 @@ export class Overlay {
         const vis = ortho ? 1 : Math.max(0, Math.min(1, (facing + 0.28) / 0.4));
         if (vis <= 0.02) continue;
         const a = rig.project(A, w, h, {}); if (a.behind) continue;
-        const off = (ortho && this.view === 'side') ? c.offSide : c.off;
+        const off = (ortho && this.view === 'side') ? c.offSide : (this.view === 'q34r' && c.offRear) || c.off;
         let cx = a.x + off[0], cy = a.y + off[1];
         // slide the badge out of the vehicle's projected box along its preferred direction
         if (bx0 < bx1 && cx > bx0 - 22 && cx < bx1 + 22 && cy > by0 - 22 && cy < by1 + 22) {
@@ -245,6 +273,9 @@ export class Overlay {
         cx = Math.max(30, Math.min(w - 30, cx)); cy = Math.max(padY, Math.min(h - bottomPad, cy));
         for (let pass = 0; pass < 2; pass++) for (const [rx0, ry0, rx1, ry1] of this._rects) { if (cx > rx0 && cx < rx1 && cy > ry0 && cy < ry1) { cy = (cy - ry0 < ry1 - cy) ? ry0 : ry1; } }
         cx = Math.max(30, Math.min(w - 30, cx)); cy = Math.max(padY, Math.min(h - bottomPad, cy));
+        // two badges never sit on each other (an opened door's badge can be pushed onto its neighbour's)
+        [cx, cy] = clearOfBadges(placed, cx, cy, [30, padY, w - 30, h - bottomPad], this._rects);
+        placed.push([cx, cy]);
         const dx = cx - a.x, dy = cy - a.y;
         let ex, ey;
         if (Math.abs(dx) >= Math.abs(dy)) { ex = a.x + Math.sign(dx) * Math.abs(dy); ey = cy; } else { ex = cx; ey = a.y + Math.sign(dy) * Math.abs(dx); }

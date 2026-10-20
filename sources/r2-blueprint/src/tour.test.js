@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTour } from './tour.js';
-import { CONFIG } from './config.js';
+import { CONFIG, ROADSTER_CONFIG } from './config.js';
 
 const steps = [
   { id: 'one', title: 'ONE', caption: 'One.', dwell: 6000, actions: [{ name: 'reset', args: {} }, { name: 'set_view', args: { view: 'iso' } }] },
@@ -95,6 +95,26 @@ test('the authored sequence reaches its final reset and completes at thirty seco
   assert.deepEqual(h.calls, CONFIG.tour.flatMap(step => step.actions.map(action => [action.name, action.args])));
   assert.deepEqual(h.stopped, ['complete']);
   assert.equal(h.pending.length, 0);
+});
+
+test('the Roadster\'s tour keeps the same rules: nine stops, thirty seconds, the same tools', async () => {
+  const tour = ROADSTER_CONFIG.tour;
+  assert.equal(tour.length, 9);
+  assert.equal(tour.reduce((n, s) => n + s.dwell, 0), 30000);
+  assert.equal(new Set(tour.map(s => s.id)).size, tour.length);
+  for (const step of tour) {
+    assert.ok(step.dwell >= 3000 && step.dwell <= 4000, step.id);
+    assert.ok(step.caption && step.title && step.actions.length, step.id);
+    assert.equal(step.actions[0].name, 'reset', `${step.id} is self-contained for start_tour({from})`);
+    for (const action of step.actions) assert.ok(['set_view', 'set_motion', 'frame_part', 'highlight_part', 'set_annotations', 'reset', 'orbit_camera', 'set_camera'].includes(action.name), `${step.id}: ${action.name}`);
+  }
+  for (const id of ['open', 'explode']) assert.equal(tour.find(step => step.id === id).dwell, 4000);
+  assert.equal(tour.at(-1).id, 'reset');
+  const h = harness({ steps: tour });
+  await h.tour.start();
+  for (let i = 0; i < tour.length; i++) await h.tick();
+  assert.deepEqual(h.stopped, ['complete']);
+  assert.deepEqual(h.calls, tour.flatMap(step => step.actions.map(action => [action.name, action.args])));
 });
 
 test('the shorter dwell includes awaited action execution rather than adding it to the tour', async () => {

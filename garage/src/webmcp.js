@@ -103,19 +103,25 @@ function validateValue(value, schema, path) {
 }
 
 export function installWebMCP(ctx) {
-  const { st, rig, vehicle, overlay, ui, setView, motion, config } = ctx;
-  let syncedContextRevision = null;
-  let syncedContextFingerprint = null;
+  const { st, rig, overlay, ui, setView, motion } = ctx;
+  // The car and its sheet text are read at call time, not captured: the Garage can switch
+  // vehicles (set_vehicle), and every tool below works on whichever one is on the sheet now.
+  const car = () => ctx.vehicle, sheet = () => ctx.config;
+  const fleet = () => ctx.vehicles ?? [];
+  const current = () => { const id = ctx.vehicleId ?? null; return { id, label: fleet().find((v) => v.id === id)?.label ?? null }; };
+  // What the configurator last synchronized, per vehicle: each car keeps its own context when
+  // the Garage switches (main.js setVehicle), so its revision and fingerprint are kept with it.
+  const synced = new Map();
 
   // Stated on every tool that returns a coordinate. Without it bounds_m and
   // delta_m are numbers an agent cannot interpret.
   const AXES = 'x forward (+x is the nose), y up (0 is the ground), z lateral (+z is the passenger side); metres';
-  const partIds = () => vehicle.order.map((p) => p.name);
+  const partIds = () => car().order.map((p) => p.name);
   const findPart = (name) => {
     if (!name) return null;
-    if (vehicle.parts[name]) return vehicle.parts[name];
+    if (car().parts[name]) return car().parts[name];
     const k = String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
-    return vehicle.order.find((p) => p.name.toLowerCase() === k
+    return car().order.find((p) => p.name.toLowerCase() === k
       || p.label.toLowerCase().replace(/[^a-z0-9]/g, '') === k) || null;
   };
   // Bounds come from the part's own meshes, not from its group.
@@ -159,7 +165,7 @@ export function installWebMCP(ctx) {
   // grid: exact per pixel, and it honours the dissolved shell and the shader-cut openings.
   // Without a renderer (tests, WebGL failure) fall back to a coarse ray grid.
   let raycaster, idPass;
-  const partById = () => new Map(vehicle.order.map((p) => [p.id, p]));
+  const partById = () => new Map(car().order.map((p) => [p.id, p]));
   const visibleParts = (cols) => {
     const hits = new Map(), byId = partById(); let empty = 0, rows;
     const tally = (part, nx, ny, depth) => {
@@ -176,7 +182,13 @@ export function installWebMCP(ctx) {
       rows = Math.max(2, Math.round(cols * H / W));
       if (!idPass || idPass.target.width !== cols || idPass.target.height !== rows) {
         idPass?.target.dispose();
-        idPass = { target: new THREE.WebGLRenderTarget(cols, rows, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true, generateMipmaps: false }), materials: idPass?.materials ?? new Map() };
+        idPass = { target: new THREE.WebGLRenderTarget(cols, rows, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true, generateMipmaps: false }), materials: idPass?.materials ?? new Map(), meshes: idPass?.meshes };
+      }
+      // A switched vehicle brings other meshes and new G-buffer uniforms (blueprint.js
+      // removeVehicle / addVehicle replace the list), so the id materials are made again.
+      if (idPass.meshes !== bp.vehicleMeshes) {
+        for (const mat of idPass.materials.values()) mat.dispose();
+        idPass.materials.clear(); idPass.meshes = bp.vehicleMeshes;
       }
       const frag = bp.gMatProto.fragmentShader
         .replace('layout(location = 0) out vec4 gNormal;', '').replace('layout(location = 1) out vec4 gData;', 'out vec4 gData;')
@@ -192,7 +204,7 @@ export function installWebMCP(ctx) {
       const buf = new Float32Array(cols * rows * 4);
       try {
         bp.ground.visible = false; r.shadowMap.enabled = false;
-        vehicle.root?.updateMatrixWorld(true);
+        car().root?.updateMatrixWorld(true);
         rig.apply(W / H);                     // the camera as posed right now, not as of the last drawn frame
         r.setRenderTarget(idPass.target); r.setClearColor(0x000000, 0); r.clear(true, true, true);
         r.render(bp.scene, rig.camera);
@@ -214,12 +226,12 @@ export function installWebMCP(ctx) {
     } else {
       raycaster ??= new THREE.Raycaster();
       cols = Math.min(cols, 24); rows = Math.max(2, Math.round(cols / rig.aspect));
-      if (!rig.ray || !vehicle.pickables) throw new Error('list_visible_parts needs the drawing\'s renderer or ray picking; neither is available here.');
-      vehicle.root?.updateMatrixWorld(true);
+      if (!rig.ray || !car().pickables) throw new Error('list_visible_parts needs the drawing\'s renderer or ray picking; neither is available here.');
+      car().root?.updateMatrixWorld(true);
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
         const nx = ((i + 0.5) / cols) * 2 - 1, ny = 1 - ((j + 0.5) / rows) * 2;
         const ray = rig.ray(nx, ny); raycaster.set(ray.origin, ray.direction);
-        const found = raycaster.intersectObjects(vehicle.pickables, false).find((h) => h.object.visible && h.object.parent.visible);
+        const found = raycaster.intersectObjects(car().pickables, false).find((h) => h.object.visible && h.object.parent.visible);
         if (!found || !found.object.userData.part) { empty++; continue; }
         tally(found.object.userData.part, nx, ny, found.distance);
       }
@@ -318,23 +330,40 @@ export function installWebMCP(ctx) {
     settled: rig.settled || rig.view === null,
   });
 
+  const getState = () => ({
+    vehicle: current(),
+    camera: cameraState(),
+    view: st.view,
+    tour: ctx.tourState ? ctx.tourState() : undefined,
+    vehicle_context: { ...st.vehicleContext },
+    vehicle_context_synced: synced.has(current().id),
+    // `panels` reads the same way as the button and as set_motion: on = shell dissolved
+    motions: { run: st.run, drive: st.drive, lights: st.lights, panels: !st.panels, explode: st.explodeOn, open: st.openOn },
+    explode_progress: round(st.explode, 3), open_progress: round(st.open, 3),
+    selected: st.hoverPart ? st.hoverPart.name : null,
+    annotations_visible: !document.body.classList.contains('cards-off'),
+    views: sheet().views.map((v) => v.id),
+    motion_ids: sheet().motions.map((m) => m.id),
+  });
+
   const TOOLS = [
     {
       name: 'start_tour',
       title: 'Start the guided tour',
-      description: 'Start the 30-second tour: overview, illuminated headlamps, side dimensions, structural battery, front drive unit, open panels, exploded assembly, drive with lights, then reset. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly. Any call that moves the scene (views, motions, camera, framing, highlighting, annotations, reset), and any click or key on the drawing, stops it where it is; reads and the host\'s context sync do not.',
-      inputSchema: { type: 'object', additionalProperties: false, properties: { from: { type: 'integer', minimum: 1, maximum: Math.max(1, config.tour?.length ?? 1) } } },
+      description: 'Start the current vehicle\'s 30-second tour, nine stops: an overview, its lamps lit, the side dimensions, details under or behind the skin, its opening panels, the exploded assembly, a drive with lights, then reset. get_vehicles gives each vehicle\'s stops. from is a 1-based step. Any other call except get_state/start_tour/stop_tour interrupts the tour; stop_tour stops it explicitly. Any call that moves the scene (views, motions, camera, framing, highlighting, annotations, reset), and any click or key on the drawing, stops it where it is; reads and the host\'s context sync do not.',
+      // Fixed once registered, so the longest tour of any vehicle; run() checks the current one.
+      inputSchema: { type: 'object', additionalProperties: false, properties: { from: { type: 'integer', minimum: 1, maximum: Math.max(1, sheet().tour?.length ?? 1, ...fleet().map((v) => v.config?.tour?.length ?? 0)) } } },
       annotations: SAFE_ACTION,
       run: ({ from = 1 }) => {
-        if (!ctx.startTour || !config.tour?.length) throw new Error('The tour is not available on this sheet.');
-        if (!Number.isInteger(from) || from < 1 || from > config.tour.length) throw new Error(`from must be an integer from 1 to ${config.tour.length}`);
+        if (!ctx.startTour || !sheet().tour?.length) throw new Error('The tour is not available on this sheet.');
+        if (!Number.isInteger(from) || from < 1 || from > sheet().tour.length) throw new Error(`from must be an integer from 1 to ${sheet().tour.length}`);
         return ctx.startTour(from - 1);
       },
     },
     {
       name: 'stop_tour',
       title: 'Stop the guided tour',
-      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, battery, drive unit, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it. Reads never stop the tour; only this, a scene-moving call, or a person\'s click or key does.',
+      description: 'Stop the tour at its current step without restoring the scene. The tour shows views, lights, dimensions, details under the skin, open panels, explode and drive. Any other call except get_state/start_tour/stop_tour also interrupts it. Reads never stop the tour; only this, a scene-moving call, or a person\'s click or key does.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: SAFE_SET,
       run: () => (ctx.stopTour ? ctx.stopTour('tool') : { running: false }),
@@ -342,23 +371,42 @@ export function installWebMCP(ctx) {
     {
       name: 'get_state',
       title: 'Get digital twin state',
-      description: 'Current view preset, camera pose, which motions are running, and what is selected. Call this first to orient.',
+      description: 'Which vehicle is on the sheet, the current view preset, camera pose, which motions are running, and what is selected. Call this first to orient.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: READ_ONLY,
-      run: () => ({
-        camera: cameraState(),
-        view: st.view,
-        tour: ctx.tourState ? ctx.tourState() : undefined,
-        vehicle_context: { ...st.vehicleContext },
-        vehicle_context_synced: syncedContextRevision !== null,
-        // `panels` reads the same way as the button and as set_motion: on = shell dissolved
-        motions: { run: st.run, drive: st.drive, lights: st.lights, panels: !st.panels, explode: st.explodeOn, open: st.openOn },
-        explode_progress: round(st.explode, 3), open_progress: round(st.open, 3),
-        selected: st.hoverPart ? st.hoverPart.name : null,
-        annotations_visible: !document.body.classList.contains('cards-off'),
-        views: config.views.map((v) => v.id),
-        motion_ids: config.motions.map((m) => m.id),
-      }),
+      run: () => getState(),
+    },
+    {
+      name: 'get_vehicles',
+      title: 'List the Garage vehicles',
+      description: 'The vehicles this Garage can show and which one is on the sheet now, each with its views, motions, tour length and whether it has a run mode (the tray\'s PLAY). Every other tool works on the current vehicle; set_vehicle switches.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      annotations: READ_ONLY,
+      run: () => {
+        const now = current().id;
+        const list = fleet().length ? fleet() : [{ id: now, label: null, config: sheet() }];
+        return {
+          current: now,
+          vehicles: list.map((v) => ({
+            id: v.id, label: v.label, current: v.id === now,
+            ...(v.id === now ? { part_count: car().order.length } : {}),
+            views: v.config.views.map((x) => x.id), motions: v.config.motions.map((m) => m.id),
+            tour_steps: v.config.tour?.length ?? 0, run_mode: !!v.play,
+          })),
+        };
+      },
+    },
+    {
+      name: 'set_vehicle',
+      title: 'Switch the Garage vehicle',
+      description: 'Put another vehicle on the sheet: rx2 is the Hudian RX2, roadster the Tesla Roadster. Its sheet text, key, callouts, camera presets and tour come with it, and the scene goes back to how it opens (ISO view, run only, shell on, nothing selected). Stops a running tour. The first switch to a vehicle loads its model, so that reply can take a moment. Returns the new state, as get_state does.',
+      inputSchema: { type: 'object', required: ['vehicle'], properties: { vehicle: { type: 'string', enum: fleet().length ? fleet().map((v) => v.id) : ['rx2', 'roadster'] } }, additionalProperties: false },
+      annotations: SAFE_SET,
+      run: async ({ vehicle }) => {
+        if (!ctx.setVehicle) throw new Error('This sheet shows one vehicle and cannot switch.');
+        const changed = await ctx.setVehicle(vehicle);
+        return { vehicle: current().id, changed: !!changed, state: getState() };
+      },
     },
     {
       name: 'set_vehicle_context',
@@ -388,20 +436,16 @@ export function installWebMCP(ctx) {
           context.build, context.paint, context.wheels, context.interior,
           context.rangeMiles, context.vehicleTotal, context.revision,
         ]);
-        if (syncedContextRevision !== null && context.revision < syncedContextRevision) {
-          throw new Error(`stale vehicle context revision ${context.revision}; Garage is already at revision ${syncedContextRevision}`);
+        const last = synced.get(current().id);
+        if (last && context.revision < last.revision) {
+          throw new Error(`stale vehicle context revision ${context.revision}; Garage is already at revision ${last.revision}`);
         }
-        if (
-          syncedContextRevision === context.revision
-          && syncedContextFingerprint !== null
-          && syncedContextFingerprint !== fingerprint
-        ) {
+        if (last && last.revision === context.revision && last.fingerprint !== fingerprint) {
           throw new Error(`vehicle context revision ${context.revision} conflicts with the context already synchronized at that revision`);
         }
-        const changed = syncedContextFingerprint !== fingerprint;
+        const changed = last?.fingerprint !== fingerprint;
         st.vehicleContext = { ...context };
-        syncedContextRevision = context.revision;
-        syncedContextFingerprint = fingerprint;
+        synced.set(current().id, { revision: context.revision, fingerprint });
         return { synced: true, changed, vehicle_context: { ...st.vehicleContext } };
       },
     },
@@ -412,7 +456,7 @@ export function installWebMCP(ctx) {
       inputSchema: { type: 'object', required: ['view'], properties: { view: { type: 'string', enum: ['iso', 'q34f', 'q34r', 'side', 'front', 'top'] } }, additionalProperties: false },
       annotations: SAFE_SET,
       run: ({ view }) => {
-        if (!config.views.some((v) => v.id === view)) throw new Error(`unknown view "${view}"`);
+        if (!sheet().views.some((v) => v.id === view)) throw new Error(`unknown view "${view}"`);
         setView(view);
         // The view transition tweens over about a second, so the camera has not
         // moved yet. Returning cameraState() here reports the pose being left,
@@ -428,7 +472,7 @@ export function installWebMCP(ctx) {
     {
       name: 'set_motion',
       title: 'Set digital twin motion',
-      description: 'Turn one of the sheet\'s motions on or off. run = idle telemetry and wheel spin; drive = rolling road with steering; lights = headlamp and tail-lamp beams; panels = dissolve the body shell to reveal the chassis; explode = separate every component along its assembly axis; open = swing the hood, liftgate, all four doors and the charge-port door. run and drive are coupled: turning drive on turns run on, and turning run off turns drive off. The reply reports every motion, not just the one asked about, so the coupling is visible.',
+      description: 'Turn one of the sheet\'s motions on or off. run = idle telemetry and wheel spin; drive = rolling road with steering; lights = headlamp and tail-lamp beams; panels = dissolve the body shell to reveal the chassis; explode = separate every component along its assembly axis; open = swing every opening panel of the current vehicle (the RX2\'s hood, liftgate, four doors and charge-port door; the Roadster\'s two gull-wing doors; the reply\'s opens names them). run and drive are coupled: turning drive on turns run on, and turning run off turns drive off. The reply reports every motion, not just the one asked about, so the coupling is visible.',
       inputSchema: {
         type: 'object', required: ['motion'],
         properties: { motion: { type: 'string', enum: ['run', 'drive', 'lights', 'panels', 'explode', 'open'] }, on: { type: 'boolean', description: 'Omit to toggle.' } },
@@ -440,7 +484,7 @@ export function installWebMCP(ctx) {
         if (cur === undefined) throw new Error(`unknown motion "${m}"`);
         if (on === undefined || on !== cur) motion(m);
         const now = { run: st.run, drive: st.drive, lights: st.lights, panels: !st.panels, explode: st.explodeOn, open: st.openOn };
-        return { motion: m, on: now[m], motions: now };
+        return { motion: m, on: now[m], motions: now, ...(m === 'open' && sheet().opens ? { opens: sheet().opens } : {}) };
       },
     },
     {
@@ -484,12 +528,12 @@ export function installWebMCP(ctx) {
     {
       name: 'list_parts',
       title: 'List digital twin parts',
-      description: 'Every named component in the vehicle. category is one of shell (body panels and glass), chassis (battery, subframes, drive units), running (the four wheels) or interior; the brakes are a chassis part, carried on the wheel hubs. Pass detail:true for bounding boxes in metres.',
+      description: 'Every named component in the current vehicle (the reply\'s vehicle says which). category is one of shell (body panels and glass), chassis (the structure under the skin: the RX2\'s battery, subframes and drive units, the Roadster\'s floor, fans and thrusters), running (the wheels) or interior. The brakes ride on the wheel hubs: a chassis part on the RX2, a running part on the Roadster. Pass detail:true for bounding boxes in metres.',
       inputSchema: { type: 'object', properties: { category: { type: 'string', enum: ['shell', 'chassis', 'running', 'interior'] }, detail: { type: 'boolean' } }, additionalProperties: false },
       annotations: READ_ONLY,
       run: ({ category, detail }) => {
-        const parts = vehicle.order.filter((p) => !category || p.category === category).map((p) => describe(p, detail));
-        return { count: parts.length, total_count: vehicle.order.length, parts };
+        const parts = car().order.filter((p) => !category || p.category === category).map((p) => describe(p, detail));
+        return { vehicle: current().id, count: parts.length, total_count: car().order.length, parts };
       },
     },
     {
@@ -500,8 +544,8 @@ export function installWebMCP(ctx) {
       annotations: READ_ONLY,
       run: ({ part }) => {
         const p = findPart(part);
-        if (!p) throw new Error(`no part "${part}". Call list_parts for the ${vehicle.order.length} available ids.`);
-        return describe(p, true);
+        if (!p) throw new Error(`no part "${part}". Call list_parts for the ${car().order.length} available ids.`);
+        return { vehicle: current().id, ...describe(p, true) };
       },
     },
     {
@@ -516,7 +560,7 @@ export function installWebMCP(ctx) {
       annotations: SAFE_SET,
       run: ({ part, azimuth_deg, elevation_deg, margin = 0.6 }) => {
         const p = findPart(part);
-        if (!p) throw new Error(`no part "${part}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (!p) throw new Error(`no part "${part}". Call list_parts for the ${car().order.length} available ids.`);
         const b = partBox(p);
         if (!b) throw new Error(`"${p.name}" has no visible geometry right now — it may be hidden by PANELS.`);
         takeCamera(true);
@@ -542,7 +586,7 @@ export function installWebMCP(ctx) {
       annotations: SAFE_SET,
       run: ({ part }) => {
         const p = part ? findPart(part) : null;
-        if (part && !p) throw new Error(`no part "${part}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (part && !p) throw new Error(`no part "${part}". Call list_parts for the ${car().order.length} available ids.`);
         ctx.select(p);
         return { selected: p ? p.name : null, label: p ? p.label : null };
       },
@@ -558,15 +602,21 @@ export function installWebMCP(ctx) {
     {
       name: 'get_specification',
       title: 'Get vehicle specification',
-      description: 'The published dimensions the RX2 model is built to (an independent reconstruction fitted to the Rivian R2\'s published figures). All values are lengths in metres — there are no masses or times here. Also returns the model\'s own derived coordinates (NOSE, TAIL, XF, XR: the x positions of the bumpers and axles), which is what part bounds and measurements are expressed against. The body is an independent reconstruction fitted to published dimensions and photographs, not manufacturer CAD.',
+      description: 'The published dimensions the current vehicle\'s model is built to (an independent reconstruction fitted to its maker\'s published figures; basis says which). Every value in dimensions_m is a length in metres; a mass, where the model carries one, comes separately as mass_kg. Also returns the model\'s own derived coordinates (NOSE, TAIL, XF, XR: the x positions of the bumpers and axles), which is what part bounds and measurements are expressed against. The body is an independent reconstruction fitted to published dimensions and photographs, not manufacturer CAD.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: READ_ONLY,
-      run: () => ({
-        units: 'metres',
-        axes: AXES,
-        dimensions_m: { ...vehicle.SPEC },
-        basis: 'Independent reconstruction fitted to Rivian\'s published R2 dimensions and photographs. Not manufacturer CAD, not a scan.',
-      }),
+      run: () => {
+        const S = car().SPEC;
+        return {
+          vehicle: current().id,
+          units: 'metres',
+          axes: AXES,
+          // Lengths only: the Roadster's SPEC also carries its id, label and mass.
+          dimensions_m: Object.fromEntries(Object.entries(S).filter(([k, v]) => typeof v === 'number' && k !== 'mass')),
+          ...(typeof S.mass === 'number' ? { mass_kg: S.mass } : {}),
+          basis: sheet().specBasis ?? 'Independent reconstruction fitted to published dimensions and photographs. Not manufacturer CAD, not a scan.',
+        };
+      },
     },
     {
       name: 'measure',
@@ -576,7 +626,7 @@ export function installWebMCP(ctx) {
       annotations: READ_ONLY,
       run: ({ from, to }) => {
         const a = findPart(from), b = findPart(to);
-        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${car().order.length} available ids.`);
         const ba = partBox(a), bb = partBox(b);
         if (!ba || !bb) throw new Error('one of those parts has no visible geometry right now');
         const d = { x: round(bb.centre.x - ba.centre.x), y: round(bb.centre.y - ba.centre.y), z: round(bb.centre.z - ba.centre.z) };
@@ -613,9 +663,9 @@ export function installWebMCP(ctx) {
       annotations: READ_ONLY,
       run: ({ from, to }) => {
         const a = findPart(from), b = findPart(to);
-        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${vehicle.order.length} available ids.`);
+        if (!a || !b) throw new Error(`no part "${!a ? from : to}". Call list_parts for the ${car().order.length} available ids.`);
         if (a === b) throw new Error('clearance needs two different components');
-        vehicle.root?.updateMatrixWorld(true);
+        car().root?.updateMatrixWorld(true);
         const sa = surfaceOf(a), sb = surfaceOf(b);
         if (!sa.verts.length || !sb.verts.length) throw new Error('one of those parts has no visible geometry right now');
         const cell = 0.05;
@@ -649,7 +699,8 @@ export function installWebMCP(ctx) {
         rig.cur.tx = x; rig.cur.ty = y; rig.cur.tz = z;
         rig.cur.dist = Math.max(1.2, Math.min(22, distance_m)); rig.userZoom = true;
         const out = { point_m: { x: round(x), y: round(y), z: round(z) }, camera: cameraState() };
-        if (st.panels && Math.abs(z) < 0.85 && y > 0.25 && y < 1.55) out.hint = 'That point is inside the body. Call set_motion {motion:"panels", on:true} to dissolve the shell, or expect to see the skin.';
+        const cabin = sheet().cabin ?? { z: 0.85, y0: 0.25, y1: 1.55 };
+        if (st.panels && Math.abs(z) < cabin.z && y > cabin.y0 && y < cabin.y1) out.hint = 'That point is inside the body. Call set_motion {motion:"panels", on:true} to dissolve the shell, or expect to see the skin.';
         return out;
       },
     },
@@ -688,7 +739,7 @@ export function installWebMCP(ctx) {
   const tourSource = Symbol('tour');
   const call = async (name, args = {}, source) => {
     // Reads and the host's context sync do not touch the scene, so they are not interruptions.
-    if (ctx.stopTour && source !== tourSource && !['get_state', 'start_tour', 'stop_tour', 'set_vehicle_context', 'get_specification', 'list_parts', 'get_part', 'measure', 'clearance', 'list_visible_parts'].includes(name)) ctx.stopTour('tool');
+    if (ctx.stopTour && source !== tourSource && !['get_state', 'get_vehicles', 'start_tour', 'stop_tour', 'set_vehicle_context', 'get_specification', 'list_parts', 'get_part', 'measure', 'clearance', 'list_visible_parts'].includes(name)) ctx.stopTour('tool');
     const t = TOOLS.find((x) => x.name === name);
     if (!t) throw new Error(`unknown tool "${name}". Available: ${TOOLS.map((x) => x.name).join(', ')}`);
     const input = args === undefined || args === null ? {} : args;

@@ -3,7 +3,9 @@
 Internal ES modules are concatenated into a single module script; three.js still comes from the CDN import map."""
 import re, os, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
-ORDER = ['geom.js', 'config.js', 'camera.js', 'vehicle.js', 'blueprint.js', 'overlay.js', 'tooltip-layout.js', 'ui.js', 'tour.js', 'webmcp.js', 'discovery.js', 'main.js']
+# The Roadster (roadster-adapter.js, rd/) is fetched by vehicles.js only when it is chosen, so it is not
+# bundled: the single file shows the RX2, and the Roadster loads only where src/ sits beside it.
+ORDER = ['geom.js', 'config.js', 'camera.js', 'vehicle.js', 'vehicles.js', 'blueprint.js', 'overlay.js', 'tooltip-layout.js', 'ui.js', 'tour.js', 'webmcp.js', 'discovery.js', 'run-mode.js', 'main.js']
 ext_imports = []
 body = []
 for name in ORDER:

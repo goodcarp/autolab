@@ -17,12 +17,15 @@ export function fitPresetFrame(p, aspect, fitScale = 1, tyOffset = 0, fov = 30, 
   };
 }
 
-export function presentationFit(view, explode, open) {
+// How far the camera backs off and lifts for the exploded and opened car. The numbers are the
+// RX2's (a 2 m explode stack); another vehicle passes its own (vehicles.js).
+export const PRESENTATION = { explodeQ34: 0.95, explode: 0.56, openQ34: 0.20, open: 0.10, liftElevation: 0.60, lift: 1.08 };
+export function presentationFit(view, explode, open, k = PRESENTATION) {
   const q34 = view === 'q34f' || view === 'q34r';
   const elevation = view === 'front' || view === 'side';
   return {
-    fitScale: 1 + (q34 ? 0.95 : 0.56) * explode + (q34 ? 0.20 : 0.10) * open,
-    tyOffset: (elevation ? 0.60 : 1.08) * explode,
+    fitScale: 1 + (q34 ? k.explodeQ34 : k.explode) * explode + (q34 ? k.openQ34 : k.open) * open,
+    tyOffset: (elevation ? k.liftElevation : k.lift) * explode,
   };
 }
 
@@ -44,6 +47,7 @@ export class Rig {
     this.cur = { az: 52, el: 22, dist: 9.0, ortho: 0, up: new THREE.Vector3(0, 1, 0), ty: 0.72, tx: 0, tz: 0 };
     this.from = null; this.to = null; this.t = 0; this.dur = 1.15;
     this.driftOn = true; this.view = 'iso'; this.settled = true; this.onSettle = null; this.userZoom = false;
+    this.presets = PRESETS;   // swapped with the vehicle (setPresets); the RX2's by default
     this.camera = new THREE.PerspectiveCamera(this.fov, 1, this.near, this.far);
     this._P = new THREE.Matrix4(); this._Po = new THREE.Matrix4(); this._Pp = new THREE.Matrix4();
   }
@@ -52,10 +56,11 @@ export class Rig {
   }
   setViewport(aspect, fitHeight = 0) {
     this.aspect = aspect; this.fitHeight = fitHeight;
-    if (this.view && this.to && !this.userZoom) Object.assign(this.to, this.frame(PRESETS[this.view], aspect));
+    if (this.view && this.to && !this.userZoom) Object.assign(this.to, this.frame(this.presets[this.view], aspect));
   }
+  setPresets(presets) { this.presets = presets || PRESETS; }
   goTo(name, dur = 1.15) {
-    const p = PRESETS[name]; if (!p) return;
+    const p = this.presets[name]; if (!p) return;
     this.view = name; this.driftOn = !!p.drift; this.settled = false; this.userZoom = false; this._orthoFade = false;
     let az = p.az;
     const c = this.cur.az; const d = (((az - c) % 360) + 540) % 360 - 180; az = c + d;
@@ -77,7 +82,7 @@ export class Rig {
     this.userZoom = true;
     // Pointer zoom must be able to back away from a portrait preset whose natural
     // distance exceeds the tool API's 22m range; otherwise zooming out jumps inward.
-    const max = fitViewport ? Math.max(22, this.frame(PRESETS.iso, this.aspect).dist * 1.5) : 22;
+    const max = fitViewport ? Math.max(22, this.frame(this.presets.iso, this.aspect).dist * 1.5) : 22;
     const cl = d => Math.max(3.5, Math.min(max, d * f));
     this.cur.dist = cl(this.cur.dist);
     if (this.from && this.to) { this.from.dist = cl(this.from.dist); this.to.dist = cl(this.to.dist); }
@@ -95,7 +100,7 @@ export class Rig {
       if (this._orthoFade) { this.cur.ortho = Math.max(0, this.cur.ortho - dt * 2.2); this.cur.up.lerp(new THREE.Vector3(0, 1, 0), Math.min(1, dt * 4)).normalize(); if (this.cur.ortho === 0 && this.cur.up.y > 0.999) this._orthoFade = false; }
       if (this.driftOn) this.cur.az -= dt * 1.6;
       // keep a settled preset framed correctly when the window aspect changes
-      if (this.view && this.settled && !this.userZoom) { const f = this.frame(PRESETS[this.view], this.aspect); this.cur.dist = f.dist; this.cur.ty = f.ty; }
+      if (this.view && this.settled && !this.userZoom) { const f = this.frame(this.presets[this.view], this.aspect); this.cur.dist = f.dist; this.cur.ty = f.ty; }
     }
   }
   apply(aspect) {

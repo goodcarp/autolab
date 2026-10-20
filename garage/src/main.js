@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { CONFIG, toggleMotionState } from './config.js';
-import { buildVehicle, CUT } from './vehicle.js';
+import { toggleMotionState } from './config.js';
+import { CUT } from './vehicle.js';
+import { VEHICLES, vehicleEntry, loadVehicle } from './vehicles.js';
+import { createRunMode } from './run-mode.js';
 import { Blueprint } from './blueprint.js';
 import { Rig, presentationFit } from './camera.js';
 import { Overlay } from './overlay.js';
@@ -30,7 +32,7 @@ function invalidateDemo() {
   scheduleFrame();
 }
 let tour;
-const tourState = () => tour?.state() ?? { running: false, step: 0, of: CONFIG.tour.length, id: null, title: null };
+const tourState = () => tour?.state() ?? { running: false, step: 0, of: config.tour.length, id: null, title: null };
 const stopTour = (reason) => tour?.stop(reason) ?? tourState();
 
 const canvas = document.getElementById('gl');
@@ -39,26 +41,97 @@ const stage = document.getElementById('stage');
 
 let bp;
 try { bp = new Blueprint(canvas); } catch (e) { postDemo('autolab-demo-error'); document.getElementById('fallback').hidden = false; throw e; }
-const vehicle = buildVehicle();
+// The car on the sheet. ?vehicle=roadster opens with the Roadster; without it (and so in the
+// landing page's ?demo=1 tour) the sheet opens with the RX2. setVehicle swaps all three, and every
+// handler below reads them when it runs rather than keeping the car it started with.
+let entry = vehicleEntry(q.get('vehicle')) || VEHICLES[0];
+let config = entry.config;
+let vehicle;
+try { vehicle = await loadVehicle(entry.id); } catch (e) {
+  if (entry === VEHICLES[0]) throw e;
+  console.warn(`[garage] ${entry.label} could not be loaded; showing the ${VEHICLES[0].label}.`, e);
+  entry = VEHICLES[0]; config = entry.config; vehicle = await loadVehicle(entry.id);
+}
 bp.addVehicle(vehicle);
 const rig = new Rig();
-const overlay = new Overlay(svg, rig, vehicle);
+rig.setPresets(entry.presets);
+const overlay = new Overlay(svg, rig, vehicle, config.keyItems);
 
 const st = {
   view: 'iso', run: true, drive: false, lights: false, panels: true, explode: 0, open: 0, explodeOn: false, openOn: false,
   speed: 0, steer: 0, soc: 87.0, time: 0, ortho: 0, hoverId: -1, hoverPart: null, lampGlow: 0, gridOffset: 0, gridAlpha: 1, hidePanels: false,
   // What the configurator has told this sheet about the car it is showing; 'Not supplied' until it does.
-  vehicleContext: { build: 'Hudian RX2', paint: 'Not supplied', wheels: 'Not supplied', interior: 'Not supplied', rangeMiles: null, vehicleTotal: null, revision: 1 },
+  vehicleContext: openingContext(entry),
 };
-const ui = new UI(CONFIG, {
+function openingContext(e) { return { build: e.label, paint: 'Not supplied', wheels: 'Not supplied', interior: 'Not supplied', rangeMiles: null, vehicleTotal: null, revision: 1 }; }
+const ui = new UI(config, {
   onView: (v) => { stopTour('view'); setView(v); },
   onTour: () => tourState().running ? stopTour('button') : startTour(),
   onMotion: (m) => { stopTour('motion'); motion(m); },
   onReset: () => { void api.call('reset'); },
   onKeyHover: (part) => { if (tourState().running) return; keyHover = part ? vehicle.parts[part] : null; },
   onKeySelect: (part) => { stopTour('part'); selectedPart = part ? vehicle.parts[part] : null; pointerHit = null; pointerDirty = false; keyHover = null; ui.selectPart(selectedPart); },
+  onVehicle: (id) => { setVehicle(id).catch(e => console.error('[garage] vehicle switch failed:', e)); },
+  onPlay: () => togglePlay(),
 });
 let keyHover = null, selectedPart = null;
+ui.setVehicles(VEHICLES, entry.id);
+document.title = `Agentic Owner's Guide · ${entry.label}`;
+canvas.setAttribute('aria-label', `Interactive ${entry.label} drawing`);
+
+// PLAY, for a car with a run mode (the Roadster). The run controller owns what PLAY does.
+const run = createRunMode({ onChange: on => ui.setPlaying(on), say: text => ui.showRunStatus(text) });
+function togglePlay() {
+  if (!entry.play) return;
+  stopTour('play');
+  if (run.active()) run.stop(); else run.start();
+}
+
+// Swap the car on the sheet. The new car opens the way the sheet does (run only, shell on,
+// nothing open, exploded, selected or flashing, the tour stopped) in the view the sheet was in.
+// Each car is built once (vehicles.js); its configurator context and charge are kept for when it
+// comes back.
+let swapToken = 0;
+const kept = {};
+async function setVehicle(id) {
+  const next = vehicleEntry(id);
+  if (!next) throw new Error(`unknown vehicle "${id}"; one of: ${VEHICLES.map(v => v.id).join(', ')}`);
+  stopTour('vehicle');
+  // The latest choice wins, even a choice of the car already on the sheet: it cancels a switch
+  // still loading (the Roadster, then the RX2 again before the Roadster arrived, stays the RX2).
+  const token = ++swapToken;
+  if (next === entry) return false;
+  const car = await loadVehicle(next.id);
+  if (token !== swapToken) return false;   // a later choice arrived while this one loaded
+  run.stop();
+  kept[entry.id] = { context: st.vehicleContext, soc: st.soc };
+  bp.removeVehicle(vehicle);
+  entry = next; config = next.config; vehicle = car;
+  Object.assign(st, { run: true, drive: false, lights: false, panels: true, explode: 0, open: 0, explodeOn: false, openOn: false,
+    speed: 0, steer: 0, gridOffset: 0, lightsT: 0, lampGlow: 0, hoverId: -1, hoverPart: null, shellDissolve: 1 });
+  st.vehicleContext = kept[next.id]?.context ?? openingContext(next);
+  st.soc = kept[next.id]?.soc ?? 87.0;
+  flashT = 99;
+  vehicle.explodeT = 0; vehicle.openT = 0; vehicle.panelsT = 1;
+  vehicle.update(0, st); vehicle.root.updateMatrixWorld(true);
+  bp.addVehicle(vehicle);
+  keyHover = selectedPart = pointerHit = null; pointerDirty = false;
+  overlay.setVehicle(vehicle, config.keyItems);
+  ui.setConfig(config); ui.setVehicle(next.id);
+  ui.selectPart(null); ui.tooltip(); ui.highlightKey(null);
+  for (const m of config.motions) ui.setToggle(m.id, m.id === 'run');
+  rig.setPresets(next.presets);
+  document.title = `Agentic Owner's Guide · ${next.label}`;
+  canvas.setAttribute('aria-label', `Interactive ${next.label} drawing`);
+  resize();
+  setView(st.view && config.views.some(v => v.id === st.view) ? st.view : 'iso');
+  invalidateDemo();
+  return true;
+}
+function cycleVehicle() {
+  const i = VEHICLES.indexOf(entry);
+  setVehicle(VEHICLES[(i + 1) % VEHICLES.length].id).catch(e => console.error('[garage] vehicle switch failed:', e));
+}
 
 function setView(v) {
   st.view = v; ui.setView(v); rig.goTo(v, tourState().running && q.get('snap') === '1' ? 0 : 1.15); overlay.setView(v);
@@ -72,7 +145,7 @@ rig.onSettle = (v) => { overlay.settled(v); ui.showViewTitle(v); };
 
 function motion(m) {
   for (const [id, on] of Object.entries(toggleMotionState(st, m))) ui.setToggle(id, on);
-  if (m === 'lights' && st.lights) { flashT = 0; const S = vehicle.SPEC; overlay.flash(vehicle.parts.headlamps, [[S.NOSE + 0.05, 0.875, -0.595], [S.NOSE + 0.05, 0.875, 0.595]]); }
+  if (m === 'lights' && st.lights && vehicle.lampFlash) { flashT = 0; overlay.flash(vehicle.lampFlash.part, vehicle.lampFlash.locals); }
   if (demo) { updateDiscoveryButtons(); invalidateDemo(); }
 }
 let flashT = 99;
@@ -263,6 +336,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'o') motion('open');
   if (e.key === 'd') motion('drive');
   if (e.key === 'r') motion('run');
+  if (e.key === 'v') cycleVehicle();
 });
 
 // Sheet clicks also stop the caption when they land on a card instead of the canvas.
@@ -274,7 +348,7 @@ function resize() {
   pointerDirty = !!pointerClient;
   const r = stage.getBoundingClientRect(); W = Math.max(2, Math.floor(r.width)); H = Math.max(2, Math.floor(r.height));
   bp.setSize(W, H); overlay.setSize(W, H);
-  rig.setViewport(W / H, demo ? discoveryFraming(tourState().running).fitHeight : ui.compactMedia.matches || framed ? 4.8 : 0);
+  rig.setViewport(W / H, demo ? discoveryFraming(tourState().running).fitHeight : ui.compactMedia.matches || framed ? entry.fitHeight : 0);
   invalidateDemo();
 }
 window.addEventListener('resize', resize); resize();
@@ -306,13 +380,13 @@ function pickHit() {
 // bundle, where it 404s -- and a failed TOP-LEVEL await means the whole module never evaluates, so
 // the sheet renders blank with the onerror fallback stripped too. Guarded: in a dist build ?pbr=1
 // now does nothing instead of destroying the page.
-if (!demo && q.get('pbr') === '1') try {
+if (!demo && q.get('pbr') === '1' && entry.id === 'rx2') try {
   const { enablePbrProbe } = await import('./pbr-probe.js');
   const info = enablePbrProbe(bp, vehicle, q.get('paint') || '#4A5D3A');
   console.info('[pbr probe]', info);
   document.documentElement.dataset.pbr = '1';
 } catch (e) { console.warn('[pbr probe] unavailable in this build:', e.message); }
-setView(q.get('view') && CONFIG.views.some(v => v.id === q.get('view')) ? q.get('view') : 'iso'); ui.setToggle('run', true);
+setView(q.get('view') && config.views.some(v => v.id === q.get('view')) ? q.get('view') : 'iso'); ui.setToggle('run', true);
 if (q.get('run') === '0') motion('run');
 if (q.get('drive') === '1') motion('drive');
 if (q.get('explode') === '1') motion('explode');
@@ -330,12 +404,15 @@ if (q.get('cards') === '0' || q.get('cards') === '1') ui.setCards(q.get('cards')
 if (q.get('min')) for (const id of q.get('min').split(',')) { if (!/^[a-z]+$/.test(id)) continue; const el = document.getElementById(id); const b = el && el.querySelector('.panel-min'); if (b && !el.classList.contains('min')) { b.dataset.noPersist = '1'; b.click(); delete b.dataset.noPersist; } }
 // ?nav=0 hides the header links when the sheet is embedded somewhere that has its own navigation
 if (q.get('nav') === '0') document.body.classList.add('nav-off');
-if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'primary-controls', 'cards-toggle', 'titleblock', 'viewtitle', 'hint', 'hdr-left', 'hdr-right']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
+if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'primary-controls', 'run-status', 'cards-toggle', 'titleblock', 'viewtitle', 'hint', 'hdr-left', 'hdr-right']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
 if (q.get('nodrift') === '1') rig.driftOn = false;
 if (q.get('snap') === '1' || q.get('az') || q.get('el')) { rig.goTo(st.view || 'iso', 0); rig.driftOn = false; if (q.get('az')) rig.cur.az = +q.get('az'); if (q.get('el')) rig.cur.el = +q.get('el'); rig.onSettle(st.view); }
 // WebMCP + window.r2: the sheet is operable by an agent, not only by a person with a pointer
 const api = installWebMCP({
-  st, rig, vehicle, overlay, ui, bp, setView, motion, config: CONFIG, tourState, startTour, stopTour, internalOnly: demo,
+  st, rig, overlay, ui, bp, setView, motion, tourState, startTour, stopTour, internalOnly: demo,
+  // read when a tool runs, so every tool follows set_vehicle and the tray
+  get vehicle() { return vehicle; }, get config() { return config; }, get vehicleId() { return entry.id; },
+  vehicles: VEHICLES, setVehicle,
   select: (p) => { selectedPart = p; pointerHit = null; pointerDirty = false; keyHover = null; st.hoverPart = p; ui.highlightKey(p ? p.name : null); ui.selectPart(p); },
 });
 
@@ -347,7 +424,7 @@ function startTour(fromIndex = 0, hold = false) {
     invalidateDemo();
   }
   tour = createTour({
-    steps: hold ? CONFIG.tour.map(step => ({ ...step, dwell: Infinity })) : CONFIG.tour,
+    steps: hold ? config.tour.map(step => ({ ...step, dwell: Infinity })) : config.tour,
     call: api.callTour,
     onStep: (step, state) => { ui.showTour(step, state); invalidateDemo(); },
     onStop: (state, reason) => { ui.stopTour(state, reason); if (demo) finishDemo(reason); },
@@ -358,7 +435,7 @@ function startTour(fromIndex = 0, hold = false) {
 
 if (demo) {
   canvas.setAttribute('aria-describedby', 'demo-description');
-  canvas.setAttribute('aria-label', 'Explore the Hudian RX2');
+  canvas.setAttribute('aria-label', `Explore the ${entry.label}`);
   const discovery = document.getElementById('demo-discovery');
   const options = document.getElementById('demo-options');
   document.getElementById('demo-replay').addEventListener('click', () => { void startTour(); canvas.focus({ preventScroll: true }); });
@@ -391,7 +468,7 @@ document.addEventListener('visibilitychange', () => {
 // Complete the tool calls before ?adv pre-roll, so held captures render the requested step.
 if (q.get('tour') === '1') {
   const requested = Number(q.get('step') || 1);
-  const from = Number.isInteger(requested) && requested >= 1 && requested <= CONFIG.tour.length ? requested - 1 : 0;
+  const from = Number.isInteger(requested) && requested >= 1 && requested <= config.tour.length ? requested - 1 : 0;
   await startTour(from, q.get('hold') === '1');
   // Capture preferences override the reset/set_annotations actions without persisting them.
   if (q.has('cards')) ui.setCards(q.get('cards') !== '0', true);
@@ -415,7 +492,7 @@ function step(dt, render = true) {
   // ground datum with groundFrac, so they need a smaller lift than the ISO views.
   // Compact and embedded stages now exclude the navigation and toolbar, so the camera
   // can centre naturally in their remaining drawing area, including phone landscape.
-  Object.assign(rig, presentationFit(rig.view, vehicle.explodeT, vehicle.openT));
+  Object.assign(rig, presentationFit(rig.view, vehicle.explodeT, vehicle.openT, entry.presentation));
   if (demo) rig.tyOffset += discoveryFraming(tourState().running).tyOffset;
   vehicle.panelsT += ((st.panels ? 1 : 0) - vehicle.panelsT) * Math.min(1, dt * 6);
   if (Math.abs(vehicle.panelsT - (st.panels ? 1 : 0)) < 0.01) vehicle.panelsT = st.panels ? 1 : 0;
@@ -477,7 +554,7 @@ function frame(now) {
 if (q.get('adv')) { const n = Math.round(+q.get('adv') * 60); for (let i = 0; i < n; i++) step(1 / 60, false); overlay.dimAlpha = overlay.dimTarget; uiT = 1; step(1 / 60, true); }
 animationReady = true; last = performance.now(); scheduleFrame();
 postDemo('autolab-demo-ready');
-if (!demo) window.__app = { rig, vehicle, st, overlay, bp, THREE };
+if (!demo) window.__app = { rig, get vehicle() { return vehicle; }, get vehicleId() { return entry.id; }, setVehicle, st, overlay, bp, THREE };
 if (!demo && q.get('debug') === '1') { const el = document.documentElement;
   const wide = [...document.querySelectorAll('#sheet *')].filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; })
     .map(e => `${e.id || e.className || e.tagName}:${Math.round(e.getBoundingClientRect().left)}..${Math.round(e.getBoundingClientRect().right)}`);

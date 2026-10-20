@@ -19,7 +19,7 @@ const G_FRAG = /* glsl */`
 precision highp float;
 layout(location = 0) out vec4 gNormal;
 layout(location = 1) out vec4 gData;
-uniform float uId; uniform float uSub; uniform float uDissolve; uniform float uCut;
+uniform float uId; uniform float uSub; uniform float uDissolve; uniform float uCut; uniform float uLamp;
 in vec3 vN; in float vD; in vec3 vObj;
 ` + cutGLSL(CUT) + `
 void main(){
@@ -27,8 +27,20 @@ void main(){
   if (uDissolve < 1.0) { float dn = fract(sin(dot(floor(gl_FragCoord.xy * 0.5), vec2(12.9898, 78.233))) * 43758.5453); if (dn > uDissolve) discard; }
   vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n;
   gNormal = vec4(n, 1.0);
-  gData = vec4(vD, uId, uSub, 1.0);
+  gData = vec4(vD, uId, uSub, 1.0 + uLamp);   // w: 1 any surface, 2 a lamp, 3 a tail lamp
 }`;
+
+// 0 nothing, 1 a lamp (glows with the headlamps and the running-light pulse), 2 a tail lamp (red
+// with LIGHTS). A mesh may say so itself (userData.lamp, the Roadster's adapter); otherwise the
+// RX2's rule: its lamp parts glow whole, and the tail strip is the tail-pill part's sub 0 plus
+// the bar across the tail that the liftgate carries as its sub 8.
+export function lampKind(v, p, m) {
+  if (m.userData.lamp !== undefined) return m.userData.lamp;
+  if (v.lampIds?.includes(p.id)) return 1;
+  const sub = m.userData.subId || 0;
+  if ((p.id === v.tailIds?.[0] && sub < 0.5) || (p.id === v.tailIds?.[1] && sub === 8)) return 2;
+  return 0;
+}
 
 const C_VERT = /* glsl */`
 precision highp float;
@@ -40,7 +52,7 @@ precision highp float;
 uniform sampler2D tBeauty, tNormal, tData;
 uniform vec2 uRes; uniform float uDpr;
 uniform mat4 uInvVP; uniform float uGridOffset; uniform float uGridAlpha; uniform float uShadowAlpha;
-uniform float uHoverId; uniform vec3 uLampIds; uniform float uLampGlow; uniform vec2 uTailIds; uniform float uLights; uniform float uNose; uniform float uTail; uniform float uSil;
+uniform float uHoverId; uniform float uLampGlow; uniform float uLights; uniform float uNose; uniform float uTail; uniform float uSil;
 uniform vec3 uInk, uFill, uFillLight, uAccent;
 in vec2 vUv; out vec4 fragColor;
 
@@ -50,10 +62,10 @@ float hatch(vec2 p, float ang, float period, float width){
   float f = abs(fract(d/period) - 0.5) * period;
   return 1.0 - smoothstep(width*0.5 - 0.5, width*0.5 + 0.5, f);
 }
-bool isLamp(float id){ return abs(id-uLampIds.x)<0.01 || abs(id-uLampIds.y)<0.01; }
-// Only the lit strip glows, and it lives on TWO parts: the corner stubs on the body (sub 0 of the
-// lamp part) and the bar across the tail, which the liftgate carries (sub 8 there).
-bool isTail(float id, float sub){ return (abs(id-uTailIds.x)<0.01 && sub < 0.5) || (abs(id-uTailIds.y)<0.01 && abs(sub-8.0)<0.01); }
+// Which surfaces glow is a per-mesh flag the G-buffer carries in data.w (see lampKind below), so a
+// lamp can be a whole part (the RX2's headlamps) or one mesh of a larger part (the Roadster's).
+bool isLamp(float kind){ return abs(kind - 2.0) < 0.01; }
+bool isTail(float kind){ return abs(kind - 3.0) < 0.01; }
 
 void main(){
   vec2 px = 1.0 / uRes;
@@ -99,8 +111,8 @@ void main(){
     float h2 = smoothstep(0.46, 0.40, lit) * 0.45;
     col = mix(col, uInk, h2 * hatch(p, -0.7854, 5.5 * uDpr, 1.0 * uDpr));
     if (hov) col = mix(col, uAccent, 0.16);
-    if (isLamp(id0)) col = mix(col, vec3(1.0, 0.93, 0.70), uLampGlow * 0.75);
-    if (isTail(id0, sub0)) col = mix(col, vec3(0.93, 0.28, 0.20), uLights * 0.75);
+    if (isLamp(d0.w)) col = mix(col, vec3(1.0, 0.93, 0.70), uLampGlow * 0.75);
+    if (isTail(d0.w)) col = mix(col, vec3(0.93, 0.28, 0.20), uLights * 0.75);
     col = mix(col, lineCol, line);
     fragColor = vec4(col, 1.0);
   } else {
@@ -164,7 +176,7 @@ export class Blueprint {
     this.gbuf.textures[0].name = 'normal'; this.gbuf.textures[0].type = THREE.HalfFloatType;
     this.gbuf.textures[1].name = 'data';
     // materials
-    this.gMatProto = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: G_VERT, fragmentShader: G_FRAG, uniforms: { uId: { value: 0 }, uSub: { value: 0 }, uDissolve: { value: 1 }, uCut: { value: 0 } }, side: THREE.DoubleSide });
+    this.gMatProto = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: G_VERT, fragmentShader: G_FRAG, uniforms: { uId: { value: 0 }, uSub: { value: 0 }, uDissolve: { value: 1 }, uCut: { value: 0 }, uLamp: { value: 0 } }, side: THREE.DoubleSide });
     const css = getComputedStyle(document.documentElement);
     // colours are authored in sRGB and written raw to the canvas, so keep them un-decoded
     const srgb = (hex) => new THREE.Color().setStyle(hex, THREE.LinearSRGBColorSpace);
@@ -175,7 +187,7 @@ export class Blueprint {
         tBeauty: { value: this.beauty.texture }, tNormal: { value: this.gbuf.textures[0] }, tData: { value: this.gbuf.textures[1] },
         uRes: { value: new THREE.Vector2(2, 2) }, uDpr: { value: this.dpr }, uInvVP: { value: new THREE.Matrix4() },
         uGridOffset: { value: 0 }, uGridAlpha: { value: 1 }, uShadowAlpha: { value: 1 }, uHoverId: { value: -1 },
-        uLampIds: { value: new THREE.Vector3(-1, -1, -1) }, uLampGlow: { value: 0 }, uTailIds: { value: new THREE.Vector2(-1, -1) }, uLights: { value: 0 }, uNose: { value: 2.31 }, uTail: { value: -2.41 }, uSil: { value: 0 },
+        uLampGlow: { value: 0 }, uLights: { value: 0 }, uNose: { value: 2.31 }, uTail: { value: -2.41 }, uSil: { value: 0 },
         uInk: { value: c('--ink', '#1c2b4f') }, uFill: { value: srgb('#cbd3e2') }, uFillLight: { value: srgb('#eaeef5') },
         uAccent: { value: c('--accent', '#c94b31') },
       },
@@ -190,9 +202,24 @@ export class Blueprint {
     this.scene.add(v.root);
     for (const p of v.order) for (const m of p.meshes) {
       const gm = this.gMatProto.clone(); gm.uniforms.uId.value = p.id; gm.uniforms.uSub.value = m.userData.subId || 0; gm.uniforms.uCut.value = m.userData.cut ? 1 : 0;
+      gm.uniforms.uLamp.value = lampKind(v, p, m);
       m.userData.gMat = gm; m.userData.beautyMat = m.material; m.userData.shell = p.category === 'shell'; this.vehicleMeshes.push(m);
     }
-    this.compMat.uniforms.uLampIds.value.set(v.lampIds[0], v.lampIds[1], -1); this.compMat.uniforms.uTailIds.value.set(v.tailIds[0], v.tailIds[1]); this.compMat.uniforms.uNose.value = v.SPEC.NOSE; this.compMat.uniforms.uTail.value = v.SPEC.TAIL;
+    this.compMat.uniforms.uNose.value = v.SPEC.NOSE; this.compMat.uniforms.uTail.value = v.SPEC.TAIL;
+  }
+  // One vehicle is drawn at a time (part ids restart at 1 in every build). Only the per-mesh
+  // G-buffer clones made above are disposed; the vehicle's own materials are shared module
+  // singletons and stay alive, so the same car can be added again later.
+  removeVehicle(v) {
+    if (!v) return;
+    this.scene.remove(v.root);
+    const gone = new Set();
+    for (const p of v.order) for (const m of p.meshes) {
+      gone.add(m);
+      if (m.userData.beautyMat) m.material = m.userData.beautyMat;
+      m.userData.gMat?.dispose(); delete m.userData.gMat;
+    }
+    this.vehicleMeshes = this.vehicleMeshes.filter((m) => !gone.has(m));
   }
   setSize(w, h) {
     this.dpr = Math.min(window.devicePixelRatio || 1, FRAMED ? 1.35 : 2);

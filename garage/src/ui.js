@@ -14,49 +14,18 @@ export function setPressed(button, pressed, className) {
 
 export class UI {
   constructor(cfg, cb) {
-    this.cfg = cfg; this.cb = cb;
+    this.cb = cb;
     const $ = (s) => document.querySelector(s);
     for (const link of document.querySelectorAll('[data-site-link]')) link.href = garageSiteBase(location.pathname) + link.dataset.siteLink;
-    $('#hdr-left-title').textContent = cfg.hdrLeft.title; $('#hdr-left-sub').textContent = cfg.hdrLeft.sub;
-    $('#hdr-right-title').textContent = cfg.hdrRight.title; $('#hdr-right-sub').textContent = cfg.hdrRight.sub;
-    $('#tb-title').innerHTML = cfg.title.map(t => `<div>${t}</div>`).join('');
-    $('#tb-grid').innerHTML = cfg.titleBlock.map(c => `<div class="tb-cell"><div class="tb-lbl">${c.lbl}</div><div class="tb-val${c.red ? ' red' : ''}">${c.val}</div></div>`).join('');
-    for (const cls of ['zone-top', 'zone-bottom']) $('.' + cls).innerHTML = cfg.zonesX.map(z => `<span>${z}</span>`).join('');
-    for (const cls of ['zone-left', 'zone-right']) $('.' + cls).innerHTML = cfg.zonesY.map(z => `<span>${z}</span>`).join('');
-    // key items: two columns (1-5, 6-10) laid out row-wise in a 2-col grid
-    const items = cfg.keyItems; const rows = [];
-    for (let i = 0; i < 5; i++) { rows.push(items[i]); rows.push(items[i + 5]); }
-    const keyMarkup = list => list.map(k => `<button type="button" class="key-item" data-part="${k.part}" data-n="${k.n}"><span class="num">${k.n}</span><span>${k.label}</span></button>`).join('');
-    $('#key-grid').innerHTML = keyMarkup(rows);
-    $('#compact-key-grid').innerHTML = keyMarkup(items);
-    this.keyEls = [...document.querySelectorAll('.key-item')];
-    for (const el of this.keyEls) {
-      el.addEventListener('pointerenter', () => cb.onKeyHover(el.dataset.part));
-      el.addEventListener('pointerleave', () => cb.onKeyHover(this.keyEls.find(row => row === document.activeElement)?.dataset.part || null));
-      el.addEventListener('focus', () => cb.onKeyHover(el.dataset.part));
-      el.addEventListener('blur', () => cb.onKeyHover(this.keyEls.find(row => row.matches(':hover'))?.dataset.part || null));
-      el.addEventListener('click', () => { this.closeSheet(); cb.onKeySelect?.(el.dataset.part); });
-    }
-    $('#instr-grid').innerHTML = cfg.instr.map(r => `<div class="k">${r.k}</div><div class="v" id="instr-${r.id}">—</div>`).join('');
-    this.instrEls = Object.fromEntries(cfg.instr.map(r => [r.id, document.getElementById('instr-' + r.id)]));
-    const views = cfg.views.map(v => `<button type="button" class="btn" data-view="${v.id}" aria-pressed="false">${v.label}</button>`).join('');
-    const motions = cfg.motions.map(m => `<button type="button" class="btn" data-motion="${m.id}" aria-pressed="false">${m.label}</button>`).join('');
-    $('#view-btns').innerHTML = views; $('#compact-view-btns').innerHTML = views;
-    $('#motion-btns').innerHTML = motions; $('#compact-motion-btns').innerHTML = motions;
-    this.viewBtns = [...document.querySelectorAll('[data-view]')]; this.motionBtns = [...document.querySelectorAll('[data-motion]')];
-    // Quick controls stay open so views and motions can be combined or undone.
-    for (const b of this.viewBtns) b.addEventListener('click', () => cb.onView(b.dataset.view));
-    for (const b of this.motionBtns) b.addEventListener('click', () => cb.onMotion(b.dataset.motion));
     this.tourBtn = document.createElement('button');
     this.tourBtn.id = 'tour-btn'; this.tourBtn.className = 'btn'; this.tourBtn.type = 'button';
     this.tourBtn.textContent = 'TOUR'; this.tourBtn.title = 'Start tour (T)';
     this.tourBtn.setAttribute('aria-pressed', 'false');
     this.tourBtn.addEventListener('click', () => cb.onTour());
-    $('#motion-btns').append(this.tourBtn);
     this.compactTourBtn = this.tourBtn.cloneNode(true);
     this.compactTourBtn.id = 'compact-tour-btn';
     this.compactTourBtn.addEventListener('click', () => cb.onTour());
-    $('#compact-motion-btns').append(this.compactTourBtn);
+    this.setConfig(cfg);
     const dialog = $('#compact-sheet');
     const launchers = [...document.querySelectorAll('[data-sheet]')];
     let sheetLauncher = null;
@@ -72,8 +41,8 @@ export class UI {
       if (dialog.open && sheetLauncher === launcher) { this.closeSheet(); return; }
       this.closeSheet(false);
       sheetLauncher = launcher;
-      for (const name of ['views', 'parts', 'more']) $('#compact-' + name).hidden = name !== section;
-      $('#compact-sheet-title').textContent = launcher.textContent;
+      for (const name of ['vehicles', 'views', 'parts', 'more']) $('#compact-' + name).hidden = name !== section;
+      $('#compact-sheet-title').textContent = launcher.dataset.sheetTitle || launcher.textContent;
       dialog.dataset.section = section;
       const modal = section === 'parts';
       dialog.setAttribute('aria-modal', String(modal));
@@ -93,6 +62,7 @@ export class UI {
       if (dialog.open && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.closeSheet(); }
     }, true);
     $('#reset-btn').addEventListener('click', () => { this.closeSheet(); cb.onReset(); });
+    $('#play-btn').addEventListener('click', () => { this.closeSheet(); cb.onPlay?.(); });
     this.compactMedia = window.matchMedia('(max-width: 980px), (max-height: 520px)');
     this.compactMedia.addEventListener('change', () => { if (!this.compactMedia.matches) this.closeSheet(); });
     this.tourCard = document.createElement('section');
@@ -136,6 +106,79 @@ export class UI {
       btn.addEventListener('click', () => { const min = !panel.classList.contains('min'); apply(min); if (btn.dataset.noPersist) return; saved[id] = min; try { localStorage.setItem('r2.min', JSON.stringify(saved)); } catch (e) {} });
     }
   }
+  // Everything on the sheet that belongs to one vehicle: header, title block, key, telemetry rows,
+  // view and motion buttons. Called again when the Garage switches cars; the old buttons go
+  // with their listeners, and the tour buttons move to the new motion rows.
+  setConfig(cfg) {
+    this.cfg = cfg;
+    const cb = this.cb;
+    const $ = (s) => document.querySelector(s);
+    $('#hdr-left-title').textContent = cfg.hdrLeft.title; $('#hdr-left-sub').textContent = cfg.hdrLeft.sub;
+    $('#hdr-right-title').textContent = cfg.hdrRight.title; $('#hdr-right-sub').textContent = cfg.hdrRight.sub;
+    $('#tb-title').innerHTML = cfg.title.map(t => `<div>${t}</div>`).join('');
+    $('#tb-grid').innerHTML = cfg.titleBlock.map(c => `<div class="tb-cell"><div class="tb-lbl">${c.lbl}</div><div class="tb-val${c.red ? ' red' : ''}">${c.val}</div></div>`).join('');
+    for (const cls of ['zone-top', 'zone-bottom']) $('.' + cls).innerHTML = cfg.zonesX.map(z => `<span>${z}</span>`).join('');
+    for (const cls of ['zone-left', 'zone-right']) $('.' + cls).innerHTML = cfg.zonesY.map(z => `<span>${z}</span>`).join('');
+    // key items: two columns (1-5, 6-10) laid out row-wise in a 2-col grid
+    const items = cfg.keyItems; const rows = [];
+    for (let i = 0; i < 5; i++) { rows.push(items[i]); rows.push(items[i + 5]); }
+    const keyMarkup = list => list.map(k => `<button type="button" class="key-item" data-part="${k.part}" data-n="${k.n}"><span class="num">${k.n}</span><span>${k.label}</span></button>`).join('');
+    $('#key-grid').innerHTML = keyMarkup(rows);
+    $('#compact-key-grid').innerHTML = keyMarkup(items);
+    this.keyEls = [...document.querySelectorAll('.key-item')];
+    for (const el of this.keyEls) {
+      el.addEventListener('pointerenter', () => cb.onKeyHover(el.dataset.part));
+      el.addEventListener('pointerleave', () => cb.onKeyHover(this.keyEls.find(row => row === document.activeElement)?.dataset.part || null));
+      el.addEventListener('focus', () => cb.onKeyHover(el.dataset.part));
+      el.addEventListener('blur', () => cb.onKeyHover(this.keyEls.find(row => row.matches(':hover'))?.dataset.part || null));
+      el.addEventListener('click', () => { this.closeSheet(); cb.onKeySelect?.(el.dataset.part); });
+    }
+    $('#instr-grid').innerHTML = cfg.instr.map(r => `<div class="k">${r.k}</div><div class="v" id="instr-${r.id}">—</div>`).join('');
+    this.instrEls = Object.fromEntries(cfg.instr.map(r => [r.id, document.getElementById('instr-' + r.id)]));
+    const views = cfg.views.map(v => `<button type="button" class="btn" data-view="${v.id}" aria-pressed="false">${v.label}</button>`).join('');
+    const motions = cfg.motions.map(m => `<button type="button" class="btn" data-motion="${m.id}" aria-pressed="false">${m.label}</button>`).join('');
+    $('#view-btns').innerHTML = views; $('#compact-view-btns').innerHTML = views;
+    $('#motion-btns').innerHTML = motions; $('#compact-motion-btns').innerHTML = motions;
+    this.viewBtns = [...document.querySelectorAll('[data-view]')]; this.motionBtns = [...document.querySelectorAll('[data-motion]')];
+    // Quick controls stay open so views and motions can be combined or undone.
+    for (const b of this.viewBtns) b.addEventListener('click', () => cb.onView(b.dataset.view));
+    for (const b of this.motionBtns) b.addEventListener('click', () => cb.onMotion(b.dataset.motion));
+    $('#motion-btns').append(this.tourBtn);
+    $('#compact-motion-btns').append(this.compactTourBtn);
+  }
+  // The tray's vehicle choice: one button per car in the sheet section the vehicle button opens.
+  setVehicles(list, current) {
+    const grid = document.getElementById('compact-vehicle-btns');
+    grid.innerHTML = list.map(v => `<button type="button" class="btn" data-vehicle="${v.id}" aria-pressed="false">${v.label.toUpperCase()}</button>`).join('');
+    this.vehicles = list;
+    for (const b of grid.querySelectorAll('[data-vehicle]')) b.addEventListener('click', () => {
+      this.closeSheet();
+      if (b.dataset.vehicle !== this.vehicleId) this.cb.onVehicle?.(b.dataset.vehicle);
+    });
+    if (current) this.setVehicle(current);
+  }
+  // Show which car is current: the tray button names it, its choice is pressed, PLAY is offered
+  // only for a car that has a run mode.
+  setVehicle(id) {
+    const entry = this.vehicles?.find(v => v.id === id); if (!entry) return;
+    this.vehicleId = id;
+    const btn = document.getElementById('vehicle-btn');
+    btn.textContent = entry.short;
+    btn.setAttribute('aria-label', `Vehicle: ${entry.label}. Choose a vehicle`);
+    for (const b of document.querySelectorAll('[data-vehicle]')) setPressed(b, b.dataset.vehicle === id, 'active');
+    document.getElementById('play-btn').hidden = !entry.play;
+    document.body.classList.toggle('has-play', !!entry.play);   // the wide tray is a button wider
+  }
+  setPlaying(on) {
+    const btn = document.getElementById('play-btn');
+    setPressed(btn, on, 'toggled');
+    btn.textContent = on ? 'STOP' : 'PLAY';
+    btn.title = on ? 'Stop run mode' : 'Start run mode';
+  }
+  showRunStatus(text) {
+    const el = document.getElementById('run-status');
+    el.textContent = text || ''; el.hidden = !text;
+  }
   setAgentTools(api) {
     const chip = document.getElementById('agent-chip');
     chip.textContent = api.registered ? `${api.tools.length} AGENT TOOLS` : 'MANUAL MODE';
@@ -149,7 +192,8 @@ export class UI {
     const panel = document.getElementById('agent-tools');
     const list = document.getElementById('agent-tools-list');
     const summaries = {
-      start_tour: 'Start the guided vehicle tour.', stop_tour: 'Stop at the current tour step.',
+      get_vehicles: 'List the vehicles in the Garage.', set_vehicle: 'Switch the Garage to another vehicle.',
+      start_tour: 'Start the current vehicle\'s guided tour.', stop_tour: 'Stop at the current tour step.',
       get_state: 'Read the current scene and camera.', set_view: 'Choose a standard drawing view.',
       set_motion: 'Control drive, lights, panels and assembly.', set_camera: 'Set an absolute camera pose.',
       orbit_camera: 'Orbit or zoom around the current target.', list_parts: 'List the named vehicle components.',
@@ -212,7 +256,12 @@ export class UI {
     this.vt.querySelector('.vt-name').textContent = t[0]; this.vt.querySelector('.vt-sub').textContent = t[1]; this.vt.classList.add('show');
   }
   setInstr(vals) { for (const [k, v] of Object.entries(vals)) { const el = this.instrEls[k]; if (el && el.textContent !== v) el.textContent = v; } }
-  highlightKey(partName) { const k = partName && partName.startsWith('wheel') ? 'wheelFR' : partName; for (const el of this.keyEls) el.classList.toggle('hot', el.dataset.part === k); }
+  // A wheel without a row of its own lights the key's wheel row.
+  highlightKey(partName) {
+    const items = this.cfg.keyItems;
+    const k = partName && partName.startsWith('wheel') && !items.some(i => i.part === partName) ? items.find(i => i.part.startsWith('wheel'))?.part : partName;
+    for (const el of this.keyEls) el.classList.toggle('hot', el.dataset.part === k);
+  }
   tooltip(x, y, name, desc, layout) {
     if (!name || !layout?.anchor) {
       this.tt.classList.remove('show'); this.tooltipPointer?.classList.remove('show');
