@@ -119,7 +119,7 @@
 
   const OVERVIEW = {
     name: "AutoLab by AutoMoto",
-    tagline: "Agent-native, web 4.0 tools for car lovers.",
+    tagline: "Super intelligence for car lovers.",
     thesis:
       "One vehicle, one shared state, from configuration through ownership. Every screen publishes its tools with WebMCP so an agent can see, know and change the product the person is looking at, while the person keeps the last word.",
     howToRunWithAnAgent: [

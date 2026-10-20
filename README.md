@@ -1,6 +1,6 @@
 # AutoLab by AutoMoto
 
-Agent-native, web 4.0 tools for car lovers. This repository is the site that
+Super intelligence for car lovers. This repository is the site that
 houses the three AutoLab experiences for
 [The WebMCP Challenge](https://webmcp.devpost.com/):
 
