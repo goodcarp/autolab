@@ -107,6 +107,7 @@ export function installWebMCP(ctx) {
   // The car and its sheet text are read at call time, not captured: the Garage can switch
   // vehicles (set_vehicle), and every tool below works on whichever one is on the sheet now.
   const car = () => ctx.vehicle, sheet = () => ctx.config;
+  const runMode = () => { if (!ctx.run) throw new Error('This sheet has no run mode.'); return ctx.run; };
   const fleet = () => ctx.vehicles ?? [];
   const current = () => { const id = ctx.vehicleId ?? null; return { id, label: fleet().find((v) => v.id === id)?.label ?? null }; };
   // What the configurator last synchronized, per vehicle: each car keeps its own context when
@@ -341,6 +342,7 @@ export function installWebMCP(ctx) {
     motions: { run: st.run, drive: st.drive, lights: st.lights, panels: !st.panels, explode: st.explodeOn, open: st.openOn },
     explode_progress: round(st.explode, 3), open_progress: round(st.open, 3),
     selected: st.hoverPart ? st.hoverPart.name : null,
+    run_active: !!ctx.run?.active(),   // a run (start_run) has the car and the camera; get_run_state reads it
     annotations_visible: !document.body.classList.contains('cards-off'),
     views: sheet().views.map((v) => v.id),
     motion_ids: sheet().motions.map((m) => m.id),
@@ -707,10 +709,11 @@ export function installWebMCP(ctx) {
     {
       name: 'reset',
       title: 'Reset digital twin presentation',
-      description: 'Return the sheet to how it opens: ISO view, shell on, nothing exploded or open, nothing selected. The ISO view drifts slowly by design, so the camera pose it returns to is not fixed.',
+      description: 'Return the sheet to how it opens: no run, ISO view, shell on, nothing exploded or open, nothing selected. The ISO view drifts slowly by design, so the camera pose it returns to is not fixed.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       annotations: SAFE_SET,
       run: () => {
+        ctx.run?.stop();   // the sheet opens with no run on
         ctx.select(null);
         for (const [m, want] of [['drive', false], ['lights', false], ['explode', false], ['open', false], ['run', true]]) {
           const cur = { run: st.run, drive: st.drive, lights: st.lights, explode: st.explodeOn, open: st.openOn }[m];
@@ -731,19 +734,100 @@ export function installWebMCP(ctx) {
         };
       },
     },
+    // ---- run mode: the Roadster driven by the drive physics at the wall-ride ramp ----
+    {
+      name: 'start_run',
+      title: 'Start a run at the wall-ride ramp',
+      description: 'Start the run mode, as the tray\'s PLAY does: the Tesla Roadster at the start line at the foot of the wall-ride ramp, 8 m before the curl, which turns vertical 9 m up and runs on upside down to an overhang 21.6 m up (the hop autopilot starts 30 m back), in drive mode with a chase camera. A real-time simulation decides whether the car makes the wall ride or falls off it, and whether a hop lands. Switches the Garage to the Roadster first if another vehicle is on the sheet. Without autopilot the car waits for set_drive_inputs or a person\'s keys; autopilot "wallride" drives the reveal\'s wall ride (fans on, about 20 ft/s up the wall, a hang upside down on the overhang, then off the tip on the jets) and "hop" the thruster hop (8.5 m up on the corner jets and down again); any input takes over from the autopilot (set_drive_inputs with only fans or wing leaves it driving). A run already on starts again from its start line. The tools that move the drawing\'s own views, camera or motions (set_view, set_motion, set_camera, orbit_camera, frame_part, highlight_part, frame_point) end the run first, as stop_run does. Returns get_run_state.',
+      inputSchema: { type: 'object', properties: { autopilot: { type: 'string', enum: ['wallride', 'hop'] } }, additionalProperties: false },
+      annotations: SAFE_ACTION,
+      run: async ({ autopilot } = {}) => {
+        const r = runMode();
+        const here = fleet().length ? !!fleet().find((v) => v.id === current().id)?.play : true;
+        if (!here) {
+          const target = fleet().find((v) => v.play);
+          if (!target || !ctx.setVehicle) throw new Error('No vehicle in this Garage has a run mode.');
+          await ctx.setVehicle(target.id);
+        }
+        if (r.active()) r.stop();
+        if (!(await r.start({ autopilot: autopilot ?? null }))) throw new Error('The run did not start (the vehicle changed while it loaded).');
+        return { vehicle: current(), ...r.status() };
+      },
+    },
+    {
+      name: 'stop_run',
+      title: 'Stop the run',
+      description: 'End the run, as STOP or Esc does: the ramp goes, the car is parked back at the garage origin and the sheet returns to its ISO view. Returns how the run ended (last), or nothing when no run was on.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      annotations: SAFE_SET,
+      run: () => {
+        const r = runMode(), stopped = r.stop();
+        return { stopped, ...r.status() };
+      },
+    },
+    {
+      name: 'set_drive_inputs',
+      title: 'Hold the drive inputs',
+      description: 'Set what the driver holds in a run; each value stays until changed, and omitted ones keep theirs. throttle -1..1 (negative reverses), brake 0..1, steer -1..1 (+ is right), boost (the four rear cold-gas nozzles), hop (the corner jets: lift off, hover, and once let go a landing burn), yawL / yawR (the nose side jets: nose left / right), fans (the downforce fans, about 4,800 kgf once spooled; they hold the car on the wall) and wing (road, lowDrag, highDownforce). The thrust gas is one 250 kg tank whose pressure falls as it empties. Takes over from an autopilot, except a call that sets only fans and/or wing: the autopilot keeps driving with the car set up that way (start_run with autopilot "wallride", then fans: false, is the same wall ride without its fans). Needs a run (start_run). Returns the inputs the next physics step will use and get_run_state.',
+      inputSchema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          throttle: { type: 'number', minimum: -1, maximum: 1 }, brake: { type: 'number', minimum: 0, maximum: 1 }, steer: { type: 'number', minimum: -1, maximum: 1 },
+          fans: { type: 'boolean' }, boost: { type: 'boolean' }, hop: { type: 'boolean' }, yawL: { type: 'boolean' }, yawR: { type: 'boolean' },
+          wing: { type: 'string', enum: ['road', 'lowDrag', 'highDownforce'] },
+        },
+      },
+      annotations: SAFE_SET,
+      run: (inputs) => {
+        const r = runMode(), next = r.setInputs(inputs);
+        return { ...r.status(), inputs: next };   // what the next physics step uses
+      },
+    },
+    {
+      name: 'get_run_state',
+      title: 'Read the run',
+      description: 'The run as its telemetry shows it: active, outcome (running, summit, fell, crashed or stopped) and its message in words ("Held the overhang", "Fell off at 108 deg", "Crashed", "Out of gas"), speed km/h, pitch deg (past 90 up the wall, about 170 upside down on the overhang), altitude ft, downforce kg, g, tank psi and gas kg, fans %, wing, the car\'s position in metres (x along the run-in, the ramp\'s foot at x = 0; y up), the inputs in use, whether an autopilot drives, and the camera. With no run on: active false and how the last run ended.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      annotations: READ_ONLY,
+      run: () => {
+        const here = fleet().length ? !!fleet().find((v) => v.id === current().id)?.play : true;
+        return { vehicle: current(), run_mode_available: here && !!ctx.run, ...(ctx.run ? ctx.run.status() : { active: false, last: null }) };
+      },
+    },
   ];
 
   // ---- dispatch -------------------------------------------------------------------------------
   // A private identity marks calls made by the tour's sequencer. Every surface uses this dispatcher,
   // and any other call while the tour runs interrupts it, which is the tour's contract.
   const tourSource = Symbol('tour');
+  const SHEET_TOOLS = ['set_view', 'set_motion', 'set_camera', 'orbit_camera', 'frame_part', 'highlight_part', 'frame_point'];
+  const CAR_FRAME_READS = ['list_parts', 'get_part', 'measure', 'clearance'];
+  const inCarFrame = (fn) => {
+    const root = car().root, p = root.position.clone(), q = root.quaternion.clone();
+    root.position.set(0, 0, 0); root.quaternion.identity(); root.updateMatrixWorld(true);
+    try { return fn(); } finally { root.position.copy(p); root.quaternion.copy(q); root.updateMatrixWorld(true); }
+  };
   const call = async (name, args = {}, source) => {
     // Reads and the host's context sync do not touch the scene, so they are not interruptions.
-    if (ctx.stopTour && source !== tourSource && !['get_state', 'get_vehicles', 'start_tour', 'stop_tour', 'set_vehicle_context', 'get_specification', 'list_parts', 'get_part', 'measure', 'clearance', 'list_visible_parts'].includes(name)) ctx.stopTour('tool');
+    if (ctx.stopTour && source !== tourSource && !['get_state', 'get_vehicles', 'start_tour', 'stop_tour', 'set_vehicle_context', 'get_specification', 'list_parts', 'get_part', 'measure', 'clearance', 'list_visible_parts', 'get_run_state'].includes(name)) ctx.stopTour('tool');
     const t = TOOLS.find((x) => x.name === name);
     if (!t) throw new Error(`unknown tool "${name}". Available: ${TOOLS.map((x) => x.name).join(', ')}`);
     const input = args === undefined || args === null ? {} : args;
     validateValue(input, t.inputSchema, name);
+    // A run holds the camera and poses the car; these work on the sheet's own views and motions,
+    // so they end the run first (as the tour, reset and a vehicle switch do) rather than act unseen.
+    if (SHEET_TOOLS.includes(name) && ctx.run?.active()) {
+      // a call that will fail anyway leaves the run alone
+      if ((name === 'frame_part' || name === 'highlight_part') && input.part != null && !findPart(input.part)) {
+        throw new Error(`no part "${input.part}". Call list_parts for the ${car().order.length} available ids.`);
+      }
+      ctx.run.stop();
+    }
+    // In a run the car is posed on the ramp; these read it in its own frame, as if it stood at
+    // the garage origin, so their numbers mean what the sheet's do.
+    if (CAR_FRAME_READS.includes(name) && ctx.run?.running?.()) {
+      return { ...inCarFrame(() => t.run(input)), run_active: true, frame_note: 'measured in the car frame; the run poses the car on the ramp (get_run_state has where it is)' };
+    }
     return t.run(input);
   };
 

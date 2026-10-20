@@ -461,3 +461,55 @@ body.demo #demo-discovery:not([hidden]){position:absolute;left:12px;right:12px;b
 #demo-options:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(100%,360px)}
 #demo-discovery #demo-options-toggle{color:#737373}
 @media (max-width:360px){.demo-action-row{gap:6px}#demo-discovery-hint{font-size:10px}}
+
+/* ---- Run mode (the Roadster's PLAY) -----------------------------------------------------
+   The drive owns the camera, so the callouts, dimensions, tooltip and part key leave the sheet;
+   the frame, the header and the TELEMETRY panel stay, the panel carrying the run's figures and
+   the keys whatever the cards are set to. The tray keeps STOP (the PLAY button) and RETRY on a
+   wide sheet; on a compact one it becomes the drive pad: FANS HOP BOOST RETRY STOP over
+   steer left, steer right, BRAKE and a wide GO, with the figures in a strip above the drawing. */
+body.run-active #overlay,body.run-active #tooltip,body.run-active #part-pointer,body.run-active #viewtitle,
+body.run-active #key,body.run-active #controls,body.run-active #hdr-right,body.run-active #tour-card,body.run-active #selected-part{display:none}
+body.run-active #primary-controls > .btn:not(#play-btn){display:none}
+body.run-active #instr{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+.drive-pad{display:contents}
+#primary-controls .drive-btn{display:none}
+/* wide: STOP stays where PLAY was (so pressing it again ends the run) and RETRY follows it, in the
+   same order in the page as on the screen (run-mode.js puts the pad after PLAY) */
+#primary-controls .drive-btn.drive-retry{display:block}
+#primary-controls .drive-btn.held{background:var(--btn-active);color:var(--paper)}
+.drive-fans{grid-column:1;grid-row:1}.drive-hop{grid-column:2;grid-row:1}.drive-boost{grid-column:3;grid-row:1}.drive-retry{grid-column:4;grid-row:1}
+body.run-active #play-btn{grid-column:5;grid-row:1}
+.drive-left{grid-column:1;grid-row:2}.drive-right{grid-column:2;grid-row:2}.drive-brake{grid-column:3;grid-row:2}.drive-go{grid-column:4 / span 2;grid-row:2}
+#run-keys{display:grid;grid-template-columns:max-content 1fr max-content 1fr;gap:4px 8px;border-top:1px solid rgba(28,43,79,.35);padding:7px 12px 9px;font-size:9.5px;letter-spacing:.1em;color:var(--ink-soft)}
+#run-keys .rk{color:var(--ink);font-weight:600;white-space:nowrap}
+#run-keys .rv{white-space:nowrap}
+@media (max-width:1240px){#run-keys{grid-template-columns:max-content 1fr}}
+#run-hud{display:none}
+body.framed #run-hud{display:none}
+/* a tablet held wide is still a touch screen: the pad sits at the bottom right */
+@media (min-width:981px) and (min-height:521px) and (hover:none) and (pointer:coarse){
+  body.run-active #primary-controls{top:auto;bottom:24px;right:24px;display:grid;grid-template-columns:repeat(5,80px);grid-template-rows:56px 56px;gap:6px}
+  body.run-active #primary-controls .btn{height:auto}
+  #primary-controls .drive-btn{display:block;touch-action:none;-webkit-touch-callout:none}
+}
+@media (max-width:980px),(max-height:520px){
+  body.run-active #primary-controls{grid-auto-flow:row;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:44px 44px}
+  #primary-controls .drive-btn{display:block;border:1px solid var(--grid-major);border-radius:7px;background:var(--paper);touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  #primary-controls .drive-btn.held,#primary-controls .drive-btn.toggled{background:var(--btn-active);color:var(--paper);border-color:var(--ink)}
+  #primary-controls .drive-btn.drive-go{border:1.5px solid var(--ink);font-weight:600;letter-spacing:.12em}
+  body.run-active #run-status{bottom:calc(max(16px,env(safe-area-inset-bottom)) + 115px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.run-active #stage{top:178px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 145px)}
+  #run-hud{display:grid;position:absolute;left:16px;right:16px;top:112px;z-index:6;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px 8px;padding:6px 10px;background:var(--paper);border:1px solid var(--grid-major);border-radius:6px}
+  #run-hud .k{display:block;font-size:8px;letter-spacing:.1em;color:var(--ink-soft);white-space:nowrap}
+  #run-hud .v{display:block;font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+}
+@media (max-height:520px) and (min-width:641px){
+  body.run-active #stage{top:72px;bottom:18px}
+  body.run-active #run-status{bottom:125px}
+  #run-hud{left:auto;right:18px;top:68px;width:var(--landscape-controls-width)}
+}
+@media (max-height:520px) and (max-width:640px){
+  #run-hud{display:none}
+  body.run-active #stage{top:112px}
+}

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { toggleMotionState } from './config.js';
 import { CUT } from './vehicle.js';
 import { VEHICLES, vehicleEntry, loadVehicle } from './vehicles.js';
-import { createRunMode } from './run-mode.js';
+import { createRunMode, AUTOPILOTS } from './run-mode.js';
 import { Blueprint } from './blueprint.js';
 import { Rig, presentationFit } from './camera.js';
 import { Overlay } from './overlay.js';
@@ -79,12 +79,44 @@ ui.setVehicles(VEHICLES, entry.id);
 document.title = `Agentic Owner's Guide · ${entry.label}`;
 canvas.setAttribute('aria-label', `Interactive ${entry.label} drawing`);
 
-// PLAY, for a car with a run mode (the Roadster). The run controller owns what PLAY does.
-const run = createRunMode({ onChange: on => ui.setPlaying(on), say: text => ui.showRunStatus(text) });
+// PLAY, for a car with a run mode (the Roadster): a drive at the wall-ride ramp (run-mode.js).
+// The run owns the car's pose, the camera, its keys and the tray's drive controls while it is
+// on; the sheet only draws it. enterRun and leaveRun put the sheet into drive mode and back.
+const run = createRunMode({
+  bp, rig, ui, canvas,
+  // framed (the configurator's Garage) the host owns the controls and hides the tray, so a run
+  // would have no STOP, RETRY or pad: the drive is the standalone Garage's
+  vehicle: () => vehicle, canRun: () => !!entry.play && !framed,
+  onChange: on => ui.setPlaying(on), say: text => ui.showRunStatus(text),
+  enter: () => enterRun(), leave: () => leaveRun(),
+});
 function togglePlay() {
-  if (!entry.play) return;
+  if (!entry.play && !run.active()) return;
   stopTour('play');
-  if (run.active()) run.stop(); else run.start();
+  if (run.active()) run.stop();
+  else run.start().catch(e => { console.error('[garage] the run could not start:', e); ui.showRunStatus('The drive could not load.'); });
+}
+// Into drive mode: motions off, doors shut, the shell on, nothing selected or flashing, and the
+// callouts, dimensions and explode guides off the sheet (body.run-active).
+function enterRun() {
+  stopTour('play'); ui.closeSheet(false);
+  Object.assign(st, { run: false, drive: false, lights: false, panels: true, explode: 0, open: 0, explodeOn: false, openOn: false,
+    speed: 0, steer: 0, gridOffset: 0, lightsT: 0, hoverId: -1, hoverPart: null, shellDissolve: 1, hidePanels: false });
+  vehicle.explodeT = 0; vehicle.openT = 0; vehicle.panelsT = 1;
+  for (const m of config.motions) ui.setToggle(m.id, false);
+  keyHover = selectedPart = pointerHit = null; pointerDirty = false; pointerX = pointerY = -1;
+  ui.selectPart(null); ui.tooltip(); ui.highlightKey(null); ui.showViewTitle(null); ui.showPanels(true);
+  flashT = 99; overlay.flashes = [];
+  dragging = false; canvas.classList.remove('dragging', 'hovering'); pinch.clear(); pinchSpan = 0;
+  document.body.classList.add('run-active');
+}
+// Back to the garage: the car is parked at the origin (run-mode.js), the sheet idles in ISO.
+function leaveRun() {
+  document.body.classList.remove('run-active');
+  st.run = true; st.lightsT = 0; ui.setToggle('run', true);
+  vehicle.update(0, st); vehicle.root.updateMatrixWorld(true);
+  setView('iso');
+  resize();
 }
 
 // Swap the car on the sheet. The new car opens the way the sheet does (run only, shell on,
@@ -197,6 +229,7 @@ function rememberPointer(e) {
   const rect = stage.getBoundingClientRect(); pointerX = e.clientX - rect.left; pointerY = e.clientY - rect.top;
 }
 canvas.addEventListener('pointerdown', (e) => {
+  if (run.active()) return;   // a run turns its own camera (run-mode.js)
   if (demo) demoTaps.down(e, tourState().running);
   stopTour('pointer'); invalidateDemo();
   if (e.button !== 0 || !e.isPrimary) return;
@@ -205,6 +238,7 @@ canvas.addEventListener('pointerdown', (e) => {
   lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging');
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (run.active()) return;
   if (demo) { demoTaps.move(e); invalidateDemo(); }
   rememberPointer(e);
   if (!dragging) return;
@@ -217,6 +251,7 @@ canvas.addEventListener('pointermove', (e) => {
 const endDrag = (e) => { if (!e.isPrimary) return; dragging = false; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('pointerup', e => {
+  if (run.active()) return;
   if (!demo) {
     const accepted = inspectionPress === e.pointerId;
     if (accepted) inspectionPress = null;
@@ -245,7 +280,7 @@ const cancelInspectionPress = e => {
 canvas.addEventListener('pointercancel', cancelInspectionPress);
 canvas.addEventListener('lostpointercapture', cancelInspectionPress);
 canvas.addEventListener('pointerleave', () => { pointerX = pointerY = -1; pointerClient = pointerHit = null; pointerDirty = false; invalidateDemo(); });
-canvas.addEventListener('wheel', (e) => { stopTour('wheel'); e.preventDefault(); rig.zoom(Math.exp(e.deltaY * 0.0012), true); rig.idle = 0; invalidateDemo(); }, { passive: false });
+canvas.addEventListener('wheel', (e) => { if (run.active()) return; stopTour('wheel'); e.preventDefault(); rig.zoom(Math.exp(e.deltaY * 0.0012), true); rig.idle = 0; invalidateDemo(); }, { passive: false });
 
 // Pinch to zoom. Zoom was bound to the wheel alone, so on a touch device the only way in or out of
 // the drawing was the view presets, and the hint named a gesture that does not exist there. Tracked
@@ -254,7 +289,7 @@ canvas.addEventListener('wheel', (e) => { stopTour('wheel'); e.preventDefault();
 const pinch = new Map();
 let pinchSpan = 0;
 canvas.addEventListener('pointerdown', (e) => {
-  if (e.pointerType !== 'touch') return;
+  if (e.pointerType !== 'touch' || run.active()) return;
   if (!e.isPrimary) canvas.setPointerCapture(e.pointerId);
   pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pinch.size === 2) {
@@ -266,7 +301,7 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (e.pointerType !== 'touch' || !pinch.has(e.pointerId)) return;
+  if (e.pointerType !== 'touch' || !pinch.has(e.pointerId) || run.active()) return;
   pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pinch.size !== 2) return;
   const [a, b] = [...pinch.values()];
@@ -300,6 +335,8 @@ function camKey(k, shift) {
 window.addEventListener('keydown', (e) => {
   if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   if (e.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+  // In a run the drive's keys are taken before this (run-mode.js); the sheet's shortcuts wait.
+  if (run.active()) return;
   if (demo) {
     // The Home exhibit has a deliberately small interaction vocabulary. Native button
     // activation remains native; keyboard canvas controls match the direct part taps.
@@ -412,12 +449,13 @@ const api = installWebMCP({
   st, rig, overlay, ui, bp, setView, motion, tourState, startTour, stopTour, internalOnly: demo,
   // read when a tool runs, so every tool follows set_vehicle and the tray
   get vehicle() { return vehicle; }, get config() { return config; }, get vehicleId() { return entry.id; },
-  vehicles: VEHICLES, setVehicle,
+  vehicles: VEHICLES, setVehicle, run,
   select: (p) => { selectedPart = p; pointerHit = null; pointerDirty = false; keyHover = null; st.hoverPart = p; ui.highlightKey(p ? p.name : null); ui.selectPart(p); },
 });
 
 function startTour(fromIndex = 0, hold = false) {
   stopTour('restart');
+  run.stop();   // the tour drives the sheet's own views; a run would hold the camera
   if (demo) {
     document.body.classList.remove('demo-exploring');
     document.getElementById('demo-discovery').hidden = true;
@@ -479,6 +517,8 @@ let fpsAcc = 0, fpsN = 0, fpsShown = 60, uiT = 0, pickT = 0;
 function step(dt, render = true) {
   st.time += dt;
   fpsAcc += dt; fpsN++; if (fpsAcc > 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
+  // the run draws once it is on; while its code loads ('starting') the sheet keeps its own step
+  if (run.running()) { stepRun(dt, render); return; }
 
   // motion state
   const targetSpeed = st.drive ? 48 : 0; st.speed += (targetSpeed - st.speed) * Math.min(1, dt * 1.2);
@@ -536,6 +576,17 @@ function step(dt, render = true) {
     else ui.setInstr({ steer: '—', rpm: '—', speed: '—', ride: '—', soc: st.soc.toFixed(1) + ' %', fps: fpsShown + ' fps' });
   }
 }
+// A run: the drive poses the car and places the camera (run.step); the sheet draws it, with the
+// tail lamps lit while the brakes are on and the grid fixed to the ground.
+function stepRun(dt, render) {
+  run.step(dt);
+  const brake = run.lamps().brake ? 1 : 0;
+  st.lightsT = (st.lightsT ?? 0) + (brake - (st.lightsT ?? 0)) * Math.min(1, dt * 12);
+  Object.assign(st, { lampGlow: 0.34, shellDissolve: 1, hoverId: -1, hoverPart: null, gridOffset: 0, ortho: 0, shadowAlpha: 1 });
+  st.gridAlpha = demo ? 0 : ui.compactMedia.matches ? 0.32 : 0.65;
+  rig.apply(W / H);
+  if (render) bp.render(rig.camera, st);
+}
 function frame(now) {
   animationHandle = null;
   // Framed, a 30 Hz technical drawing still feels immediate and halves the three-pass GPU work so the
@@ -547,14 +598,16 @@ function frame(now) {
   // backwards and drive the explode/open ramps to full because their decay term flips sign.
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
   step(dt);
-  if (!demo || tourState().running || st.drive || rig.from || rig._orthoFade || dragging || pinch.size > 0
+  if (!demo || run.active() || tourState().running || st.drive || rig.from || rig._orthoFade || dragging || pinch.size > 0
     || discoveryHasTransitions(st, vehicle, flashT) || now < demoDirtyUntil) scheduleFrame();
 }
 // ?adv=<seconds>: advance the simulation deterministically before the first frame (for captures)
 if (q.get('adv')) { const n = Math.round(+q.get('adv') * 60); for (let i = 0; i < n; i++) step(1 / 60, false); overlay.dimAlpha = overlay.dimTarget; uiT = 1; step(1 / 60, true); }
 animationReady = true; last = performance.now(); scheduleFrame();
 postDemo('autolab-demo-ready');
-if (!demo) window.__app = { rig, get vehicle() { return vehicle; }, get vehicleId() { return entry.id; }, setVehicle, st, overlay, bp, THREE };
+if (!demo) window.__app = { rig, get vehicle() { return vehicle; }, get vehicleId() { return entry.id; }, setVehicle, run, st, overlay, bp, THREE };
+// ?play=1 starts a run as PLAY does; ?play=wallride or ?play=hop starts it on that autopilot.
+if (!demo && q.get('play') && entry.play) run.start({ autopilot: AUTOPILOTS.includes(q.get('play')) ? q.get('play') : null }).catch(e => console.error('[garage] the run could not start:', e));
 if (!demo && q.get('debug') === '1') { const el = document.documentElement;
   const wide = [...document.querySelectorAll('#sheet *')].filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; })
     .map(e => `${e.id || e.className || e.tagName}:${Math.round(e.getBoundingClientRect().left)}..${Math.round(e.getBoundingClientRect().right)}`);

@@ -133,8 +133,7 @@ export class UI {
       el.addEventListener('blur', () => cb.onKeyHover(this.keyEls.find(row => row.matches(':hover'))?.dataset.part || null));
       el.addEventListener('click', () => { this.closeSheet(); cb.onKeySelect?.(el.dataset.part); });
     }
-    $('#instr-grid').innerHTML = cfg.instr.map(r => `<div class="k">${r.k}</div><div class="v" id="instr-${r.id}">—</div>`).join('');
-    this.instrEls = Object.fromEntries(cfg.instr.map(r => [r.id, document.getElementById('instr-' + r.id)]));
+    this.setInstrRows(cfg.instr);
     const views = cfg.views.map(v => `<button type="button" class="btn" data-view="${v.id}" aria-pressed="false">${v.label}</button>`).join('');
     const motions = cfg.motions.map(m => `<button type="button" class="btn" data-motion="${m.id}" aria-pressed="false">${m.label}</button>`).join('');
     $('#view-btns').innerHTML = views; $('#compact-view-btns').innerHTML = views;
@@ -145,6 +144,11 @@ export class UI {
     for (const b of this.motionBtns) b.addEventListener('click', () => cb.onMotion(b.dataset.motion));
     $('#motion-btns').append(this.tourBtn);
     $('#compact-motion-btns').append(this.compactTourBtn);
+  }
+  // The TELEMETRY panel's rows: the vehicle's own by default, or another set (the run mode's).
+  setInstrRows(rows = this.cfg.instr) {
+    document.getElementById('instr-grid').innerHTML = rows.map(r => `<div class="k">${r.k}</div><div class="v" id="instr-${r.id}">—</div>`).join('');
+    this.instrEls = Object.fromEntries(rows.map(r => [r.id, document.getElementById('instr-' + r.id)]));
   }
   // The tray's vehicle choice: one button per car in the sheet section the vehicle button opens.
   setVehicles(list, current) {
@@ -193,6 +197,7 @@ export class UI {
     const list = document.getElementById('agent-tools-list');
     const summaries = {
       get_vehicles: 'List the vehicles in the Garage.', set_vehicle: 'Switch the Garage to another vehicle.',
+      set_vehicle_context: 'Match the sheet to the configurator\'s build.',
       start_tour: 'Start the current vehicle\'s guided tour.', stop_tour: 'Stop at the current tour step.',
       get_state: 'Read the current scene and camera.', set_view: 'Choose a standard drawing view.',
       set_motion: 'Control drive, lights, panels and assembly.', set_camera: 'Set an absolute camera pose.',
@@ -203,6 +208,8 @@ export class UI {
       list_visible_parts: 'What the camera sees, by component and coverage.', clearance: 'Nearest surface-to-surface gap between two components.',
       frame_point: 'Look at a coordinate in the vehicle frame.',
       reset: 'Restore the opening view and motions.',
+      start_run: 'Drive the Roadster at the wall-ride ramp, or watch an autopilot.', stop_run: 'End the run and park the car in the garage.',
+      set_drive_inputs: 'Hold the throttle, brake, steering, fans, jets or wing.', get_run_state: 'Read the run: speed, pitch, gas and outcome.',
     };
     for (const tool of api.tools) {
       const name = document.createElement('dt'), description = document.createElement('dd');

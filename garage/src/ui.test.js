@@ -251,3 +251,20 @@ test('switching the sheet to the Roadster rewrites its text, key and buttons, an
   ui.highlightKey('doorFR');
   assert.deepEqual(ui.keyEls.filter(el => el.classList.contains('hot')).map(el => el.dataset.part), ['doorFR', 'doorFR']);
 });
+
+test('every agent tool has a line in the agent tools panel, and the telemetry rows can be swapped and back', async t => {
+  const { ui, document } = createSheet(t);
+  const source = await readFile(new URL('./webmcp.js', import.meta.url), 'utf8');
+  const names = [...source.matchAll(/^      name: '([a-z_]+)',$/gm)].map(m => m[1]);
+  assert.equal(names.length, 25);
+  ui.setAgentTools({ tools: names.map(name => ({ name })), registered: true });
+  const lines = [...document.querySelectorAll('#agent-tools-list dd')].map(dd => dd.textContent);
+  assert.equal(lines.length, 25);
+  assert.ok(lines.every(line => line.length > 10), 'no tool without its summary');
+  assert.equal(document.getElementById('agent-chip').textContent, '25 AGENT TOOLS');
+  ui.setInstrRows([{ k: 'SPEED', id: 'speed' }, { k: 'RUN', id: 'outcome' }]);
+  ui.setInstr({ speed: '12.0 km/h', outcome: 'RUNNING', soc: '87 %' });
+  assert.deepEqual([...document.querySelectorAll('#instr-grid .v')].map(v => v.textContent), ['12.0 km/h', 'RUNNING']);
+  ui.setInstrRows();
+  assert.deepEqual([...document.querySelectorAll('#instr-grid .k')].map(k => k.textContent), CONFIG.instr.map(r => r.k));
+});

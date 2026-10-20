@@ -48,6 +48,10 @@ export class Rig {
     this.from = null; this.to = null; this.t = 0; this.dur = 1.15;
     this.driftOn = true; this.view = 'iso'; this.settled = true; this.onSettle = null; this.userZoom = false;
     this.presets = PRESETS;   // swapped with the vehicle (setPresets); the RX2's by default
+    // A pose placed from outside the orbit (the run mode's chase camera): { pos, target, up } in
+    // world space, plus optional fov, near and far. While it is set, apply() uses it and the orbit state
+    // waits underneath, untouched; setFree(null) gives the camera back to the views.
+    this.free = null;
     this.camera = new THREE.PerspectiveCamera(this.fov, 1, this.near, this.far);
     this._P = new THREE.Matrix4(); this._Po = new THREE.Matrix4(); this._Pp = new THREE.Matrix4();
   }
@@ -59,6 +63,7 @@ export class Rig {
     if (this.view && this.to && !this.userZoom) Object.assign(this.to, this.frame(this.presets[this.view], aspect));
   }
   setPresets(presets) { this.presets = presets || PRESETS; }
+  setFree(pose) { this.free = pose || null; }
   goTo(name, dur = 1.15) {
     const p = this.presets[name]; if (!p) return;
     this.view = name; this.driftOn = !!p.drift; this.settled = false; this.userZoom = false; this._orthoFade = false;
@@ -105,6 +110,7 @@ export class Rig {
   }
   apply(aspect) {
     this.aspect = aspect;
+    if (this.free) return this._applyFree(aspect);
     const c = this.cur, cam = this.camera;
     const az = c.az * D2R, el = c.el * D2R;
     const target = new THREE.Vector3(c.tx || 0, c.ty, c.tz || 0);
@@ -117,6 +123,17 @@ export class Rig {
     this._Po.makeOrthographic(-hw, hw, hh, -hh, this.near, this.far);
     const a = this._Pp.elements, b = this._Po.elements, o = this._P.elements;
     for (let i = 0; i < 16; i++) o[i] = a[i] + (b[i] - a[i]) * c.ortho;
+    cam.projectionMatrix.copy(this._P); cam.projectionMatrixInverse.copy(this._P).invert();
+    cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+  }
+  // The free pose: a plain perspective camera at pos looking at target, rolled to up.
+  _applyFree(aspect) {
+    const f = this.free, cam = this.camera;
+    const near = f.near ?? this.near, far = f.far ?? this.far;
+    cam.position.copy(f.pos); cam.up.copy(f.up); cam.lookAt(f.target); cam.updateMatrixWorld(true);
+    cam.aspect = aspect;
+    const hh = near * Math.tan((f.fov ?? this.fov) * D2R / 2), hw = hh * aspect;
+    this._P.makePerspective(-hw, hw, hh, -hh, near, far);
     cam.projectionMatrix.copy(this._P); cam.projectionMatrixInverse.copy(this._P).invert();
     cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
   }

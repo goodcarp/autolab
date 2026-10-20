@@ -49,11 +49,11 @@ test('reset restores every motion after repeated demonstrations and reports the 
   api.dispose();
 });
 
-test('all 21 tools have closed schemas, titles and complete annotations; the tour rides the dispatcher', async t => {
+test('all 25 tools have closed schemas, titles and complete annotations; the tour rides the dispatcher', async t => {
   browser(t);
   const ctx = sheet(); const api = installWebMCP(ctx);
-  assert.equal(api.tools.length, 21);
-  assert.equal(new Set(api.tools.map(x => x.name)).size, 21);
+  assert.equal(api.tools.length, 25);
+  assert.equal(new Set(api.tools.map(x => x.name)).size, 25);
   for (const tool of api.tools) {
     assert.ok(tool.title.length > 3, tool.name);
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
@@ -112,7 +112,7 @@ test('document registerTool wins over navigator and provideContext; every tool r
   browser(t, { modelContext: { registerTool, provideContext } }, { modelContext: { registerTool: navRegister } });
   const api = installWebMCP(sheet());
   assert.equal(await api.registration, true);
-  assert.equal(registerTool.mock.callCount(), 21);
+  assert.equal(registerTool.mock.callCount(), 25);
   assert.equal(provideContext.mock.callCount(), 0); assert.equal(navRegister.mock.callCount(), 0);
   assert.equal(api.registered, true); assert.equal(api.api, 'document.modelContext.registerTool');
   assert.ok(registerTool.mock.calls.every(c => typeof c.arguments[0].title === 'string' && c.arguments[0].annotations));
@@ -126,7 +126,7 @@ test('late navigator injection registers once and execute uses the shared dispat
   await flush(); t.mock.timers.tick(1000); await flush();
   globalThis.navigator.modelContext = { registerTool };
   t.mock.timers.tick(300); await flush(); t.mock.timers.tick(300); await flush();
-  assert.equal(registerTool.mock.callCount(), 21);
+  assert.equal(registerTool.mock.callCount(), 25);
   assert.equal(await api.registration, true);
   const decl = registerTool.mock.calls.find(c => c.arguments[0].name === 'get_state').arguments[0];
   const result = await decl.execute({});
@@ -163,10 +163,10 @@ test('failed registration retries only the tools that failed', async t => {
   browser(t, { modelContext: { registerTool } });
   const api = installWebMCP(sheet());
   await flush();
-  assert.equal(registerTool.mock.callCount(), 21);
+  assert.equal(registerTool.mock.callCount(), 25);
   fail = false;
   t.mock.timers.tick(300); await flush();
-  assert.equal(registerTool.mock.callCount(), 22);
+  assert.equal(registerTool.mock.callCount(), 26);
   assert.equal(await api.registration, true);
   api.dispose();
 });
@@ -258,5 +258,61 @@ test('a sheet without a registry still answers get_vehicles and refuses set_vehi
   assert.equal(listed.vehicles.length, 1);
   assert.equal(listed.vehicles[0].current, true);
   await assert.rejects(api.call('set_vehicle', { vehicle: 'roadster' }), /cannot switch/);
+  api.dispose();
+});
+
+// A run mode as the tools see it (run-mode.js runs for real in run-mode.test.js).
+function fakeRun(t) {
+  let on = false, last = null, held = {};
+  return {
+    calls: [],
+    active: () => on,
+    start: t.mock.fn(async ({ autopilot = null } = {}) => { on = true; held = {}; return true; }),
+    stop: t.mock.fn(() => { if (!on) return false; on = false; last = { outcome: 'running' }; return true; }),
+    setInputs: t.mock.fn((inp) => { if (!on) throw new Error('No run is on. Call start_run first.'); Object.assign(held, inp); return { ...held }; }),
+    status: () => (on ? { active: true, outcome: 'running', inputs: { throttle: 0 } } : { active: false, starting: false, last }),
+  };
+}
+
+test('the run tools: closed schemas and annotations, start_run moves to the Roadster, get_run_state never interrupts, reset ends a run', async t => {
+  browser(t);
+  const ctx = fleet(t); ctx.run = fakeRun(t);
+  const api = installWebMCP(ctx);
+  const tool = (n) => api.tools.find(x => x.name === n);
+  assert.deepEqual(['start_run', 'stop_run', 'set_drive_inputs', 'get_run_state'].map(n => [tool(n).annotations.readOnlyHint, tool(n).annotations.idempotentHint]),
+    [[false, false], [false, true], [false, true], [true, true]]);
+  assert.deepEqual(tool('start_run').inputSchema.properties.autopilot.enum, ['wallride', 'hop']);
+  assert.deepEqual(Object.keys(tool('set_drive_inputs').inputSchema.properties), ['throttle', 'brake', 'steer', 'fans', 'boost', 'hop', 'yawL', 'yawR', 'wing']);
+  const read = await api.call('get_run_state');
+  assert.equal(read.active, false); assert.equal(read.run_mode_available, false, 'the RX2 has no run mode');
+  assert.deepEqual(ctx.stopped, [], 'reading the run is not an interruption');
+  await assert.rejects(api.call('start_run', { autopilot: 'loop' }), /must be one of: wallride, hop/);
+  const started = await api.call('start_run', { autopilot: 'wallride' });
+  assert.deepEqual(ctx.swaps, ['roadster'], 'start_run put the Roadster on the sheet first');
+  assert.deepEqual(ctx.run.start.mock.calls[0].arguments[0], { autopilot: 'wallride' });
+  assert.equal(started.active, true); assert.deepEqual(started.vehicle, { id: 'roadster', label: 'Tesla Roadster' });
+  assert.ok(ctx.stopped.includes('tool'), 'a run is a scene-moving call');
+  assert.equal((await api.call('get_state')).run_active, true);
+  await assert.rejects(api.call('set_drive_inputs', { steer: -1.5 }), /at least -1/);
+  await assert.rejects(api.call('set_drive_inputs', { boost: 'yes' }), /must be a boolean/);
+  assert.equal((await api.call('set_drive_inputs', { throttle: 0.7, wing: 'highDownforce' })).inputs.throttle, 0.7);
+  await api.call('start_run');   // again: a fresh run, no switch
+  assert.equal(ctx.run.stop.mock.callCount(), 1); assert.deepEqual(ctx.swaps, ['roadster']);
+  assert.deepEqual(ctx.run.start.mock.calls[1].arguments[0], { autopilot: null });
+  const stopped = await api.call('stop_run');
+  assert.equal(stopped.stopped, true); assert.equal(stopped.active, false); assert.deepEqual(stopped.last, { outcome: 'running' });
+  await api.call('start_run');
+  await api.call('reset');
+  assert.equal(ctx.run.active(), false, 'reset returns the sheet to how it opens, with no run');
+  // the sheet's own camera and motion tools end a run first; reads and the run's own tools do not
+  for (const [name, args] of [['set_view', { view: 'side' }], ['set_motion', { motion: 'lights', on: true }], ['set_camera', { azimuth_deg: 30, elevation_deg: 20, distance_m: 9 }]]) {
+    await api.call('start_run');
+    await api.call(name, args);
+    assert.equal(ctx.run.active(), false, `${name} ends the run`);
+  }
+  await api.call('start_run');
+  for (const name of ['get_state', 'get_run_state', 'list_parts', 'get_specification']) await api.call(name);
+  await api.call('set_drive_inputs', { throttle: 1 });
+  assert.equal(ctx.run.active(), true, 'reads and set_drive_inputs leave the run on');
   api.dispose();
 });
