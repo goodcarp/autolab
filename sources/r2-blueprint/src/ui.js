@@ -1,4 +1,5 @@
-// DOM panels: header, key to items, instrumentation, controls, title block, view title, tooltip, sheet zones.
+// DOM panels: the header's page links, key to items, instrumentation, controls, the tray, title block,
+// view title, tooltip, sheet zones.
 import { placePartTooltip, partTooltipLeader } from './tooltip-layout.js';
 // The same sheet ships at /garage/ and /configure/garage/, including under a site prefix.
 export function garageSiteBase(pathname) {
@@ -12,11 +13,22 @@ export function setPressed(button, pressed, className) {
   button.setAttribute('aria-pressed', String(!!pressed));
 }
 
+// Where the console choice (CONSOLE, H, MORE's CONSOLE) is remembered: one key for the standalone
+// page, one for the sheet framed inside the configurator. 'r2.cards' is the earlier build's key.
+export const CONSOLE_KEY = 'r2.console';
+export const CONSOLE_KEY_FRAMED = 'r2.console.framed';
+export const LEGACY_CONSOLE_KEY = 'r2.cards';
+
 export class UI {
   constructor(cfg, cb) {
     this.cb = cb;
     const $ = (s) => document.querySelector(s);
-    for (const link of document.querySelectorAll('[data-site-link]')) link.href = garageSiteBase(location.pathname) + link.dataset.siteLink;
+    const site = garageSiteBase(location.pathname);
+    for (const link of document.querySelectorAll('[data-site-link]')) link.href = site + link.dataset.siteLink;
+    // the AutoLab mark (the tab icon and the home link's mark) lives at the site's root
+    for (const link of document.querySelectorAll('link[data-site-href]')) link.href = site + link.dataset.siteHref;
+    for (const img of document.querySelectorAll('img[data-site-src]')) { img.hidden = false; img.src = site + img.dataset.siteSrc; }
+    this.framed = (() => { try { return !!window.top && window.top !== window; } catch (e) { return true; } })();
     this.tourBtn = document.createElement('button');
     this.tourBtn.id = 'tour-btn'; this.tourBtn.className = 'btn'; this.tourBtn.type = 'button';
     this.tourBtn.textContent = 'TOUR'; this.tourBtn.title = 'Start tour (T)';
@@ -44,6 +56,12 @@ export class UI {
       for (const name of ['vehicles', 'views', 'parts', 'more']) $('#compact-' + name).hidden = name !== section;
       $('#compact-sheet-title').textContent = launcher.dataset.sheetTitle || launcher.textContent;
       dialog.dataset.section = section;
+      // On a wide sheet the vehicle choice is a small menu just above its tray button (styles.css).
+      if (section === 'vehicles') {
+        const r = launcher.getBoundingClientRect();
+        dialog.style.setProperty('--menu-left', `${Math.round(r.left)}px`);
+        dialog.style.setProperty('--menu-bottom', `${Math.round(window.innerHeight - r.top + 6)}px`);
+      }
       const modal = section === 'parts';
       dialog.setAttribute('aria-modal', String(modal));
       launcher.setAttribute('aria-expanded', 'true');
@@ -64,7 +82,7 @@ export class UI {
     $('#reset-btn').addEventListener('click', () => { this.closeSheet(); cb.onReset(); });
     $('#play-btn').addEventListener('click', () => { this.closeSheet(); cb.onPlay?.(); });
     this.compactMedia = window.matchMedia('(max-width: 980px), (max-height: 520px)');
-    this.compactMedia.addEventListener('change', () => { if (!this.compactMedia.matches) this.closeSheet(); });
+    this.compactMedia.addEventListener('change', () => { if (!this.compactMedia.matches) this.closeSheet(); this.layoutTray(); });
     this.tourCard = document.createElement('section');
     this.tourCard.id = 'tour-card'; this.tourCard.hidden = true;
     this.tourCard.setAttribute('role', 'status'); this.tourCard.setAttribute('aria-live', 'polite');
@@ -74,26 +92,40 @@ export class UI {
       document.documentElement.style.setProperty('--tour-space', this.tourCard.hidden ? '0px' : `${this.tourCard.offsetHeight + 12}px`);
     }).observe(this.tourCard);
     this.key = $('#key'); this.instr = $('#instr'); this.vt = $('#viewtitle'); this.tt = $('#tooltip');
-    // one control dissolves every card away so the drawing can be read on its own
+    // CONSOLE (the tray's last button, H, or MORE's CONSOLE on a compact sheet) dissolves every card
+    // away so the drawing can be read on its own, and brings them back. Its pressed state is the
+    // console being on.
     const cardsBtn = $('#cards-toggle');
+    this.holdCards = false;
     this.setCards = (on, noPersist) => {
+      if (this.holdCards) return;   // keepCards: an action that must leave the console as it is
       document.body.classList.toggle('cards-off', !on);
-      cardsBtn.title = on ? 'Hide panels (H)' : 'Show panels (H)';
-      cardsBtn.setAttribute('aria-label', on ? 'Hide the drawing panels' : 'Show the drawing panels');
-      cardsBtn.setAttribute('aria-pressed', String(on));
+      cardsBtn.title = on ? 'Hide the console (H)' : 'Show the console (H)';
+      setPressed(cardsBtn, on, 'toggled');
       setPressed($('#compact-cards-btn'), on, 'toggled');
       $('#key').inert = !on || $('#key').classList.contains('hidden');
       $('#instr').inert = !on || $('#instr').classList.contains('hidden'); $('#titleblock').inert = !on;
-      if (!noPersist) try { localStorage.setItem('r2.cards', on ? '1' : '0'); } catch (e) {}
+      $('#controls').inert = !on;
+      if (!noPersist) try { localStorage.setItem(this.consoleKey, on ? '1' : '0'); } catch (e) {}
+      this.layoutTray();
     };
-    // The sheet opens bare; the drawing panels are opt-in (H, the corner toggle, or ?cards=1).
-    // Standalone the sheet opens bare and the panels are opt-in; framed inside the configurator it opens
-    // with its panels, because there the sheet is the whole point of the view.
-    const framed = (() => { try { return !!window.top && window.top !== window; } catch (e) { return true; } })();
+    // Standalone the sheet opens with the console off and the panels are opt-in (CONSOLE, H, or
+    // ?cards=1); framed inside the configurator it opens with its panels, because there the sheet is
+    // the whole point of the view.
+    // The choice is kept under its own key for each place the sheet opens, so hiding the console on
+    // the standalone page never opens the configurator's framed sheet without its panels. The old
+    // 'r2.cards' key is ignored and cleared: the earlier build wrote the default on every visit, so
+    // what it holds is mostly the last page opened, not a choice (one framed visit left '1' and the
+    // standalone page then opened with the console on).
+    const framed = this.framed;
+    this.consoleKey = framed ? CONSOLE_KEY_FRAMED : CONSOLE_KEY;
     let cardsOn = framed;
-    try { const saved = localStorage.getItem('r2.cards'); if (saved !== null) cardsOn = saved === '1'; } catch (e) {}
+    try { localStorage.removeItem(LEGACY_CONSOLE_KEY); } catch (e) {}
+    try { const saved = localStorage.getItem(this.consoleKey); if (saved !== null) cardsOn = saved === '1'; } catch (e) {}
     document.body.classList.add('no-card-anim');
-    this.setCards(cardsOn);
+    // applied, not chosen: only CONSOLE, H or MORE's CONSOLE writes the preference (writing the
+    // default here made one standalone visit open the configurator's framed sheet without its panels)
+    this.setCards(cardsOn, true);
     requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('no-card-anim')));
     cardsBtn.addEventListener('click', () => this.setCards(document.body.classList.contains('cards-off')));
     $('#compact-cards-btn').addEventListener('click', () => this.setCards(document.body.classList.contains('cards-off')));
@@ -106,15 +138,13 @@ export class UI {
       btn.addEventListener('click', () => { const min = !panel.classList.contains('min'); apply(min); if (btn.dataset.noPersist) return; saved[id] = min; try { localStorage.setItem('r2.min', JSON.stringify(saved)); } catch (e) {} });
     }
   }
-  // Everything on the sheet that belongs to one vehicle: header, title block, key, telemetry rows,
+  // Everything on the sheet that belongs to one vehicle: title block, key, telemetry rows,
   // view and motion buttons. Called again when the Garage switches cars; the old buttons go
   // with their listeners, and the tour buttons move to the new motion rows.
   setConfig(cfg) {
     this.cfg = cfg;
     const cb = this.cb;
     const $ = (s) => document.querySelector(s);
-    $('#hdr-left-title').textContent = cfg.hdrLeft.title; $('#hdr-left-sub').textContent = cfg.hdrLeft.sub;
-    $('#hdr-right-title').textContent = cfg.hdrRight.title; $('#hdr-right-sub').textContent = cfg.hdrRight.sub;
     $('#tb-title').innerHTML = cfg.title.map(t => `<div>${t}</div>`).join('');
     $('#tb-grid').innerHTML = cfg.titleBlock.map(c => `<div class="tb-cell"><div class="tb-lbl">${c.lbl}</div><div class="tb-val${c.red ? ' red' : ''}">${c.val}</div></div>`).join('');
     for (const cls of ['zone-top', 'zone-bottom']) $('.' + cls).innerHTML = cfg.zonesX.map(z => `<span>${z}</span>`).join('');
@@ -144,6 +174,35 @@ export class UI {
     for (const b of this.motionBtns) b.addEventListener('click', () => cb.onMotion(b.dataset.motion));
     $('#motion-btns').append(this.tourBtn);
     $('#compact-motion-btns').append(this.compactTourBtn);
+    if (this.compactMedia) this.layoutTray();
+  }
+  // Where the tray sits. Console off, on a wide sheet: one row centred at the foot of the sheet,
+  // vehicle · TOUR · PLAY · RESET · CONSOLE. Console on: the controls panel's third row, under VIEW
+  // and MOTION, with TOUR back in the MOTION row (one TOUR on the sheet, never two). In a run the
+  // panel is gone, so the tray (STOP and the drive's buttons) stays at the foot of the sheet;
+  // compact sheets keep their own bottom toolbar, and framed the host hides it. Focus moves with a
+  // moved button, so CONSOLE pressed from the keyboard keeps it.
+  layoutTray() {
+    const tray = document.getElementById('primary-controls'), row = document.getElementById('tray-row');
+    const sheet = document.getElementById('sheet'), motions = document.getElementById('motion-btns'), play = document.getElementById('play-btn');
+    if (!tray || !row || !sheet || !motions) return;
+    const body = document.body, compact = !!this.compactMedia?.matches;
+    const wide = !compact && !this.framed && !body.classList.contains('run-active');
+    const cardsOn = !body.classList.contains('cards-off');
+    const focused = document.activeElement;
+    const keep = focused && (tray.contains(focused) || focused === this.tourBtn) ? focused : null;
+    if (wide && cardsOn) { if (tray.parentElement !== row) row.append(tray); }
+    else if (tray.parentElement !== sheet) document.getElementById('controls').after(tray);
+    if (wide && !cardsOn) { if (this.tourBtn.parentElement !== tray) tray.insertBefore(this.tourBtn, play); }
+    else if (this.tourBtn.parentElement !== motions) motions.append(this.tourBtn);
+    body.classList.toggle('tray-in-panel', wide && cardsOn);
+    if (keep && document.activeElement !== keep) keep.focus({ preventScroll: true });
+  }
+  // Run an action with the console left as it is (the tray's RESET: the reset tool's own
+  // "annotations on" is for the tour and agents).
+  keepCards(fn) {
+    this.holdCards = true;
+    try { return fn(); } finally { this.holdCards = false; }
   }
   // The TELEMETRY panel's rows: the vehicle's own by default, or another set (the run mode's).
   setInstrRows(rows = this.cfg.instr) {
@@ -171,7 +230,7 @@ export class UI {
     btn.setAttribute('aria-label', `Vehicle: ${entry.label}. Choose a vehicle`);
     for (const b of document.querySelectorAll('[data-vehicle]')) setPressed(b, b.dataset.vehicle === id, 'active');
     document.getElementById('play-btn').hidden = !entry.play;
-    document.body.classList.toggle('has-play', !!entry.play);   // the wide tray is a button wider
+    document.body.classList.toggle('has-play', !!entry.play);   // the tray is a button wider
   }
   setPlaying(on) {
     const btn = document.getElementById('play-btn');

@@ -57,7 +57,7 @@ export function R2VehicleModel({
       paintColor: paint.color,
       paintId: paint.id,
       rimFinish: rimFinishFor(wheel.id, wheel.style),
-      caliperColor: "#2b3033",
+      caliperColor: "#e0a01c", // the Performance trim's yellow calipers, as on the reference
       cabinColor: interior?.color ?? "#22262a",
       lampsOn: true,
     }),

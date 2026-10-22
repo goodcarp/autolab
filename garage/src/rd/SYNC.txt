@@ -1,11 +1,11 @@
 # Files copied from roadster-lab by tools/sync-garage.mjs: sha256 of the bytes written, path under rd/, lab commit.
 # A file whose hash no longer matches was edited here by hand; the sync refuses to overwrite it.
-ae6e8cfd5236b2d580808a2a43543436ab0bf343a6067d01f9ad1c621b0139b6  drive/car.js  3360319
-95d3238d6e8e8e1431dd5c77fc18d9b4b8ff539690ccb174b89c50f8ff37474b  drive/constants.js  3360319
+94086b88d115651415cd2dc923accefabbb84b29779d7a45402bd496ad6e97cd  drive/car.js  c9e9c53
+78a78f1912c75b5b83e67c6e2e7e4b0e55d8c7edb573e6e55a2851201dfbfc81  drive/constants.js  c9e9c53
 3e5fa3a63d2fbfd00e833cf00b30909f14347144904b3cc67f52333e91c53051  drive/fans.js  3360319
 6a404d9839ff05be6b921584ec012cee3d62a52415972e91fdc6b07b8b05f26d  drive/gas.js  3360319
 345af6bd66c6007f8f04d9e2735898611c553adb5aca727079089f3e5df5ea36  drive/math.js  3360319
-479d25616578452d603d35a86b79a5379c5ba84836f40c1b5cea37496c7c8c2e  drive/run.js  3360319
+141c5d22702cb178295dab523f4af6ff37e201b0af971a5bcd28754bd670b37d  drive/run.js  c9e9c53
 e45812e17d437f00f2cdbd06e792ab7e266b10e13e6e467d3de7ae76147d7a30  drive/scripts.js  3360319
 10b1a8fbf135765d747dabb784ab82005f09d4f646599ba07e78f093bf6b3ad3  drive/thrust.js  3360319
 a15db1fb9cfeb7274fb657df7da37f1a0d10a961efdcc875842973fd4b91f397  drive/world.js  3360319

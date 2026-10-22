@@ -26,10 +26,15 @@ const BODY_NOSE = S.NOSE - 0.034, BODY_TAIL = S.TAIL + 0.020;
 // End knots below are inset with the skin, preserving their height/width values
 // and order. Roof, cabin, axle datums, and the broad corner-radius curve stay in
 // their original frame; only the nose/tail profile ends need room for the trim.
-const ZB = interp([[S.TAIL + 0.020, 0.55], [T(4.651273), 0.45], [T(4.56), 0.39], [T(4.43), 0.33], [T(4.22), 0.30], [T(3.34), 0.285], [T(2.60), 0.27], [T(1.30), 0.27], [T(0.40), 0.29], [T(0.22), 0.30], [T(0.11275), 0.36], [T(0.0655), 0.42], [S.NOSE - 0.034, 0.50]]);
-const ZT = interp([[S.TAIL + 0.020, 1.19], [-2.30, 1.215], [-2.00, 1.225], [-1.35, 1.225], [-1.10, 1.20], [0.60, 1.20], [1.00, 1.196], [1.10, 1.193], [1.20, 1.189], [1.30, 1.185], [1.45, 1.178], [1.60, 1.170], [1.75, 1.161], [1.90, 1.149], [2.00, 1.136], [2.10, 1.112], [2.189375, 1.083], [2.2445, 1.050], [S.NOSE - 0.034, 1.000]]);
-const HWB = interp([[S.TAIL + 0.020, 0.78], [T(4.696273), 0.85], [T(4.675818), 0.895], [T(4.634909), 0.915], [T(4.40), 0.92], [T(1.45), 0.92], [T(0.25), 0.915], [T(0.136375), 0.905], [T(0.073375), 0.87], [T(0.04975), 0.82], [S.NOSE - 0.034, 0.74]]);
-const HWT = interp([[S.TAIL + 0.020, 0.79], [T(4.696273), 0.86], [T(4.675818), 0.90], [T(4.634909), 0.92], [-2.00, 0.92], [-1.00, 0.92], [0.60, 0.92], [1.00, 0.90], [1.30, 0.875], [2.00, 0.87], [2.15, 0.87], [2.205125, 0.86], [2.2445, 0.83], [S.NOSE - 0.034, 0.75]]);
+// The rear end of ZB is the departure chamfer: aft of T(4.22) (x -1.91, behind the rear arch) the
+// underside rises to 0.565 at the tail, so the bumper's skid (the underside itself) reads as the grey
+// band under it. The spline's tangents carry the change forward a little: between -1.91 and -0.29 the
+// sill moves by -1.3 to +1.0 mm.
+// ZT's tail knot is 1.205 so the rolled top (12 mm lower at the tail) still clears the lamp bar's top row.
+const ZB = interp([[S.TAIL + 0.020, 0.565], [T(4.651273), 0.530], [T(4.56), 0.478], [T(4.43), 0.402], [T(4.31), 0.378], [T(4.22), 0.30], [T(3.34), 0.285], [T(2.60), 0.27], [T(1.30), 0.27], [T(0.40), 0.29], [T(0.22), 0.30], [T(0.11275), 0.36], [T(0.0655), 0.42], [S.NOSE - 0.034, 0.50]]);
+const ZT = interp([[S.TAIL + 0.020, 1.205], [-2.30, 1.215], [-2.00, 1.225], [-1.35, 1.225], [-1.10, 1.20], [0.60, 1.20], [1.00, 1.196], [1.10, 1.193], [1.20, 1.189], [1.30, 1.185], [1.45, 1.178], [1.60, 1.170], [1.75, 1.161], [1.90, 1.149], [2.00, 1.136], [2.10, 1.112], [2.189375, 1.086], [2.2445, 1.066], [S.NOSE - 0.034, 1.058]]);
+const HWB = interp([[S.TAIL + 0.020, 0.78], [T(4.696273), 0.85], [T(4.675818), 0.895], [T(4.634909), 0.915], [T(4.40), 0.92], [T(1.45), 0.92], [2.026, 0.915], [2.076, 0.910], [2.136, 0.8895], [2.186, 0.857], [2.226, 0.815], [2.251, 0.774], [2.266, 0.735], [S.NOSE - 0.034, 0.665]]);
+const HWT = interp([[S.TAIL + 0.020, 0.79], [T(4.696273), 0.86], [T(4.675818), 0.90], [T(4.634909), 0.92], [-2.00, 0.92], [-1.00, 0.92], [0.60, 0.92], [1.00, 0.90], [1.30, 0.875], [2.026, 0.87], [2.076, 0.865], [2.136, 0.8445], [2.186, 0.812], [2.226, 0.770], [2.251, 0.729], [2.266, 0.690], [S.NOSE - 0.034, 0.620]]);
 const RT = interp([[S.TAIL, 0.06], [T(3.5), 0.09], [T(1.7), 0.09], [T(1.2), 0.12], [S.NOSE, 0.07]]);
 // greenhouse top: long raked windscreen (≈38°) flattening into the roof, flat roof, spoiler lip, rear glass 27° from vertical
 // The last knot is 1.245, not the belt: at 1.20 the greenhouse ring collapses to 6 mm at x = -2.339
@@ -45,13 +50,30 @@ const ZROOF = interp([[T(4.70), 1.245], [-2.30, 1.286], [-2.20, 1.541], [-2.10, 
 const HWG = interp([[T(4.70), 0.84], [T(4.60), 0.78], [T(4.45), 0.755], [T(4.20), 0.76], [-0.30, 0.76], [0.05, 0.71], [0.18, 0.69], [0.30, 0.69], [0.45, 0.71], [0.65, 0.73], [0.77, 0.75], [0.90, 0.80], [1.00, 0.84]]);
 
 const WELL = 0.665;          // wheel-well inner wall (lateral)
-const RA = 0.505;            // arch opening half-size (squircle)
-const ARCH_N = 2.7;
+// Arch opening: a superellipse round the hub, RA_X fore and aft, RA_Y up, exponent ARCH_N.
+// Measured: the official side drawing puts the opening 465-478 mm from the axle at hub height and its
+// crown 88-90 mm over the tyre; the reference photo puts the 45 degree shoulder about 525 mm out. The old
+// squircle (505 mm, n 2.7) stood about 40 mm too far out in the shoulders, so the wheel read small.
+// With the arch trim's bevel the visible edge is 478 mm out at hub height, ~523 mm at 45 degrees, and
+// ~91 mm over the tyre at the crown. The configurator's wheel-house liners read these from SPEC.
+const RA_X = 0.480, RA_Y = 0.500, ARCH_N = 2.5;
+S.archRX = RA_X; S.archRY = RA_Y; S.archN = ARCH_N;
+// The black arch trim (the lower cladding's flares) runs from TRIM_IN to TRIM_W outside the opening.
+// TRIM_W is measured against the rear door's raked shut line (CUT.rearShut): with the trim's 6 mm bevel,
+// a band wider than about 0.065 reaches that line near y 0.69 and would sit on the door; at 0.060 the
+// rear flare stays about 10 mm aft of it. The front bumper's rear end follows the same outer edge.
+const TRIM_W = 0.060, TRIM_IN = 0.004;
+// x of a point on the trim at height y (above the hub) on an arch's forward (dir +1) or rearward (dir -1)
+// side: f 0 is its inner edge, 1 its outer edge
+function trimX(xa, dir, y, f) {
+  const o = TRIM_IN + (TRIM_W - TRIM_IN) * f;
+  return xa + dir * (RA_X + o) * Math.pow(1 - Math.pow((y - S.tireR) / (RA_Y + o), ARCH_N), 1 / ARCH_N);
+}
 function archZ(x) {
   let z = -1;
   for (const xa of [S.XF, S.XR]) {
-    const u = Math.abs(x - xa) / RA;
-    if (u < 1) z = Math.max(z, S.tireR + RA * Math.pow(1 - Math.pow(u, ARCH_N), 1 / ARCH_N));
+    const u = Math.abs(x - xa) / RA_X;
+    if (u < 1) z = Math.max(z, S.tireR + RA_Y * Math.pow(1 - Math.pow(u, ARCH_N), 1 / ARCH_N));
   }
   return z;
 }
@@ -64,7 +86,7 @@ function rollOff(x) {
 export function lowerSec(x, notch = true) {
   let hwB = HWB(x), hwT = HWT(x), zb = ZB(x), zt = ZT(x), rt = RT(x), rb = 0.07;
   const [s, R] = rollOff(x);
-  if (s > 0) { hwB -= s * R * 0.30; hwT -= s * R * 0.35; zt -= s * R * 0.12; zb += s * R * 0.10; }
+  if (s > 0) { const kz = x > 0 ? 0 : 1; hwB -= kz * s * R * 0.30; hwT -= kz * s * R * 0.35; zt -= s * R * (x > 0 ? 0.05 : 0.12); zb += s * R * 0.10; }
   const pts = roundedLoop({ hwB, hwT, zb, zt, rb, rt, bulge: 0.010 });
   if (notch) { const za = archZ(x); if (za > 0) for (const p of pts) if (Math.abs(p[0]) > 0.5 && p[1] < za) p[0] = Math.sign(p[0]) * Math.min(Math.abs(p[0]), WELL); }
   return pts;
@@ -78,7 +100,7 @@ export function lowerSec(x, notch = true) {
 const WS_CROWN = 0.020;      // how far the glass centre leads the pillars
 const PILLAR_DX = 0.095;     // visible A-pillar width, measured horizontally (matches the photo: 60-120 mm)
 const SAIL_Y = 1.335;        // below this the edge runs down to the belt as the mirror sail
-const DLO_TOP = 1.565;       // top of the side glass
+const DLO_TOP = 1.600;       // top of the side glass (drawing: glass tops 1.595-1.61)
 const CROWN = interp([[S.TAIL, 0.018], [-0.40, 0.020], [-0.10, 0.024], [0.90, 0.024]]);
 const crownAt = (x) => CROWN(x);
 const glassEdgeY = (x) => ZROOF(x) - WS_CROWN;
@@ -105,9 +127,15 @@ const DOOR_Q = (() => {
 
 export function upperSec(x) {
   const zb = ZT(x) - 0.012, zt = ZROOF(x);
-  const rtMax = x > 0.05 ? 0.014 : (x > -0.20 ? 0.014 + (0.05 - x) * 0.244 : 0.075); // crisp windscreen side edges, rounder roof aft of the header
-  const hwT = HWG(x), rt = Math.min(rtMax, (zt - zb) * 0.45);
-  let hwB = Math.min(HWT(x) - 0.006, 0.915);
+  // crisp windscreen side edges, rounder roof aft of the header. The radius eases in over 0.8 m
+  // behind x 0.20: the old 0.25 m ramp put a visible pinch in the roof rail just behind the header.
+  const rtT = clamp((0.20 - x) / 0.80, 0, 1), rtMax = 0.014 + 0.061 * rtT * rtT * (3 - 2 * rtT);
+  // The ring sits ON the lower body, so at the tail it takes the same plan roll lowerSec takes off its
+  // top (s * R * 0.35), and its top is never wider than the body under it. Without either, the gate's
+  // top edge stood out as an ear on each corner, 65 mm proud of the body at x -2.391.
+  const [rs, rR] = rollOff(x), roll = rs > 0 && x < 0 ? rs * rR * 0.35 : 0;
+  const hwT = Math.min(HWG(x), HWT(x) - 0.006) - roll, rt = Math.min(rtMax, (zt - zb) * 0.45);
+  let hwB = Math.min(HWT(x) - 0.006, 0.915) - roll;
   // Forward of the doors the body's top corner is far rounder than the greenhouse's foot, so the ring
   // would stand ~30 mm proud of the fender and show as a dart at the pillar base. Tuck the foot onto
   // the skin it actually sits on, blended in over the last 80 mm before the cowl.
@@ -123,6 +151,55 @@ export function upperSec(x) {
   return pts;
 }
 const stations = (x0, x1, step) => linspace(x0, x1, step);
+// Rim flange height over the bead seat, and the tyre section around a given rim radius: the bead tucks
+// 6 mm behind the lip, the sidewall bulges to the full section width at about half height, and the
+// shoulder rounds over 25 mm instead of a two-segment chamfer. Points are [radius, axial], mirrored.
+export const RIM_LIP = 0.024;
+export function tyreProfile(rimR) {
+  const r = S.tireR, hw = S.tireW / 2, bead = rimR + RIM_LIP - 0.006, h = r - 0.025 - bead;
+  const side = [[0, hw - 0.020], [0.12, hw - 0.007], [0.30, hw - 0.001], [0.52, hw], [0.72, hw - 0.004], [0.88, hw - 0.011], [1.0, hw - 0.020]]
+    .map(([f, z]) => [bead + f * h, z]);
+  const sh = [];
+  for (let i = 1; i <= 4; i++) { const t = (i / 4) * Math.PI / 2; sh.push([r - 0.025 + 0.025 * Math.sin(t), hw - 0.020 - 0.030 * (1 - Math.cos(t))]); }
+  const outer = [...side, ...sh, [r, 0]];
+  return [...outer, ...outer.slice(0, -1).reverse().map(([a, z]) => [a, -z])];
+}
+// The body loft's own section, notched with a FIXED edge row. lowerSec's notch clamps whichever loop
+// points happen to sit under the arch at a station -- the side runs 43 mm between points -- so from one
+// station to the next a different point flips from skin to well, and the strip between them twists:
+// the opening reads as a sawtooth and the well as a comb of shelves. Here the side's points are
+// redistributed along the SAME side curve so that row EDGE_M always lands on the arch height: rows
+// under it step down the well wall, the row itself is the lip on the skin, rows above it re-space up
+// to the shoulder. Near an arch the redistribution blends back to the plain spacing, and since every
+// point stays on the side curve, the skin itself does not move.
+// Only the body loft uses it: door skins, creases, onSkin and wrapBand keep lowerSec's own notch.
+const EDGE_M = 13, EDGE_BLEND = 0.12;
+function loftSec(x) {
+  const pts = lowerSec(x, false);
+  let du = Infinity, xa0 = 0;
+  for (const xa of [S.XF, S.XR]) if (Math.abs(x - xa) < du) { du = Math.abs(x - xa); xa0 = xa; }
+  if (du > RA_X + EDGE_BLEND) return pts;
+  const za = archZ(x), inside = za > 0;
+  for (const side of [1, -1]) {
+    const idx = (m) => side > 0 ? J.sideR + m : J.cBL - m;          // m = 0 at the side's foot, 18 at its top
+    const line = []; for (let m = 0; m <= 18; m++) line.push(pts[idx(m)].slice());
+    const at = (y) => { for (let m = 0; m < 18; m++) { const a = line[m], b = line[m + 1]; if (y <= b[1] || m === 17) { const t = (y - a[1]) / Math.max(1e-9, b[1] - a[1]); return [a[0] + (b[0] - a[0]) * t, y]; } } };
+    const y0 = line[0][1], y1 = line[18][1], yN = line[EDGE_M][1];
+    // edge height: the arch inside it, the natural row height at the blend's far end
+    const w = inside ? 1 : clamp(1 - (du - RA_X) / EDGE_BLEND, 0, 1), e = inside ? za : yN + (S.tireR - yN) * w * w * (3 - 2 * w);
+    for (let m = 1; m < 18; m++) {
+      const yn = line[m][1];
+      const y = m <= EDGE_M ? y0 + (e - y0) * (yn - y0) / (yN - y0) : e + (y1 - e) * (yn - yN) / (y1 - yN);
+      pts[idx(m)] = at(y);
+    }
+    if (inside) {
+      for (let m = 0; m < EDGE_M; m++) { const p = pts[idx(m)]; pts[idx(m)] = [side * WELL, m === EDGE_M - 1 ? e : y0 + (e - y0) * m / (EDGE_M - 1)]; }
+      for (let j = side > 0 ? J.cBR : J.cBL; side > 0 ? j < J.sideR : j < J.bottomL; j++) { const p = pts[j]; if (Math.abs(p[0]) > 0.5) p[0] = side * Math.min(Math.abs(p[0]), WELL); }
+    }
+  }
+  if (inside) for (let j = 0; j < pts.length; j++) { const p = pts[j]; if ((j < J.cBR || j >= J.bottomL) && Math.abs(p[0]) > 0.5) p[0] = Math.sign(p[0]) * Math.min(Math.abs(p[0]), WELL); }
+  return pts;
+}
 const rollStations = (end, R, sign) => [0.12, 0.30, 0.48, 0.64, 0.78, 0.88, 0.95, 0.985].map(f => end - sign * R * (1 - f));
 function jAtHeight(pts, jFrom, jTo, z) {
   let best = jFrom, bd = 1e9;
@@ -183,7 +260,32 @@ function rowGrid(secFn, ys, xa, xb, jRange, N, off) {
 // A band that follows the body's OWN skin at height y: down the +z quarter from xA to the cap, across
 // the cap face, and back up the -z quarter. The real R2's rear light bar and bumper are each ONE
 // wrap-around part rather than a flat panel with two corner pieces stuck on the quarters.
-function wrapBand(xA, xCap, y, h, off, jHi, part = 'all') {
+//
+// opt, all optional. With none the band is exactly two rows at y -/+ h/2, both cut from the outline at y.
+//   hug     rows every ~12 mm, each cut from the outline at ITS OWN height. A tall band over a curving
+//           corner needs that: with only two rows the straight span between its edges is a chord that
+//           dives under the skin it is meant to sit on, or stands off it as a vertical ribbon.
+//   ledge   [offA, offB]: two rows at height y on two offsets, i.e. the horizontal face that closes
+//           a band standing proud of the skin. The order sets which way it faces: inner to outer
+//           faces down (the lip under a band), outer to inner faces up (the ledge on top).
+//   jLo     loop index the height search starts from (default J.sideR; J.cBR lets a low band find
+//           its height on the bottom corner).
+//   nFlank  fixes the number of steps down the flank (wrapSolid needs every row in step); by default ~12 mm.
+//   round   rounded ends in side view: within R = h / 2 of xA every row closes in on y, so each end of
+//           the band is half a stadium (the lamp bar's corner pills). Stations are 3 mm apart over
+//           that last R so the curve reads as round. Not with a ledge.
+function wrapBand(xA, xCap, y, h, off, jHi, part = 'all', opt = {}) {
+  // outward is a direction: the outline runs the other way round at the nose, so flip the sign there,
+  // on every offset (the ledge's two included)
+  const s = xCap > xA ? -1 : 1;
+  // rows: [height, outward offset]. h <= 0 without a ledge is two rows at y (wrapOutline's case).
+  let rows;
+  if (opt.ledge) rows = [[y, s * opt.ledge[0]], [y, s * opt.ledge[1]]];
+  else if (opt.hug && h > 0) {
+    const nR = Math.max(2, Math.ceil(h / 0.012) + 1), y0 = y - h / 2, y1 = y + h / 2;
+    rows = Array.from({ length: nR }, (_, r) => [r === nR - 1 ? y1 : y0 + (y1 - y0) * r / (nR - 1), s * off]);
+  } else rows = h > 0 ? [[y - h / 2, s * off], [y + h / 2, s * off]] : [[y, s * off], [y, s * off]];
+  const jLo = opt.jLo ?? J.sideR;
   // Build the RAW plan-view outline first -- down the +z quarter, across the tail, back up the -z
   // quarter -- then offset every point along that outline's own outward normal.
   //
@@ -192,40 +294,89 @@ function wrapBand(xA, xCap, y, h, off, jHi, part = 'all') {
   // Adding it to z on the flanks and to x at the cap (either sign) leaves a step of `off` exactly at
   // the corner, which renders as a square flap jutting out of the bumper -- and adding it with the
   // wrong sign at the cap buried the whole tail crossing inside the body.
-  const raw = [];
-  for (const x of linspace(xA, xCap, 0.012)) {
-    const sec = lowerSec(x, false), j = jAtHeight(sec, J.sideR, jHi, y);
-    raw.push([x, loopPoint(sec, j)[0]]);
-  }
-  const nF = raw.length, w = raw[nF - 1][1];
-  for (let i = 1; i < 12; i++) raw.push([xCap, w - 2 * w * i / 12]);
-  const outline = [...raw, ...raw.slice(0, nF).reverse().map(q => [q[0], -q[1]])];
+  const R = opt.round && !opt.ledge && h > 0 ? h / 2 : 0;
+  const xs = opt.nFlank ? Array.from({ length: opt.nFlank + 1 }, (_, i) => xA + (xCap - xA) * i / opt.nFlank)
+    : R ? [...linspace(xA, xA - s * R, 0.003), ...linspace(xA - s * R, xCap, 0.012).slice(1)] : linspace(xA, xCap, 0.012);
+  const nF = xs.length;
+  const outlineAt = (yy) => {
+    const raw = xs.map(x => { const sec = lowerSec(x, false), j = jAtHeight(sec, jLo, jHi, yy); return [x, loopPoint(sec, j)[0]]; });
+    const w = raw[nF - 1][1];
+    for (let i = 1; i < 12; i++) raw.push([xCap, w - 2 * w * i / 12]);
+    return [...raw, ...raw.slice(0, nF).reverse().map(q => [q[0], -q[1]])];
+  };
   // outward normal of the plan curve: n = (tz, -tx) for a tangent t, which gives +z down the near
   // flank, -x across the tail and -z back up the far flank, with a mitre through each corner
-  const full = outline.map((p, i) => {
+  const offsetOutline = (outline, o) => outline.map((p, i) => {
     const a = outline[Math.max(0, i - 1)], b = outline[Math.min(outline.length - 1, i + 1)];
     const tx = b[0] - a[0], tz = b[1] - a[1], L = Math.hypot(tx, tz) || 1;
-    return [p[0] + (tz / L) * off, p[1] - (tx / L) * off];
+    return [p[0] + (tz / L) * o, p[1] - (tx / L) * o];
   });
+  const atY = opt.hug ? null : outlineAt(y), cache = new Map();
+  const outlineFor = (yy) => atY ?? (cache.get(yy) || cache.set(yy, outlineAt(yy)).get(yy));
+  const full = rows.map(([yy, o]) => offsetOutline(outlineFor(yy), o));
+  // row r's height at outline point i: as laid, or closing in on y within R of the xA end. d runs
+  // from 0 at xA - R (s = 1, the tail: x falls from xA to xCap) to R at xA itself.
+  const rowY = (r, i) => {
+    const yy = rows[r][0];
+    if (!R) return yy;
+    const d = s * (full[r][i][0] - xA) + R;
+    if (d <= 0) return yy;
+    const k = Math.sqrt(Math.max(0, 1 - (d / R) * (d / R)));
+    return y + (yy - y) * k;
+  };
   // The real R2 carries the lamp bar on the LIFTGATE: closed it reads as one piece across the tail,
   // and it swings up with the gate, leaving only the wrapped corner stubs behind on the quarters.
   // So the band splits at the two corners -- 'cross' is the run over the tail cap (goes on the gate),
   // 'ends' is the two quarter wraps (stay on the body), 'all' is the whole thing (the bumper, which
   // really is one body part). Both halves are cut from the SAME offset outline and share their
   // boundary vertices, so they cannot mis-register at the shut line however the gate is posed.
-  const a0 = nF - 1, b0 = nF + 11;
+  const a0 = nF - 1, b0 = nF + 11, n = full[0].length, M = rows.length;
   const runs = part === 'cross' ? [[a0, b0]]
-    : part === 'ends' ? [[0, a0], [b0, full.length - 1]]
-      : [[0, full.length - 1]];
+    : part === 'ends' ? [[0, a0], [b0, n - 1]]
+      : [[0, n - 1]];
   const pos = [], idx = [];
+  // triangles between consecutive rows
   for (const [i0, i1] of runs) {
     const base = pos.length / 3;
-    for (let i = i0; i <= i1; i++) for (let r = 0; r < 2; r++) pos.push(full[i][0], y + (r ? h / 2 : -h / 2), full[i][1]);
-    for (let i = 0; i < i1 - i0; i++) { const a = base + i * 2; idx.push(a, a + 1, a + 3, a, a + 3, a + 2); }
+    for (let i = i0; i <= i1; i++) for (let r = 0; r < M; r++) pos.push(full[r][i][0], rowY(r, i), full[r][i][1]);
+    for (let i = 0; i < i1 - i0; i++) for (let r = 0; r < M - 1; r++) { const a = base + i * M + r; idx.push(a, a + 1, a + M + 1, a, a + M + 1, a + M); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3)); g.setIndex(idx); g.computeVertexNormals();
   return g;
+}
+// the part of a section loop at or above yMin (or at or below yMax): the gate's cap stops at the
+// bumper ledge and the body carries the closing panel under it
+function clipLoop(pts, yMin = -Infinity, yMax = Infinity) {
+  const inside = (p) => p[1] >= yMin && p[1] <= yMax, out = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    if (inside(a)) out.push(a);
+    for (const yc of [yMin, yMax]) {
+      if (!Number.isFinite(yc)) continue;
+      if ((a[1] - yc) * (b[1] - yc) < 0) { const t = (yc - a[1]) / (b[1] - a[1]); out.push([a[0] + (b[0] - a[0]) * t, yc]); }
+    }
+  }
+  return out;
+}
+function wrapOutline(xA, xCap, y, off, jHi, nFlank = 0) {
+  const g = wrapBand(xA, xCap, y, 0, off, jHi, 'all', { nFlank }), p = g.getAttribute('position'), o = [];
+  for (let i = 0; i < p.count; i += 2) o.push([p.getX(i), p.getZ(i)]);
+  g.dispose(); return o;
+}
+// xA is where the flank starts, or a function of height. As a function, the outer face gets a row every
+// ~27 mm so its end can follow a curve (the front bumper's rear end follows the arch trim's outer edge),
+// and every row takes the same number of flank steps so the rows stay in step.
+function wrapSolid(xA, xCap, y0, y1, off, jHi) {
+  const xAt = typeof xA === 'function' ? xA : () => xA, K = typeof xA === 'function' ? 6 : 1;
+  const spec = [[y1, 0.0005]]; for (let k = 0; k <= K; k++) spec.push([y1 + (y0 - y1) * k / K, off]); spec.push([y0, 0.0005]);
+  const nF = Math.max(1, Math.round(Math.max(...spec.map(([y]) => Math.abs(xCap - xAt(y)))) / 0.012));
+  const rows = spec.map(([y, o]) => ({ y, pts: wrapOutline(xAt(y), xCap, y, o, jHi, nF) }));
+  const n = rows[0].pts.length, pos = [], idx = [];
+  for (const r of rows) for (const q of r.pts) pos.push(q[0], r.y, q[1]);
+  for (let r = 0; r < rows.length - 1; r++) for (let i = 0; i < n - 1; i++) { const a = r * n + i, b = a + 1, c = a + n + 1, d = a + n; idx.push(a, b, c, a, c, d); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  return geo;
 }
 function onSkin(x, z, sgn, off) { const pts = lowerSec(x, false); const j0 = sgn > 0 ? J.sideR : J.sideL; const j = jAtHeight(pts, j0, j0 + 17, z); const p = loopPoint(pts, j), n = loopNormal(pts, j); return [x, p[1] + n[1] * off, p[0] + n[0] * off]; }
 
@@ -255,7 +406,8 @@ function jAtZ(pts, jFrom, jTo, z) {
 // instead of beginning as a 70 mm vertical step at x = 1.00.
 export function hoodJ(x, pts) {
   const t = clamp((x - 1.11) / 0.30, 0, 1), s = t * t * (3 - 2 * t), j0 = jAtZ(pts, J.cTR, J.top, DECK_Z);
-  return j0 + (HOOD_J - j0) * s;
+  const tn = clamp((x - 2.00) / 0.22, 0, 1);
+  return j0 + (HOOD_J - j0) * s + 4 * tn * tn * (3 - 2 * tn);
 }
 // That same edge in side elevation, sampled straight off the section curves. The frunk aperture is
 // cut to this curve (less a 4 mm lip) so the shut line sits on the fender shoulder along its whole
@@ -277,15 +429,21 @@ export const rakeX = (y) => {
 };
 export const CUT = {
   doorZ: 0.55, doorY0: 0.50, doorY1: DLO_TOP, beltY: BELT_Y,
-  // Bottom of the quarter aperture. BELT_Y is a single number but ZT is not: it rises to 1.225 behind
-  // the doors, so back here the greenhouse ring's floor (ZT - 12 mm) is 13 mm ABOVE the belt and a
-  // constant cut ran straight past the bottom of the glass. Follow the section instead.
-  quarterY0: linspace(-1.80, -1.05, 0.05).map(x => [x, ZT(x) - 0.006]),
+  // Bottom of the quarter aperture. On the drawing the quarter light's foot sits 55 mm above the
+  // foot of the door glass, so the cut is level at BELT_Y + 55 mm. That is above the greenhouse
+  // ring's floor back here (ZT - 12 mm, never more than 1.213), so body colour shows under the glass.
+  quarterY0: [[-1.80, BELT_Y + 0.055], [-1.05, BELT_Y + 0.055]],
   // Door shut lines, measured off the panel outlines drawn on Rivian's official orthographic side
   // drawing. The two doors meet on ONE line at about x -0.245: the 100 mm of body this model used to
-  // keep between the two apertures is not on the car, where you see only a shut line.
-  rearX1: -0.251, frontX0: -0.240, frontX1: 0.71, frontGlassX1: 0.60, aSlope: 1.4,
-  rearGlassX0: -0.919, rearGlassX1: -0.402, frontGlassX0: -0.299,
+  // keep between the two apertures is not on the car, where you see only a shut line. The front
+  // door's leading shut line is at x 0.80 on the drawing.
+  rearX1: -0.251, frontX0: -0.240, frontX1: 0.80, frontGlassX1: 0.60, aSlope: 1.4,
+  // Door glass. The rear glass runs back to -1.055, 5 mm short of the frame line on the drawing
+  // (the drawing's line at -0.919 is the bar that divides the glass, not where it ends). Between the
+  // rear glass's front edge (-0.402) and the front glass's back edge (-0.225) is the B pillar,
+  // about 0.18 m, as drawn. Moving -0.402 further back deepens the rear doors' aperture
+  // survivor by about 1 mm for every mm moved, so it stays.
+  rearGlassX0: -1.055, rearGlassX1: -0.402, frontGlassX0: -0.225,
   // Rear door APERTURE above the belt. It is not the same thing as the glass: on the car the rear
   // door is framed, its trailing edge runs unbroken from rocker to roof rail, and the C pillar sits
   // BEHIND it. Cutting the body only as far as the glass left 324 mm of shell where the door's own
@@ -297,12 +455,12 @@ export const CUT = {
   // as BELT_Y and tailY: a constant standing in for a curve. Measured every 27 mm off the drawing.
   rearShut: [[0.50, -0.885], [0.605, -0.922], [0.738, -0.972], [0.844, -1.020], [0.923, -1.084],
              [0.976, -1.172], [1.020, -1.238], [1.30, -1.243]],
-  // Quarter light, measured off Rivian's official orthographic side drawing (the DLO is drawn on it):
-  // its frame runs x -2.17 .. -1.38, so the glass reaches almost to the liftgate and the D-pillar is
-  // narrow. Ours used to stop at -1.72 and start at -1.13, which put 410 mm of body where the drawing
-  // has glass and left a 460 mm C-pillar looking like a 170 mm one. -2.12 is just ahead of the
-  // greenhouse loft's own rear end at T(4.49) = -2.129, where the liftgate takes over.
-  quarterX0: -2.12, quarterX1: -1.40,   // fixed quarter window behind the rear door
+  // Quarter light, measured off Rivian's official orthographic side drawing (the DLO is drawn on it).
+  // Up to quarterYR (1.30 m) the glass runs x -2.00 .. -1.445. Above that both ends lean forward as
+  // they rise: the rear edge by 0.385 m per metre of height and the front edge by 0.24 m per metre,
+  // so at the glass top (DLO_TOP) the opening runs about -1.88 .. -1.37. The raked rear edge is what
+  // leaves the D pillar its width at the roof.
+  quarterX0: -2.00, quarterX1: -1.445, quarterYR: 1.30, quarterRake: 0.385, quarterRakeF: 0.24,   // fixed quarter window behind the rear door
   qa: DOOR_Q[0], qb: DOOR_Q[1], qc: DOOR_Q[2], sailY: SAIL_Y, sailSlope: (BELT_X - SAIL_X) / (SAIL_Y - BELT_Y),
   hoodX0: 1.11, hoodX1: BODY_NOSE - 0.08, hoodEdge: HOOD_EDGE, hoodZ: 0.93, // shut line on the fender shoulder
   // deckX0 reaches PAST the body's own tail (BODY_TAIL = -2.392). It used to stop at -2.36, which left a
@@ -413,8 +571,12 @@ export function buildVehicle() {
   const bodyP = P('body', 'BODY SHELL', 'Slab-sided unibody, belt line at 1 220 mm, flat shoulder', 'shell');
   {
     const xs = [...rollStations(BODY_TAIL, ROLL_T, -1), ...stations(BODY_TAIL + ROLL_T, BODY_NOSE - ROLL_N, 0.035), ...rollStations(BODY_NOSE, ROLL_N, +1).reverse()].sort((a, b) => a - b);
-    bodyP.add(loft(xs.map(x => ({ x, pts: lowerSec(x) }))), { cut: true });
-    bodyP.add(capFromLoop(lowerSec(BODY_NOSE - 0.002), BODY_NOSE - 0.002, +1), { sub: 1 });
+    // stations land exactly on the four arch ends, and run every 15 mm across each arch
+    const archXs = [S.XF, S.XR].flatMap(xa => stations(xa - RA_X, xa + RA_X, 0.015));
+    const xsB = [...new Set([...xs.filter(x => ![S.XF, S.XR].some(xa => Math.abs(x - xa) < RA_X)), ...archXs].map(v => +v.toFixed(5)))].sort((a, b) => a - b);
+    bodyP.add(loft(xsB.map(x => ({ x, pts: loftSec(x) }))), { cut: true });
+    // nose cap on sub 0 with the shell, so the ink look draws no seam where the cap meets the loft
+    bodyP.add(capFromLoop(lowerSec(BODY_NOSE - 0.002), BODY_NOSE - 0.002, +1));
     // crease on the rear quarters (the front crease is the clamshell hood edge, the door creases ride the doors)
     // this ribbon is NOT cut by the apertures, so it has to end ON the rear door's shut line: any of
     // it left inside the opening is a bar across the doorway once the door swings (the v0.12.0 bug).
@@ -433,8 +595,8 @@ export function buildVehicle() {
     // edges follow hoodJ, so the rear corner starts on the cowl tray and wraps down into the shut line
     hoodP.add(rebase(colGrid(x => lowerSec(x, false), xs, (x, pts) => hoodJ(x, pts), (x, pts) => 104 - hoodJ(x, pts), 33, HOOD_OFF), hoodP.hinge));
     // power-dome creases and the compass badge
-    for (const k of [4.8, 15.2]) hoodP.add(rebase(patchX(x => lowerSec(x, false), [J.top + k - 0.12, J.top + k + 0.12], stations(1.005, BODY_NOSE - 0.30, 0.04), 0.009), hoodP.hinge), { sub: 1 });
-    hoodP.add(new THREE.CylinderGeometry(0.026, 0.026, 0.006, 20), { pos: [BODY_NOSE - 0.06 - hoodP.hinge.x, ZT(BODY_NOSE - 0.06) + 0.011 - hoodP.hinge.y, 0], sub: 2 });
+    for (const k of [3.3, 16.7]) hoodP.add(rebase(patchX(x => lowerSec(x, false), [J.top + k - 0.12, J.top + k + 0.12], stations(1.16, BODY_NOSE - 0.30, 0.04), 0.009), hoodP.hinge), { sub: 1 });
+    hoodP.add(new THREE.CylinderGeometry(0.026, 0.026, 0.006, 20), { pos: [BODY_NOSE - 0.12 - hoodP.hinge.x, ZT(BODY_NOSE - 0.12) + 0.011 - hoodP.hinge.y, 0], sub: 2 });
     hoodP.anchor = new THREE.Vector3(1.60, ZT(1.60) + 0.01, 0.0); hoodP.anchorN = new THREE.Vector3(0.15, 1, 0);
   }
   // frunk tub and engine-bay structure under the hood
@@ -444,8 +606,9 @@ export function buildVehicle() {
     // towers, which capped the coil at 207 mm); the tub narrows around the towers instead of clearing them
     for (const sgn of [1, -1]) frunkP.add(new THREE.BoxGeometry(0.80, 0.30, 0.02), { pos: [T(0.62), 0.87, sgn * 0.405], sub: 1 });
     for (const dx of [-0.40, 0.40]) frunkP.add(new THREE.BoxGeometry(0.02, 0.30, 0.81), { pos: [T(0.62) + dx, 0.87, 0], sub: 1 });
-    // strut towers: reach the top mount at y ~1.08 instead of stopping 100 mm short of it
-    for (const sgn of [1, -1]) frunkP.add(new THREE.CylinderGeometry(0.115, 0.145, 0.44, 20), { pos: [S.XF - 0.075, 0.875, sgn * 0.635], sub: 2 });
+    // strut towers: from y 0.835 up to the top mount at 1.095. The bottom sits 22 mm over the tyre's
+    // crown; the old 440 mm tower reached down to 0.655 and stood 150 mm inside each front tyre.
+    for (const sgn of [1, -1]) frunkP.add(new THREE.CylinderGeometry(0.115, 0.135, 0.26, 20), { pos: [S.XF - 0.075, 0.965, sgn * 0.635], sub: 2 });
     frunkP.add(rbox(0.30, 0.10, 0.60, 0.02, 2), { pos: [T(1.45), 0.74, 0], sub: 3 });                          // power electronics under the cowl
   }
   // floor plates that would otherwise mask the skateboard in PANELS mode — dissolve with the shell, not with the interior trim
@@ -497,8 +660,40 @@ export function buildVehicle() {
       cover.computeVertexNormals();
       roofP.add(cover, { sub: 1 });
     }
-    roofP.add(rbox(0.02, 0.014, 0.08, 0.005, 2), { pos: [T(4.495), ZROOF(T(4.495)) - 0.02, 0], sub: 2 });   // CHMSL
-    roofP.add(rbox(0.12, 0.03, 1.46, 0.012, 2), { pos: [T(4.44), ZROOF(T(4.44)) - 0.030, 0], sub: 3 });     // spoiler lip (under the roofline)
+    // spoiler lip: a thin black blade carrying on the roof's round-over, its front edge tucked under the
+    // roof skin near x -2.095 and its trailing edge at x ~-2.195, y ~1.60; its top stays under 1.617 at
+    // x -2.19 and 1.646 at -2.14. 1.30 m wide, so its ends stay inside the roof's top corners. The CHMSL
+    // sits just under the lip's trailing edge on the centreline, on the same slope, clear of lip and glass.
+    const LIP_C = [-2.145, 1.630], LIP_A = 0.588, ca = Math.cos(LIP_A), sa = Math.sin(LIP_A);
+    const onLip = (u, v) => [LIP_C[0] + u * ca - v * sa, LIP_C[1] + u * sa + v * ca, 0];   // lip-local (u along, v up) to world
+    // The lip is the 0.12 x 0.014 x 1.30 rounded box, built as a loft across the car (a stadium section,
+    // rings every 50 mm, ends rounded like the box's) so it can be bent to the roof's crown: 13 mm lower
+    // at its ends than on the centreline. Left straight, it was tucked under the skin at the centre but
+    // stood 6-10 mm proud of it at its ends, front edge and all.
+    const LIP_L = 0.12, LIP_T = 0.014, LIP_W = 1.30, lr = LIP_T / 2, la = LIP_L / 2 - lr;
+    // section: the trailing and leading semicircles, joined by flats sampled every ~6 mm (long single
+    // facets would also make the side silhouette read a facet's whole height in one column)
+    const stad = [], nFlat = 18;
+    for (let k = 0; k <= 8; k++) { const t = -Math.PI / 2 + Math.PI * k / 8; stad.push([la + lr * Math.cos(t), lr * Math.sin(t)]); }
+    for (let k = 1; k < nFlat; k++) stad.push([la - 2 * la * k / nFlat, lr]);
+    for (let k = 0; k <= 8; k++) { const t = Math.PI / 2 + Math.PI * k / 8; stad.push([-la + lr * Math.cos(t), lr * Math.sin(t)]); }
+    for (let k = 1; k < nFlat; k++) stad.push([-la + 2 * la * k / nFlat, -lr]);
+    const lipRing = (c) => stad.map(([u, v]) => { const cu = clamp(u, -la, la); return [cu + (u - cu) * c, v * c]; });
+    const zIn = LIP_W / 2 - lr, lipSecs = [];
+    for (const f of [1, 0.866, 0.5, 0]) lipSecs.push({ x: -(zIn + lr * Math.sqrt(1 - f * f)), pts: lipRing(f) });
+    for (const z of linspace(-zIn, zIn, 0.05)) lipSecs.push({ x: z, pts: lipRing(1) });
+    for (const f of [0.5, 0.866, 1]) lipSecs.push({ x: zIn + lr * Math.sqrt(1 - f * f), pts: lipRing(f) });
+    lipSecs.sort((a, b) => a.x - b.x);
+    for (const sc of [lipSecs[0], lipSecs[lipSecs.length - 1]]) sc.pts = lipRing(0);
+    // loft lays a section out as (station, v, u); turning it about y puts the stations across the car
+    const lip = loft(lipSecs.map(sc => ({ x: sc.x, pts: sc.pts }))).rotateY(Math.PI / 2).rotateZ(LIP_A).translate(LIP_C[0], LIP_C[1], 0);
+    const lp = lip.getAttribute('position'), secAt = new Map(), upAt = (x) => secAt.get(x) || secAt.set(x, upperSec(x)).get(x);   // every ring shares its x values
+    for (let i = 0; i < lp.count; i++) { const x = lp.getX(i), z = lp.getZ(i); lp.setY(i, lp.getY(i) - (topYatZ(upAt, x, 0) - topYatZ(upAt, x, z))); }
+    lip.computeVertexNormals();
+    roofP.add(lip, { sub: 3 });
+    // (-0.056, -0.014): trailing face 2 mm inside the lip's edge, 1 mm under it, 1.6 mm clear of the frame
+    // closed and still clear of it all through the gate's swing
+    roofP.add(rbox(0.012, 0.012, 0.08, 0.004, 2), { pos: onLip(-0.056, -0.014), rot: [0, 0, LIP_A], sub: 2 });   // CHMSL
     roofP.anchor = new THREE.Vector3(T(3.2), ZROOF(T(3.2)) + 0.006, -0.35); roofP.anchorN = new THREE.Vector3(0, 1, -0.2);
   }
   // pillars & glazing surrounds that belong to the body (doors carry their own frames)
@@ -519,11 +714,25 @@ export function buildVehicle() {
     const surround = (sgn) => colGrid(upperSec, stations(COWL_X0, T(4.49), 0.025),
       () => (sgn > 0 ? J.cTR + 1 : J.cTL + 7), () => (sgn > 0 ? J.cBR + 2 : J.cBL + 5), 16, 0.004);
     pillP.add(surround(1), { cut: true }); pillP.add(surround(-1), { cut: true });
+    // The C pillar, the panel under the quarter light and the D pillar are body colour on the car.
+    // One panel per side, 1.5 mm over the surround, from the rear door's shut line back, from the
+    // glass top down to the surround's own bottom edge. It is cut by the same apertures, so the
+    // quarter light opens through it.
+    // On the +z side its columns run nose-ward, so both panels' normals point OUT of the car. The
+    // surround under it is wound inward on +z, which is harmless for a black panel that casts no shadow,
+    // but this one is paint and does: the showroom's shadow normal bias follows the vertex normal, and
+    // an inward normal made the panel shadow itself in a dot pattern.
+    const cPanel = (sgn) => colGrid(upperSec, sgn > 0 ? stations(CUT.rearFrameX0 - 0.003, T(4.49), 0.025).reverse() : stations(CUT.rearFrameX0 - 0.003, T(4.49), 0.025),
+      (x, pts) => jExact(pts, sgn > 0 ? J.sideR : J.cTL + 7, sgn > 0 ? J.cTR + 1 : J.cBL + 5, DLO_TOP),
+      () => (sgn > 0 ? J.cBR + 2 : J.cBL + 5), 12, 0.0055);
+    pillP.add(cPanel(1), { cut: true, sub: 6 }); pillP.add(cPanel(-1), { cut: true, sub: 6 });
     // quarter glass sits in its own aperture, inset so it reads as glazing rather than a hole
     // bottom index is the surround's OWN bottom, not a height lookup: searching for CUT.beltY landed
     // 15 mm high and left a see-through slot along the whole quarter. Below the belt the body skin is
     // uncut back here (the door aperture stops at the rearShut rake), so the glass tucks in behind it.
-    const quarter = (sgn) => colGrid(upperSec, stations(CUT.quarterX1 + 0.005, CUT.quarterX0 - 0.005, 0.02),
+    // It starts at the raked opening's furthest-forward point (its top-front corner), or that corner
+    // is a see-through slot.
+    const quarter = (sgn) => colGrid(upperSec, stations(CUT.quarterX1 + CUT.quarterRakeF * (DLO_TOP - CUT.quarterYR) + 0.005, CUT.quarterX0 - 0.005, 0.02),
       () => (sgn > 0 ? J.cTR + 2 : J.cTL + 6), () => (sgn > 0 ? J.cBR + 2 : J.cBL + 5), 10, -0.002);
     pillP.add(quarter(1), { sub: 5 }); pillP.add(quarter(-1), { sub: 5 });
     // cowl tray: one black panel from the windscreen lip forward to the hood's rear edge, plus the
@@ -554,7 +763,7 @@ export function buildVehicle() {
   // ===== doors (skin + window frame + card, hinged at the leading edge; mirrors ride the front doors) =====
   const doors = [];
   const doorDefs = [
-    ['doorFL', -1, CUT.frontX0, 0.71, 'FRONT LEFT DOOR', true], ['doorFR', 1, CUT.frontX0, 0.71, 'FRONT RIGHT DOOR', true],
+    ['doorFL', -1, CUT.frontX0, CUT.frontX1, 'FRONT LEFT DOOR', true], ['doorFR', 1, CUT.frontX0, CUT.frontX1, 'FRONT RIGHT DOOR', true],
     ['doorRL', -1, -1.243, CUT.rearX1, 'REAR LEFT DOOR', false], ['doorRR', 1, -1.243, CUT.rearX1, 'REAR RIGHT DOOR', false],
   ];
   const aSlope = CUT.aSlope, glassX1 = CUT.frontGlassX1, beltY = CUT.beltY;
@@ -588,8 +797,13 @@ export function buildVehicle() {
       ? rowGrid(upperSec, ys, () => Math.min(xa, CUT.frontGlassX0) - 0.005, (y) => Math.min(xb + 0.005, Math.max(doorGlassX(y) + 0.005, gxa)), jr, 40, 0.003)
       : rowGrid(upperSec, ys, () => CUT.rearGlassX0, () => xb + 0.005, jr, 22, 0.003);
     dp.add(rebase(frame, dp.hinge), { sub: 1 });                                                  // window frame + glass
-    // the rear door's own frame, aft of its glass: sub 7 so an ink line draws where the glass stops
-    if (!front) dp.add(rebase(rowGrid(upperSec, ys, () => xa - 0.005, () => CUT.rearGlassX0, jr, 12, 0.003), dp.hinge), { sub: 7 });
+    // The rear door's own frame, aft of its glass. Most of it is body colour (sub 8): it is the door's
+    // share of the C pillar. The last 35 mm before the glass is the black glass frame (sub 7), which
+    // ends on the drawing's outer frame line at about -1.09; the sub change draws that ink line.
+    if (!front) {
+      dp.add(rebase(rowGrid(upperSec, ys, () => xa - 0.005, () => CUT.rearGlassX0 - 0.035, jr, 10, 0.003), dp.hinge), { sub: 8 });
+      dp.add(rebase(rowGrid(upperSec, ys, () => CUT.rearGlassX0 - 0.035, () => CUT.rearGlassX0, jr, 4, 0.003), dp.hinge), { sub: 7 });
+    }
     // crease and inner card both used to be laid out across the door's bounding x range, which is
     // only correct while the trailing edge is vertical. On the raked rear door that put the crease
     // 117 mm and the card 300 mm behind the skin, hanging in the wheel arch.
@@ -603,118 +817,295 @@ export function buildVehicle() {
     const len = xb - xaCard, mid = (xaCard + xb) / 2;
     dp.add(rbox(len - 0.06, 0.62, 0.035, 0.02, 2), { pos: [mid - dp.hinge.x, 0.86, sgn * (hw - 0.06) - dp.hinge.z], sub: 3 });   // inner door card
     dp.add(rbox(0.36, 0.06, 0.09, 0.02, 2), { pos: [mid - dp.hinge.x, 0.99, sgn * (hw - 0.11) - dp.hinge.z], sub: 4 });          // armrest
-    const hx = front ? 0.10 : rakeX(1.03) + 0.15; const hp = onSkin(hx, 1.03, sgn, 0.007);   // 150 mm in from the trailing edge, as before
-    dp.add(rbox(0.12, 0.03, 0.012, 0.01, 2), { pos: [hp[0] - dp.hinge.x, hp[1], hp[2] - dp.hinge.z], sub: 5 });                      // flush handle
+    // flush handles, off the drawing: 220 x 46 mm pills centred at x -0.072 (front) and -1.000 (rear)
+    const hx = front ? -0.072 : -1.000; const hp = onSkin(hx, front ? 1.07 : 1.09, sgn, 0.007);
+    dp.add(rbox(0.22, 0.046, 0.012, 0.022, 2), { pos: [hp[0] - dp.hinge.x, hp[1], hp[2] - dp.hinge.z], sub: 5 });                    // flush handle
     if (front) {
       // mirror: rooted on the sail panel above the belt (not floating on the door skin). The stalk
       // starts at the exact lateral position of the sail skin at its own height and runs out to the
       // housing's inboard face, so the two read as one bracket.
-      const mx = 0.632, my = 1.222, mzOut = 1.033, mHalf = 0.0425;
+      // The arm is black (sub 6); the housing, 0.26 x 0.15 m centred at (0.50, 1.29), is body colour (sub 8).
+      const mx = 0.625, my = 1.235, mzOut = 1.033, mHalf = 0.0425;
       const mPts = upperSec(mx), mz = loopPoint(mPts, jExact(mPts, J.sideR, J.cTR, my))[0];
       const zRoot = mz - 0.008, zIn = mzOut - mHalf;
-      dp.add(rbox(0.082, 0.050, zIn - zRoot + 0.020, 0.014, 2), { pos: [mx - dp.hinge.x, my, sgn * (zRoot + zIn) / 2 - dp.hinge.z], sub: 6 });
-      dp.add(rbox(0.21, 0.125, 2 * mHalf, 0.03, 3), { pos: [mx - 0.030 - dp.hinge.x, my + 0.026, sgn * mzOut - dp.hinge.z], sub: 6 });
+      dp.add(rbox(0.060, 0.050, zIn - zRoot + 0.020, 0.014, 2), { pos: [mx - dp.hinge.x, my, sgn * (zRoot + zIn) / 2 - dp.hinge.z], sub: 6 });
+      dp.add(rbox(0.26, 0.15, 2 * mHalf, 0.04, 3), { pos: [0.50 - dp.hinge.x, 1.29, sgn * mzOut - dp.hinge.z], sub: 8 });
     }
     dp.explode.set(front ? 0.26 : -0.26, 1.50, sgn * 1.20);   // straight outboard, on the body shell's level
     doors.push({ part: dp, sgn, front });
   }
-  // black lower cladding: sill shoe + arch trims (one continuous "shoe")
+  // black lower cladding: ONE shoe per side, rear flare -> rocker -> front flare, plus the amber markers on it
   const cladP = P('cladding', 'LOWER CLADDING', 'Black sill shoe, arch and bumper cladding — one continuous band', 'shell');
   {
-    for (const sgn of [1, -1]) cladP.add(rbox(1.96, 0.21, 0.05, 0.02, 2), { pos: [T(2.32), 0.395, sgn * (HWB(T(2.32)) + 0.003)] });
-    for (const xa of [S.XF, S.XR]) for (const sgn of [1, -1]) {
-      const shape = new THREE.Shape();
-      const ro = RA + 0.06, ri = RA + 0.004, zc = S.tireR, zclip = 0.29;
-      const arc = (r, dir) => {
-        const n = 48; const pts = [];
-        for (let i = 0; i <= n; i++) {
-          const ang = Math.PI * i / n;
-          let px = Math.cos(ang), pz = Math.sin(ang);
-          const q = Math.pow(Math.pow(Math.abs(px), ARCH_N) + Math.pow(Math.abs(pz), ARCH_N), 1 / ARCH_N);
-          pts.push([px / q * r, zc + pz / q * r]);
-        }
-        if (dir < 0) pts.reverse();
-        return pts;
-      };
-      const o = arc(ro, 1), inn = arc(ri, -1);
-      shape.moveTo(o[0][0], Math.max(o[0][1], zclip));
-      for (const p of o) shape.lineTo(p[0], Math.max(p[1], zclip));
-      for (const p of inn) shape.lineTo(p[0], Math.max(p[1], zclip));
-      shape.closePath();
-      const g = new THREE.ExtrudeGeometry(shape, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2 });
-      const hw = HWB(xa) - 0.008;
-      const m = cladP.add(g, { pos: [xa, 0, sgn > 0 ? hw : -hw - 0.022] });
-      m.userData.subId = 1;
+    // The R2's lower trim is one dark shoe: up and over each wheel, joined along the sill by the rocker
+    // band. It is built as ONE piece per side and laid onto the skin vertex by vertex, so the flare follows
+    // the front fender's tumblehome instead of standing 27-31 mm off it as a flat plate, and the rocker is
+    // no longer a separate box bolted under the doors.
+    // The flares' band (TRIM_IN .. TRIM_W outside the opening) is set at the top of the file, next to the arch.
+    const W = TRIM_W, IN = TRIM_IN, ZC = 0.29, ROCK_Y = 0.50, DEPTH = 0.020, PROUD = 0.006, BEVEL = 0.006;
+    const arc = (xa, rx, ry, from, to, n = 224) => {   // superellipse arc round the hub, angle 0 = forward
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const ang = from + (to - from) * i / n, px = Math.cos(ang), pz = Math.sin(ang);
+        const q = Math.pow(Math.pow(Math.abs(px), ARCH_N) + Math.pow(Math.abs(pz), ARCH_N), 1 / ARCH_N);
+        const p = [xa + px / q * rx, S.tireR + pz / q * ry];
+        if (p[1] >= ZC) pts.push(p);
+      }
+      return pts;
+    };
+    const len = (pts) => { let d = 0; for (let i = 1; i < pts.length; i++) d += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return d; };
+    const resample = (pts, n) => {   // n + 1 points evenly spaced along the polyline, both ends kept
+      const d = [0]; for (let i = 1; i < pts.length; i++) d.push(d[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      const out = []; let k = 0;
+      for (let i = 0; i <= n; i++) {
+        if (i === n) { out.push(pts[pts.length - 1].slice()); break; }
+        const s = d[d.length - 1] * i / n; while (k < d.length - 2 && d[k + 1] < s) k++;
+        const t = (s - d[k]) / ((d[k + 1] - d[k]) || 1);
+        out.push([pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t]);
+      }
+      return out;
+    };
+    const outR = arc(S.XR, RA_X + W, RA_Y + W, Math.PI, 0), outF = arc(S.XF, RA_X + W, RA_Y + W, Math.PI, 0);
+    const inR = arc(S.XR, RA_X + IN, RA_Y + IN, Math.PI, 0), inF = arc(S.XF, RA_X + IN, RA_Y + IN, Math.PI, 0);
+    const rockA = [trimX(S.XR, 1, ROCK_Y, 1), ROCK_Y], rockB = [trimX(S.XF, -1, ROCK_Y, 1), ROCK_Y];
+    const footR = inR[inR.length - 1], footF = inF[0];   // the inner edges at hub height, either end of the rocker
+    // The shoe is a band between two edges that both run rear to front. The outer edge: the rear flare's
+    // outer edge from its rear foot (hub height) over the top and down to the rocker top, the rocker top,
+    // then the front flare's outer edge up, over and down to its front foot. The inner edge: round the
+    // rear opening, down its front side to ZC, the rocker bottom, up the front opening's rear side and
+    // round it to its front foot. The outer feet stay at hub height: dropped to ZC they fold under the
+    // bottom corner. The two edges are resampled in step, in three spans that match each other (rear
+    // flare, rocker, front flare): a column every 30 mm round the flares, every 90 mm along the straight
+    // rocker, where the skin barely bends and finer columns only add triangles.
+    const spans = [
+      [[...outR.filter(p => p[0] <= S.XR || p[1] > ROCK_Y), rockA], [...inR, [footR[0], ZC]]],
+      [[rockA, rockB], [[footR[0], ZC], [footF[0], ZC]]],
+      [[rockB, ...outF.filter(p => p[0] >= S.XF || p[1] > ROCK_Y)], [[footF[0], ZC], ...inF]],
+    ];
+    const top = [], bot = [];
+    for (const [u, l] of spans) {
+      const n = Math.max(1, Math.ceil(Math.max(len(u), len(l)) / (u[0] === rockA ? 0.09 : 0.03)));
+      const ru = resample(u, n), rl = resample(l, n);
+      if (top.length) { ru.shift(); rl.shift(); }        // the corner between two spans is already in
+      top.push(...ru); bot.push(...rl);
     }
+    // Faces as a grid, M rows across the band. Triangulating the outline instead (ExtrudeGeometry's own
+    // faces) gives slivers, some the whole rocker long, and a sliver laid on a curved skin cuts a chord
+    // through it: up to 27 mm under the face it should be on. The grid gives the drape a vertex every
+    // couple of centimetres to bend at.
+    const M = 10, N = top.length;
+    const at = (i, r) => r === 0 ? top[i] : r === M ? bot[i] : [top[i][0] + (bot[i][0] - top[i][0]) * r / M, top[i][1] + (bot[i][1] - top[i][1]) * r / M];
+    // The extrusion still supplies the bevelled side walls. Its outline is the grid's own boundary, end
+    // columns included, so the walls and the faces share every edge vertex and no crack can open.
+    const rim = [...top]; for (let r = 1; r < M; r++) rim.push(at(N - 1, r));
+    for (let i = N - 1; i >= 0; i--) rim.push(bot[i]); for (let r = M - 1; r >= 1; r--) rim.push(at(0, r));
+    const shape = new THREE.Shape();
+    shape.moveTo(rim[0][0], rim[0][1]); for (const p of rim.slice(1)) shape.lineTo(p[0], p[1]); shape.closePath();
+    const ext = new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 2, curveSegments: 1 });
+    const walls = ext.groups.find(q => q.materialIndex === 1), ea = ext.getAttribute('position').array;
+    const flat = Array.from(ea.subarray(walls.start * 3, (walls.start + walls.count) * 3)); ext.dispose();
+    // the faces wind the same way round as the walls see them: outer face toward +z, back face toward -z
+    let area = 0; for (let i = 0; i < N - 1; i++) area += (top[i + 1][0] - top[i][0]) * (bot[i][1] - top[i][1]) - (top[i + 1][1] - top[i][1]) * (bot[i][0] - top[i][0]);
+    const ccw = area > 0;   // whether grid order (i, r) -> (i + 1, r) -> (i + 1, r + 1) runs anticlockwise seen from +z
+    for (const [zl, out] of [[DEPTH + BEVEL, true], [-BEVEL, false]]) {
+      for (let i = 0; i < N - 1; i++) for (let r = 0; r < M; r++) {
+        const a = at(i, r), b = at(i + 1, r), c = at(i + 1, r + 1), d = at(i, r + 1);
+        const tris = (ccw === out) ? [a, b, c, a, c, d] : [a, c, b, a, d, c];
+        for (const p of tris) flat.push(p[0], p[1], zl);
+      }
+    }
+    const shoe = new THREE.BufferGeometry(); shoe.setAttribute('position', new THREE.Float32BufferAttribute(flat, 3));
+    // half-width of the unnotched skin at (x, y), read off the side between its bottom and top corners
+    const skinAt = (x, y) => { const sec = lowerSec(x, false); const j = jExact(sec, J.cBR, J.cTR, Math.max(y, sec[J.cBR][1] + 1e-4)); return loopPoint(sec, j)[0]; };
+    // Each part is built on the +z side and mirrored. A mirror image's triangles are re-wound to keep their
+    // normals pointing out: an inward normal makes a part that receives shadows (the configurator's
+    // cladding does) shadow itself.
+    const rewind = (g) => {
+      if (g.index) { const a = g.index.array; for (let i = 0; i < a.length; i += 3) { const t = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = t; } g.index.needsUpdate = true; return; }
+      for (const att of Object.values(g.attributes)) {
+        const k = att.itemSize, a = att.array;
+        for (let i = 0; i < att.count; i += 3) for (let c = 0; c < k; c++) { const t = a[(i + 1) * k + c]; a[(i + 1) * k + c] = a[(i + 2) * k + c]; a[(i + 2) * k + c] = t; }
+        att.needsUpdate = true;
+      }
+    };
+    // lay a geometry on the skin: each vertex keeps its x and y, and its own z becomes a distance out from
+    // the skin. A section costs a loop build, and the same (x, y) recurs in every triangle and bevel ring
+    // round a vertex, so each one is looked up once.
+    const drape = (g, base) => {
+      const pa = g.getAttribute('position'), seen = new Map();
+      for (let i = 0; i < pa.count; i++) {
+        const x = pa.getX(i), y = pa.getY(i), k = x + ',' + y;
+        let s = seen.get(k); if (s === undefined) { s = skinAt(x, y); seen.set(k, s); }
+        pa.setZ(i, s + base + pa.getZ(i));
+      }
+      pa.needsUpdate = true;
+      return g;
+    };
+    // the -z copy of a finished +z part: positions and normals mirrored, triangles re-wound
+    const mirrored = (g) => {
+      const m = g.clone();
+      for (const name of ['position', 'normal']) { const a = m.getAttribute(name); for (let i = 0; i < a.count; i++) a.setZ(i, -a.getZ(i)); }
+      rewind(m); return m;
+    };
+    // Smooth normals across the draped faces, kept sharp across the bevel's 45 degree steps, so the trim
+    // shades as one moulding and not as a field of flat facets.
+    const creaseNormals = (g, deg) => {
+      const p = g.getAttribute('position').array, nrm = new Float32Array(p.length), cmin = Math.cos(deg * Math.PI / 180);
+      const key = (i) => `${Math.round(p[i] * 1e5)},${Math.round(p[i + 1] * 1e5)},${Math.round(p[i + 2] * 1e5)}`;
+      const faces = [], byPos = new Map();
+      for (let t = 0; t < p.length; t += 9) {
+        const ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2], vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+        const f = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];   // area-weighted
+        faces.push([f, Math.hypot(...f) || 1]);
+        for (let c = 0; c < 3; c++) { const k = key(t + 3 * c); if (!byPos.has(k)) byPos.set(k, []); byPos.get(k).push(faces.length - 1); }
+      }
+      for (let t = 0, fi = 0; t < p.length; t += 9, fi++) {
+        const [o, ol] = faces[fi];
+        for (let c = 0; c < 3; c++) {
+          let x = 0, y = 0, z = 0;
+          for (const q of byPos.get(key(t + 3 * c))) { const [f, l] = faces[q]; if ((f[0] * o[0] + f[1] * o[1] + f[2] * o[2]) / (l * ol) >= cmin) { x += f[0]; y += f[1]; z += f[2]; } }
+          const l = Math.hypot(x, y, z) || 1; nrm[t + 3 * c] = x / l; nrm[t + 3 * c + 1] = y / l; nrm[t + 3 * c + 2] = z / l;
+        }
+      }
+      g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+      return g;
+    };
+    // extruded local z runs -BEVEL .. DEPTH + BEVEL: the back face sits 4 mm under the skin, the outer face 28 mm out
+    creaseNormals(drape(shoe, PROUD - 0.004), 30);
+    cladP.add(shoe, { sub: 1 }); cladP.add(mirrored(shoe), { sub: 1 });
+    const FACE = DEPTH + BEVEL + PROUD - 0.004;
+    // Amber side markers (sub 2), laid on the flare's outer face and sunk 1 mm into it: a slim reflector
+    // up the front arch's leading side, leaning with the band as on the car, and a short level repeater on
+    // its trailing side behind the front wheel. The reflector's centre is at y 0.73, as measured on the
+    // reference photos: just behind and above the bumper's top corner (x 1.96, y 0.712), as on the car.
+    const MK = 0.006;
+    const marker = (w, h, x, y, lean) => {
+      const g = rbox(w, h, MK, 0.003, 2);
+      g.rotateZ(lean); g.translate(x, y, 0);
+      drape(g, FACE + MK / 2 - 0.001);
+      cladP.add(g, { sub: 2 }); cladP.add(mirrored(g), { sub: 2 });
+    };
+    // front reflector: centred across the band, its long axis along the band's own centre line
+    const yF = 0.73, xF = trimX(S.XF, 1, yF, 0.5);
+    const tx = trimX(S.XF, 1, yF + 0.01, 0.5) - trimX(S.XF, 1, yF - 0.01, 0.5);
+    marker(0.014, 0.075, xF, yF, Math.atan2(-tx, 0.02));
+    // rear repeater: level, so it sits in the middle of the room the slanting band leaves it
+    const yR = 0.70, hR = 0.018;
+    marker(0.035, hR, (trimX(S.XF, -1, yR + hR / 2, 1) + trimX(S.XF, -1, yR - hR / 2, 0)) / 2, yR, 0);
   }
   // ===== front lamps & fascia =====
-  const lampP = P('headlamps', 'STADIUM HEADLAMPS', 'Vertical LED “stadium” rings, 190 × 330 mm, three matrix modules', 'shell');
+  const LAMP = { y: 0.944, z: 0.513, w: 0.150, h: 0.288, mw: 0.089, mh: 0.200 };   // front drawing, face-plane scale
+  const stadium = (path, w, h) => { const r = w / 2, v = h / 2 - r; path.moveTo(-r, -v); path.absarc(0, -v, r, Math.PI, Math.PI * 2, false); path.lineTo(r, v); path.absarc(0, v, r, 0, Math.PI, false); path.closePath(); return path; };
+  const pill = (w, h, r) => { const p = new THREE.Shape(), a = w / 2 - r, b = h / 2 - r; p.moveTo(-a, -h / 2); p.lineTo(a, -h / 2); p.absarc(a, -b, r, -Math.PI / 2, 0); p.lineTo(w / 2, b); p.absarc(a, b, r, 0, Math.PI / 2); p.lineTo(-a, h / 2); p.absarc(-a, b, r, Math.PI / 2, Math.PI); p.lineTo(-w / 2, -b); p.absarc(-a, -b, r, Math.PI, Math.PI * 1.5); return p; };
+  // extruded along local z, then turned to face +x; local x runs [x0, x1] after the turn
+  // 8 curve segments: three doubles that on every arc, so 16 per arc, under 0.4 mm off the true curve
+  const faceOn = (shape, x0, x1) => { const g = new THREE.ExtrudeGeometry(shape, { depth: x1 - x0, bevelEnabled: false, curveSegments: 8 }); g.translate(0, 0, x0); g.rotateY(Math.PI / 2); return g; };
+  const lampP = P('headlamps', 'STADIUM HEADLAMPS', 'Vertical LED “stadium” rings, 150 × 288 mm, three matrix modules', 'shell');
   {
     for (const sgn of [1, -1]) {
-      lampP.add(rbox(0.035, 0.33, 0.19, 0.095, 4), { pos: [BODY_NOSE + 0.010, 0.875, sgn * 0.595] });
-      lampP.add(rbox(0.012, 0.27, 0.13, 0.065, 4), { pos: [BODY_NOSE + 0.028, 0.875, sgn * 0.595], sub: 1 });
+      const ring = stadium(new THREE.Shape(), LAMP.w, LAMP.h); ring.holes.push(stadium(new THREE.Path(), LAMP.mw, LAMP.mh));
+      lampP.add(faceOn(ring, -0.012, 0.002), { pos: [BODY_NOSE + 0.010, LAMP.y, sgn * LAMP.z] });                       // DRL ring
+      lampP.add(faceOn(stadium(new THREE.Shape(), LAMP.mw, LAMP.mh), -0.010, -0.001), { pos: [BODY_NOSE + 0.010, LAMP.y, sgn * LAMP.z], sub: 1 });   // dark lens
+      for (const dy of [0.054, -0.004, -0.061]) lampP.add(faceOn(pill(0.065, 0.030, 0.012), -0.002, 0.0005), { pos: [BODY_NOSE + 0.010, LAMP.y + dy, sgn * LAMP.z], sub: 2 });
     }
-    lampP.anchor = new THREE.Vector3(BODY_NOSE + 0.04, 0.875, -0.595); lampP.anchorN = new THREE.Vector3(1, 0, -0.3);
+    lampP.anchor = new THREE.Vector3(BODY_NOSE + 0.02, LAMP.y, -LAMP.z); lampP.anchorN = new THREE.Vector3(1, 0, -0.3);
   }
   const barP = P('lightBar', 'FRONT LIGHT BAR', 'Edge-lit bar under the hood lip, wraps the corners', 'shell');
   {
-    barP.add(rbox(0.03, 0.05, 1.72, 0.015, 2), { pos: [BODY_NOSE + 0.008, 0.995, 0] });
-    for (const sgn of [1, -1]) barP.add(rbox(0.11, 0.05, 0.03, 0.012, 2), { pos: [BODY_NOSE - 0.06, 1.002, sgn * (HWT(BODY_NOSE - 0.06) + 0.004)], sub: 1 });
-    barP.anchor = new THREE.Vector3(BODY_NOSE + 0.03, 1.005, 0.2); barP.anchorN = new THREE.Vector3(1, 0.2, 0);
+    barP.add(wrapBand(2.02, BODY_NOSE, 1.023, 0.040, 0.007, J.cTR + 8));                    // lit strip, one piece round both corners
+    barP.add(wrapBand(2.00, BODY_NOSE, 1.015, 0.070, 0.003, J.cTR + 8), { sub: 1 });         // dark housing behind it
+    barP.anchor = new THREE.Vector3(BODY_NOSE + 0.01, 1.022, 0.2); barP.anchorN = new THREE.Vector3(1, 0.2, 0);
   }
-  const fasciaP = P('fasciaFront', 'FRONT FASCIA', 'Deep black bumper, intake slot, grey skid lip, tow-hook covers, radar', 'shell');
+  const fasciaP = P('fasciaFront', 'FRONT FASCIA', 'Deep black bumper, intake slot, grey skid, tusk lamps, radar', 'shell');
   {
-    fasciaP.add(rbox(0.06, 0.34, 1.62, 0.04, 3), { pos: [BODY_NOSE - 0.012, 0.535, 0] });
-    fasciaP.add(rbox(0.05, 0.07, 1.00, 0.015, 2), { pos: [BODY_NOSE + 0.005, 0.42, 0], sub: 1 });   // intake slot
-    fasciaP.add(rbox(0.16, 0.06, 1.24, 0.015, 2), { pos: [BODY_NOSE - 0.17, 0.315, 0], sub: 2 });  // skid lip
-    for (const sgn of [1, -1]) fasciaP.add(new THREE.BoxGeometry(0.008, 0.045, 0.11), { pos: [BODY_NOSE + 0.02, 0.60, sgn * 0.59], sub: 3 });
-    fasciaP.add(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 16), { pos: [BODY_NOSE + 0.022, 0.56, 0], rot: [0, 0, Math.PI / 2], sub: 4 });
-  }
-  // ===== rear: quarter pills on the body, liftgate carries the bar, glass, plate and lettering =====
-  const pillsP = P('tailPills', 'REAR CORNER LAMPS', 'Horizontal stadium pills in a recess, body-colour brow above, vent below', 'shell');
-  {
-    const tailX = T(4.58), tailY = 1.115;
-    // ONE bar: up each quarter, around both corners and across the tail, with the lit strip inside it
-    // and a body-colour brow above. The corner "pills" are simply its ends.
-    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY, 0.090, 0.005, J.cTR + 8, 'ends'), { sub: 1 });  // recess
-    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY, 0.052, 0.011, J.cTR + 8, 'ends'));               // lit strip
-    // brow height is keyed UNDER the section's own top at the tail, not set by a constant: the roll
-    // pulls zt down to 1.178 there, and a brow at tailY + 0.068 = 1.183 sits above the bodywork, so
-    // jAtHeight finds no such height, clamps to the top corner and returns a crossing 60 mm narrower
-    // at each end than the lit strip below it. Invisible while the bands were buried; not any more.
-    pillsP.add(wrapBand(T(4.46), BODY_TAIL, tailY + 0.050, 0.024, 0.014, J.cTR + 8, 'ends'), { sub: 2 });  // brow above
+    // bumper, wraps to the arch. Its face, the pods, their strips and the radar each sit 1.5 mm proud of the
+    // one behind (face 2.307, pods and radar 2.3085, strips 2.310 = S.NOSE): coplanar fronts z-fight.
+    // Its rear end follows the arch trim's outer edge, 2 mm onto the trim's bevel, top to bottom: a
+    // straight end at x 1.960 lapped 40 mm over the trim's front leg at y 0.55 and drew a line across it,
+    // and a straight end at the trim's foot (2.008) left a 45 mm wedge of paint at the bumper's top.
+    fasciaP.add(wrapSolid((y) => trimX(S.XF, 1, y, 1) + 0.002, BODY_NOSE, 0.55, 0.712, 0.031, J.sideR + 17));
+    // skid: the nose's own raked underside, dressed as one panel (bottom run and most of each bottom corner)
+    const js = []; for (let j = -13; j <= 13; j++) js.push(j);
+    fasciaP.add(patchX(x => lowerSec(x, false), js, stations(2.03, BODY_NOSE - 0.002, 0.012), 0.006), { sub: 2 });
+    // intake: recessed into the skid's rake (surface runs (2.215, 0.38) -> (2.268, 0.48), 62 deg from level)
+    fasciaP.add(rbox(0.010, 0.110, 0.86, 0.004, 2), { pos: [2.2455, 0.430, 0], rot: [0, 0, -0.487], sub: 1 });
     for (const sgn of [1, -1]) {
-      const vp = onSkin(tailX + 0.12, 0.62, sgn, 0.006);
-      pillsP.add(rbox(0.16, 0.075, 0.010, 0.018, 2), { pos: vp, sub: 3 });                      // pressure-relief vent
+      fasciaP.add(rbox(0.030, 0.115, 0.205, 0.020, 2), { pos: [BODY_NOSE + 0.0175, 0.578, sgn * 0.508], sub: 3 });   // tusk pod
+      fasciaP.add(rbox(0.006, 0.030, 0.140, 0.006, 2), { pos: [BODY_NOSE + 0.031, 0.560, sgn * 0.508], sub: 5 });   // its strip lamp
     }
+    fasciaP.add(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 16), { pos: [BODY_NOSE + 0.0275, 0.640, 0], rot: [0, 0, Math.PI / 2], sub: 4 });
+  }
+  // ===== rear: quarter pills on the body, liftgate carries the bar, glass and lettering, plate in the bumper =====
+  // The lamp bar: a smoked surround LAMP_H tall centred on LAMP_Y, the lit lens inside it, both hugging
+  // the skin row by row and rounded at their forward ends, which sit ~0.30 m onto each quarter. The
+  // ends stay on the body (tailPills); the run across the tail rides the liftgate. No brow over it.
+  // The lens ends 12 mm short of the surround's end (aft of it: x falls toward the tail), so its rounded
+  // tip stays inside the surround; started 12 mm AHEAD of it, its first 20 mm stood 10 mm off the paint.
+  const LAMP_XA = T(4.40), LAMP_Y = 1.142, LAMP_H = 0.090, LIT_Y = 1.155, LIT_H = 0.044;
+  const lampBar = (part) => [
+    wrapBand(LAMP_XA, BODY_TAIL, LAMP_Y, LAMP_H, 0.005, J.cTR + 8, part, { hug: true, round: true }),         // smoked surround
+    wrapBand(LAMP_XA - 0.012, BODY_TAIL, LIT_Y, LIT_H, 0.010, J.cTR + 8, part, { hug: true, round: true }),  // lit lens
+  ];
+  const pillsP = P('tailPills', 'REAR CORNER LAMPS', 'The lamp bar\'s rounded ends on each rear quarter: smoked surround with the lit lens inside', 'shell');
+  {
+    const [surround, lens] = lampBar('ends');
+    pillsP.add(surround, { sub: 1 });
+    pillsP.add(lens);   // sub 0 is the lit part (the Garage glow and discovery read it)
   }
   const fasciaRP = P('fasciaRear', 'REAR FASCIA', 'Black bumper band, grey skid, reflectors, hitch cover', 'shell');
   {
-    fasciaRP.add(wrapBand(T(4.44), BODY_TAIL, 0.560, 0.235, 0.004, J.sideR + 17));                 // bumper band, wraps the corners
-    fasciaRP.add(wrapBand(T(4.41), BODY_TAIL, 0.432, 0.070, 0.011, J.sideR + 17), { sub: 1 });     // grey skid under it
-    for (const sgn of [1, -1]) fasciaRP.add(new THREE.BoxGeometry(0.008, 0.08, 0.03), { pos: [BODY_TAIL + 0.03, 0.62, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 3 });
+    // The bumper is a black band standing BOFF proud of the skin from BY0 to BY1, closed by a ledge
+    // on top and a lip underneath, rather than a zero-thickness curtain hanging below the body. It
+    // hugs the skin row by row, so it follows the bottom corner instead of cutting a chord through it.
+    const BX = -2.03, BY0 = 0.590, BY1 = 0.780, BOFF = 0.016, jB = { jLo: J.cBR };
+    fasciaRP.add(wrapBand(BX, BODY_TAIL, (BY0 + BY1) / 2, BY1 - BY0, BOFF, J.sideR + 17, 'all', { ...jB, hug: true }));   // black band, proud of the skin
+    fasciaRP.add(wrapBand(BX, BODY_TAIL, BY1, 0, 0, J.sideR + 17, 'all', { ...jB, ledge: [BOFF, 0] }), { sub: 2 });       // top ledge, facing up
+    fasciaRP.add(wrapBand(BX, BODY_TAIL, BY0, 0, 0, J.sideR + 17, 'all', { ...jB, ledge: [0.006, BOFF] }), { sub: 2 });   // lower lip, facing down
+    // skid: the underside itself, from the band's lip on one flank, under the tail, to the other. It
+    // inherits ZB's departure chamfer, so seen from behind it is the grey band under the black one.
+    fasciaRP.add(colGrid(x => lowerSec(x, false), stations(BX, BODY_TAIL, 0.02),
+      (x, pts) => jExact(pts, J.sideL, J.bottomL, BY0), (x, pts) => J.N + jExact(pts, J.bottomR, J.sideR + 17, BY0), 40, 0.006), { sub: 1 });
+    for (const sgn of [1, -1]) {
+      const rp = onSkin(-2.17, BY0 + 0.016, sgn, BOFF + 0.002);
+      fasciaRP.add(rbox(0.24, 0.018, 0.004, 0.002, 2), { pos: rp, sub: 3 });                            // flank reflector, on the band
+    }
+    fasciaRP.add(new THREE.BoxGeometry(0.008, 0.155, 0.31), { pos: [BODY_TAIL - BOFF, 0.655, 0], sub: 4 });   // licence plate in the bumper, rear face at S.TAIL
   }
+  // The liftgate stops just over the bumper ledge; under it the body carries its own closing panel,
+  // so the gate's cap no longer runs down through the bumper when it opens.
+  const GATE_Y0 = 0.785;
+  bodyP.add(capFromLoop(clipLoop(lowerSec(BODY_TAIL + 0.002), -Infinity, GATE_Y0), BODY_TAIL + 0.002, -1), { sub: 3 });   // closing panel behind the bumper
   const gateP = P('tailgate', 'LIFTGATE & DROP GLASS', 'One-piece liftgate, top-hinged; powered rear window lowers into it', 'shell');
   {
     gateP.hinge = new THREE.Vector3(T(4.50), 1.665, 0);
     gateP.group.position.copy(gateP.hinge);
-    gateP.add(rebase(capFromLoop(lowerSec(BODY_TAIL + 0.002), BODY_TAIL + 0.002, -1), gateP.hinge));
+    gateP.add(rebase(capFromLoop(clipLoop(lowerSec(BODY_TAIL + 0.002), GATE_Y0), BODY_TAIL + 0.002, -1), gateP.hinge));   // down to GATE_Y0 only
     const xs = stations(T(4.49), T(4.70), 0.015);
     gateP.add(rebase(loft(xs.map(x => ({ x, pts: upperSec(x) }))), gateP.hinge), { sub: 1 });
     gateP.add(rebase(capFromLoop(upperSec(T(4.70) - 0.001), T(4.70) - 0.001, -1), gateP.hinge), { sub: 1 });
-    gateP.add(new THREE.BoxGeometry(0.012, 0.20, 0.36), { pos: [BODY_TAIL - 0.014 - gateP.hinge.x, 0.82 - gateP.hinge.y, 0], sub: 3 });   // licence plate
-    gateP.add(new THREE.BoxGeometry(0.006, 0.06, 0.75), { pos: [BODY_TAIL - 0.013 - gateP.hinge.x, 0.96 - gateP.hinge.y, 0], sub: 4 });   // RIVIAN lettering plate
-    gateP.add(rbox(0.008, 0.025, 0.065, 0.006, 2), { pos: [BODY_TAIL - 0.014 - gateP.hinge.x, 0.84 - gateP.hinge.y, -0.72], sub: 5 });    // R2 badge
-    // the lamp bar across the tail belongs to the gate and swings with it. Subs 8-10 are free on this
-    // part, so the glow test can pick out the lit strip without lighting the rest of the liftgate.
-    const TY = 1.115;
-    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY, 0.090, 0.005, J.cTR + 8, 'cross'), gateP.hinge), { sub: 9 });
-    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY, 0.052, 0.011, J.cTR + 8, 'cross'), gateP.hinge), { sub: 8 });
-    gateP.add(rebase(wrapBand(T(4.46), BODY_TAIL, TY + 0.050, 0.024, 0.014, J.cTR + 8, 'cross'), gateP.hinge), { sub: 10 });
-    gateP.add(rbox(0.05, 0.40, 1.30, 0.03, 2), { pos: [BODY_TAIL + 0.05 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0], sub: 6 });            // inner trim panel
-    for (const sgn of [1, -1]) gateP.add(new THREE.BoxGeometry(0.004, 0.42, 0.05), { pos: [BODY_TAIL + 0.03 - gateP.hinge.x, 0.93 - gateP.hinge.y, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 7 });
+    // the rear glass is a panel IN the liftgate, not the whole upper gate: body colour round it (the
+    // D-pillar faces and the band down to the lamp bar), a black frame, and the glass inset within it.
+    // The patch runs across the section's top run (indices 42-62, centre 52) between |z| = zHalf.
+    const glassPatch = (zHalf, x0, x1, off, sub) => gateP.add(rebase(colGrid(upperSec, linspace(x0, x1, 0.006),
+      (x, pts) => jAtZ(pts, J.top, J.top + 10, zHalf), (x, pts) => jAtZ(pts, J.top + 10, J.cTL, -zHalf), 14, off), gateP.hinge), { sub });
+    // The frame starts at T(4.49), the gate's own front station, not 10 mm ahead of it on the fixed roof:
+    // from -2.170 its leading strip swept up through the CHMSL and brushed the lip as the gate opened.
+    glassPatch(0.665, T(4.49), -2.312, 0.002, 12);   // black frame
+    glassPatch(0.625, -2.186, -2.296, 0.004, 11);   // glass
+    // lettering: six separate blocks (generic, not the letterforms) standing 5 mm proud of the cap face
+    // at BODY_TAIL + 0.002, and the badge seated on that face too
+    for (let i = 0; i < 6; i++) gateP.add(new THREE.BoxGeometry(0.005, 0.040, 0.030), { pos: [BODY_TAIL - 0.0005 - gateP.hinge.x, 1.035 - gateP.hinge.y, -0.2625 + 0.105 * i], sub: 4 });
+    gateP.add(rbox(0.008, 0.025, 0.065, 0.006, 2), { pos: [BODY_TAIL - 0.002 - gateP.hinge.x, 0.84 - gateP.hinge.y, -0.72], sub: 5 });    // R2 badge
+    // the lamp bar across the tail belongs to the gate and swings with it: sub 9 the surround, sub 8
+    // the lit lens, so the glow test can pick out the lit part without lighting the rest of the liftgate
+    const [surround, lens] = lampBar('cross');
+    gateP.add(rebase(surround, gateP.hinge), { sub: 9 });
+    gateP.add(rebase(lens, gateP.hinge), { sub: 8 });
+    // inner trim and its edge strips stay above GATE_Y0 too
+    gateP.add(rbox(0.05, 0.36, 1.30, 0.03, 2), { pos: [BODY_TAIL + 0.05 - gateP.hinge.x, 0.99 - gateP.hinge.y, 0], sub: 6 });            // inner trim panel
+    for (const sgn of [1, -1]) gateP.add(new THREE.BoxGeometry(0.004, 0.34, 0.05), { pos: [BODY_TAIL + 0.03 - gateP.hinge.x, 0.98 - gateP.hinge.y, sgn * 0.74], rot: [0, sgn * Math.PI / 4, 0], sub: 7 });
     gateP.anchor = new THREE.Vector3(T(4.58), ZROOF(T(4.58)) + 0.008, 0.05); gateP.anchorN = new THREE.Vector3(-0.75, 0.65, 0);
-    gateP.explode.set(-0.95, 0.50, 0);
+    gateP.explode.set(-0.95, 1.95, 0);   // the hood's tier: back and up, clear above the body it closes
   }
   const cargoP = P('cargo', 'CARGO AREA', '813 L behind row two, flat floor, wheel-well trims', 'interior');
   {
@@ -725,7 +1116,7 @@ export function buildVehicle() {
   cargoFloorP.add(new THREE.BoxGeometry(1.15, 0.02, 1.10), { pos: [T(4.13), 0.70, 0] });
   const portP = P('chargePort', 'CHARGE PORT', 'NACS inlet behind a hinged door on the left-rear quarter, 210 kW DC', 'shell');
   {
-    const pp = onSkin(T(4.40), 0.82, -1, 0.007);
+    const pp = onSkin(T(4.40), 0.885, -1, 0.007);   // clear of the bumper's top ledge at 0.78
     portP.hinge = new THREE.Vector3(pp[0] + 0.075, 0, pp[2]);
     portP.group.position.copy(portP.hinge);
     portP.add(rbox(0.15, 0.17, 0.012, 0.03, 2), { pos: [pp[0] - portP.hinge.x, pp[1], 0] });
@@ -734,7 +1125,7 @@ export function buildVehicle() {
   }
   const inletP = P('inlet', 'NACS INLET', 'NACS inlet in its recess: DC pins, AC pins, latch and ring light', 'interior');
   {
-    const rp = onSkin(T(4.40), 0.82, -1, -0.032);                       // recessed pocket behind the door
+    const rp = onSkin(T(4.40), 0.885, -1, -0.032);                      // recessed pocket behind the door
     // pocket sits just inside the door's own outline so its rim cannot peek round the edge
     inletP.add(rbox(0.142, 0.162, 0.045, 0.018, 3), { pos: rp });
     const fp = [rp[0], rp[1], rp[2] + 0.018];                            // inlet face, sitting in the pocket
@@ -933,9 +1324,26 @@ export function buildVehicle() {
   // ===== wheels =====
   const wheels = [];
   const r = S.tireR, hw = S.tireW / 2;
-  const tireProfile = [[0.268, hw - 0.025], [0.33, hw], [0.375, hw], [r - 0.008, hw - 0.012], [r, hw - 0.030], [r, -(hw - 0.030)], [r - 0.008, -(hw - 0.012)], [0.375, -hw], [0.33, -hw], [0.268, -(hw - 0.025)]].map(p => new THREE.Vector2(p[0], p[1]));
-  const tireGeo = new THREE.LatheGeometry(tireProfile, 60);
+  const tireGeo = new THREE.LatheGeometry(tyreProfile(S.rimR).map(p => new THREE.Vector2(p[0], p[1])), 96);
+  // rim flange: the visible lip the tyre bead tucks behind (the drawing's double rim circle)
+  const AX = 0.085, LIP = RIM_LIP;
+  const lipGeo = new THREE.LatheGeometry([[S.rimR - 0.012, AX + 0.004], [S.rimR + LIP - 0.005, AX + 0.027], [S.rimR + LIP, AX + 0.022], [S.rimR + LIP - 0.001, AX + 0.012], [S.rimR + LIP - 0.008, AX + 0.004]].map(p => new THREE.Vector2(p[0], p[1])), 96);
   const barrelGeo = new THREE.CylinderGeometry(S.rimR, S.rimR, 0.216, 40, 1, true);
+  // Five Y spokes, as on the 21 in Liquid Tungsten wheel in the reference: a 50 mm stem from the hub
+  // to r 150 mm, forking at r 140 mm into two 32 mm arms that land on the lip 18 degrees either side of
+  // it (traced off the side frame: fork at 0.14 m, landings 0.30 m out at +-17.8 degrees). The stem
+  // keeps its origin 155 mm out along the spoke: the showroom's spoke restyle and twin maths rely on it.
+  const STEM = new THREE.BoxGeometry(0.090, 0.050, 0.03).translate(-0.050, 0, 0);
+  const R_FORK = 0.140, R_LAND = S.rimR + 0.006, FORK = 0.31;
+  const armLen = Math.hypot(R_LAND * Math.cos(FORK) - R_FORK, R_LAND * Math.sin(FORK));
+  const ARM = new THREE.BoxGeometry(armLen + 0.02, 0.032, 0.026);
+  // Performance caliper: an arc that follows the disc, 97 mm deep over its bevels, about 63 degrees long (176 mm at the
+  // pad centre), centred on the trailing horizontal -- the reference caliper is that size, not a brick.
+  const caliperGeo = (() => {
+    const sh = new THREE.Shape(), r0 = 0.118, r1 = 0.205, h = 0.55;
+    sh.absarc(0, 0, r1, -h, h, false); sh.absarc(0, 0, r0, h, -h, true); sh.closePath();
+    return new THREE.ExtrudeGeometry(sh, { depth: 0.085, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 12 });
+  })();
   const wheelDefs = [['wheelFL', S.XF, -1, 'FRONT LEFT WHEEL'], ['wheelFR', S.XF, 1, 'FRONT RIGHT WHEEL'], ['wheelRL', S.XR, -1, 'REAR LEFT WHEEL'], ['wheelRR', S.XR, 1, 'REAR RIGHT WHEEL']];
   for (const [name, xa, sgn, label] of wheelDefs) {
     const wp = P(name, label, '20 in Bicolor Carbon alloy, 255/60 R20, 5×114.3 PCD', 'running', root);
@@ -945,15 +1353,21 @@ export function buildVehicle() {
     const face = new THREE.Group(); spin.add(face); if (sgn < 0) face.rotation.y = Math.PI;
     wp.add(tireGeo, { rot: [Math.PI / 2, 0, 0], parent: face });
     wp.add(barrelGeo, { rot: [Math.PI / 2, 0, 0], parent: face, sub: 1 });
-    const ax = 0.085;
-    wp.add(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 24), { pos: [0, 0, ax], rot: [Math.PI / 2, 0, 0], parent: face, sub: 2 });
+    wp.add(lipGeo, { rot: [Math.PI / 2, 0, 0], parent: face, sub: 7 });
+    const ax = AX;
+    wp.add(new THREE.CylinderGeometry(0.072, 0.072, 0.05, 24), { pos: [0, 0, ax], rot: [Math.PI / 2, 0, 0], parent: face, sub: 2 });
     wp.add(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 20), { pos: [0, 0, ax + 0.03], rot: [Math.PI / 2, 0, 0], parent: face, sub: 3 });
     for (let k = 0; k < 5; k++) {
       const a = k * Math.PI * 2 / 5 + 0.3;
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.085, 0.03), white);
+      const spoke = new THREE.Mesh(STEM, white);
       spoke.position.set(Math.cos(a) * 0.155, Math.sin(a) * 0.155, ax); spoke.rotation.z = a; wp.addMesh(spoke, face); spoke.userData.subId = 4;
-      const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.008), white);
-      const b = a + Math.PI / 5; pocket.position.set(Math.cos(b) * 0.19, Math.sin(b) * 0.19, ax - 0.012); pocket.rotation.z = b; wp.addMesh(pocket, face); pocket.userData.subId = 5;
+      const fx = R_FORK * Math.cos(a), fy = R_FORK * Math.sin(a);
+      for (const s of [1, -1]) {
+        const ex = R_LAND * Math.cos(a + s * FORK), ey = R_LAND * Math.sin(a + s * FORK);
+        const arm = new THREE.Mesh(ARM, white);
+        arm.position.set((ex + fx) / 2, (ey + fy) / 2, ax + 0.002); arm.rotation.z = Math.atan2(ey - fy, ex - fx);
+        wp.addMesh(arm, face); arm.userData.subId = 8;
+      }
       const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.02, 8), white);
       lug.position.set(Math.cos(a + 0.628) * 0.057, Math.sin(a + 0.628) * 0.057, ax + 0.03); lug.rotation.x = Math.PI / 2; wp.addMesh(lug, face); lug.userData.subId = 6;
     }
@@ -965,8 +1379,10 @@ export function buildVehicle() {
     brakeP.add(new THREE.CylinderGeometry(0.176, 0.176, 0.032, 44), { pos: [0, 0, -0.02], rot: [Math.PI / 2, 0, 0], parent: hub });
     brakeP.add(new THREE.CylinderGeometry(0.1785, 0.1785, 0.009, 44), { pos: [0, 0, -0.02], rot: [Math.PI / 2, 0, 0], parent: hub, sub: 2 });  // vent gap on the disc edge
     brakeP.add(new THREE.CylinderGeometry(0.086, 0.086, 0.084, 24), { pos: [0, 0, -0.060], rot: [Math.PI / 2, 0, 0], parent: hub, sub: 3 });   // disc hat, reaching in to the hub flange
-    brakeP.add(rbox(0.086, 0.155, 0.090, 0.014, 2), { pos: [-0.148 * mir, 0.056, -0.02], rot: [0, 0, -0.353 * mir], parent: hub, sub: 1 });    // caliper, trailing
-    brakeP.add(rbox(0.030, 0.090, 0.104, 0.010, 2), { pos: [-0.108 * mir, 0.041, -0.02], rot: [0, 0, -0.353 * mir], parent: hub, sub: 4 });    // caliper carrier bracket
+    // caliper, trailing, straddling the disc edge: the sector is centred on local +x, which the mirrored
+    // hub turns rearward on the left; on the right a half turn about z does the same
+    brakeP.add(caliperGeo, { pos: [0, 0, -0.0625], rot: [0, 0, sgn < 0 ? 0 : Math.PI], parent: hub, sub: 1 });
+    brakeP.add(rbox(0.030, 0.090, 0.104, 0.010, 2), { pos: [-0.108 * mir, 0, -0.02], rot: [0, 0, 0], parent: hub, sub: 4 });    // caliper carrier bracket, on the caliper's axis
     wp.explode.set(0, 0.0, sgn * 0.85);   // straight outboard on the ground line; brakes ride the hub
     if (name === 'wheelFL') { wp.anchor = new THREE.Vector3(0, 0.02, -0.15); wp.anchorN = new THREE.Vector3(0, 0, -1); wp.anchorLocal = true; }
     wheels.push({ part: wp, spin, sgn, xa, front: xa > 0 });
@@ -987,7 +1403,7 @@ export function buildVehicle() {
   setExp(['lightBar'], [1.25, 2.18, 0]);
   setExp(['fasciaFront'], [1.70, 1.25, 0]);
   // rear stack: liftgate swings back and up, rear fascia straight back beneath it
-  setExp(['fasciaRear'], [-0.45, 1.50, 0]);
+  setExp(['fasciaRear'], [-0.55, 1.20, 0]);
   // interior lifts just clear of the skateboard; the frunk tub slides forward with it
   setExp(['dash', 'steeringWheel', 'seats', 'floor', 'cargo', 'cargoFloor', 'inlet'], [0, 0.14, 0]);
   setExp(['frunk', 'frunkFloor'], [0.15, 0.70, 0]);
@@ -1010,8 +1426,8 @@ export function buildVehicle() {
       hood: [1.7 - hoodP.hinge.x, ZT(1.7) + 0.01 - hoodP.hinge.y, 0], tailgate: [BODY_TAIL + 0.02 - gateP.hinge.x, 0.95 - gateP.hinge.y, 0],
       body: [0.0, 0.7, 0.93], battery: [0.4, 0.32, 0.0], wheelFL: [0, 0, 0], wheelRL: [0, 0, 0], wheelFR: [0, 0, 0], wheelRR: [0, 0, 0],
       doorFL: [-0.55, 0.9, 0], doorFR: [-0.55, 0.9, 0], doorRL: [-0.35, 0.9, 0], doorRR: [-0.35, 0.9, 0],
-      headlamps: [BODY_NOSE, 0.875, 0.595], lightBar: [BODY_NOSE + 0.008, 0.995, -0.55], fasciaFront: [BODY_NOSE - 0.02, 0.535, 0.55],
-      fasciaRear: [BODY_TAIL, 0.52, -0.50], seats: [T(2.45), 0.8, 0.4], frunk: [1.69, 1.00, -0.45],
+      headlamps: [BODY_NOSE + 0.01, 0.944, 0.513], lightBar: [BODY_NOSE + 0.007, 1.022, -0.30], fasciaFront: [BODY_NOSE - 0.02, 0.535, 0.55],
+      fasciaRear: [BODY_TAIL - 0.016, 0.685, -0.50], seats: [T(2.45), 0.8, 0.4], frunk: [1.69, 1.00, -0.45],
       subframeF: [S.XF + 0.02, 0.44, 0.50], subframeR: [S.XR - 0.02, 0.44, -0.50],
     },
     update(dt, st) {

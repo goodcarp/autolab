@@ -1,4 +1,4 @@
-import { Copy, Orbit, Share2, Sparkles, Undo2, Wrench, X } from "lucide-react";
+import { Check, Share, Sparkles, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VehicleConfigurator } from "../features/configurator";
 import { BuyerContextPanel } from "../features/configurator/VehicleConfigurator";
@@ -18,6 +18,7 @@ import {
 } from "../owner-guide/owner-guide-bridge";
 import { AgentActivity } from "./AgentActivity";
 import { IncentiveSummary } from "./IncentiveSummary";
+import { SiteNav } from "./SiteNav";
 import { ToolStatus } from "./ToolStatus";
 import { ToolActivityStrip } from "./ToolActivityStrip";
 import {
@@ -44,7 +45,6 @@ import "./configurator-shell.css";
 import {
   formatCurrency,
   selectedOption,
-  shortBuildLabel,
   vehicleInterior,
   vehiclePaint,
   vehicleWheel,
@@ -398,72 +398,27 @@ export function App() {
     }
   };
 
-  return (
-    <main className="configurator-shell" data-workspace={workspace}>
-      <header className="configurator-header" inert={reviewOpen}>
-        <a className="configurator-header__brand" href="../" aria-label="AutoLab home">
-          <span className="configurator-header__mark" aria-hidden="true">A</span>
-          <span className="configurator-header__wordmark">
-            <strong>AutoLab</strong>
-            <small>by AutoMoto</small>
-          </span>
-        </a>
-
-        <div className="configurator-header__center">
-          <nav className="lifecycle-switch" aria-label="Vehicle lifecycle">
-            <button
-              type="button"
-              aria-pressed={workspace === "configure"}
-              onClick={() => ownerGuideBridge.setWorkspace("configure")}
-            >
-              <Orbit aria-hidden="true" /> Shop
-            </button>
-            <button
-              type="button"
-              aria-pressed={workspace === "garage"}
-              onClick={() => ownerGuideBridge.setWorkspace("garage")}
-            >
-              <Wrench aria-hidden="true" /> My Car
-            </button>
-          </nav>
-          <div className="configurator-header__model">
-            <span>RX2 / {workspace === "configure" ? "Build" : "Digital twin"}</span>
-            <strong>{shortBuildLabel(buildOption)}</strong>
-            <span>Rev {revision}</span>
-          </div>
-        </div>
-
-        <div className="configurator-header__actions">
-          {activeAgentTransaction && (
-            <span className="header-action" data-state="ready">
-              <Sparkles aria-hidden="true" />
-              <span>
-                Agent configuring {activeAgentTransaction.completedCount}/{activeAgentTransaction.stageCount}
-              </span>
-            </span>
-          )}
-          {canUndo && (
-            <button className="header-action" type="button" onClick={handleUndo} aria-label="Undo agent changes">
-              <Undo2 aria-hidden="true" /> <span>Undo agent</span>
-            </button>
-          )}
-          <button className="header-action" type="button" onClick={() => void handleShare()}
-            aria-label={visibleShareStatus === "copied" ? "Link copied" : "Share build"} disabled={visibleShareStatus === "copying"}>
-            {visibleShareStatus === "copied" ? <Copy aria-hidden="true" /> : <Share2 aria-hidden="true" />}
-            <span>{visibleShareStatus === "copied" ? "Link copied" : "Share"}</span>
-          </button>
-          <ToolStatus status={siteTools} />
-        </div>
-      </header>
-
-      <ToolActivityStrip />
-
+  const shareControl = (
+    <div className="share-control" data-status={visibleShareStatus}>
+      <button className="share-control__button" type="button" onClick={() => void handleShare()}
+        aria-label={visibleShareStatus === "copied" ? "Link copied" : "Share build"} disabled={visibleShareStatus === "copying"}>
+        {visibleShareStatus === "copied" ? <Check aria-hidden="true" /> : <Share aria-hidden="true" />}
+      </button>
+      {visibleShareStatus === "copied" && <span className="share-control__toast" aria-hidden="true">Link copied</span>}
       {visibleShareStatus === "failed" && !reviewOpen && (
         <div className="share-fallback" role="status">
           <label>Copy this build link<input aria-label="Build link" readOnly value={shareUrl} onFocus={(event) => event.target.select()} /></label>
           <button type="button" aria-label="Dismiss build link" onClick={() => setShareStatus("idle")}><X aria-hidden="true" /></button>
         </div>
       )}
+    </div>
+  );
+
+  return (
+    <main className="configurator-shell" data-workspace={workspace}>
+      {/* No top bar: the brand and site nav sit in the viewport's corner, and
+          the agent status is spoken rather than drawn. */}
+      <ToolStatus status={siteTools} />
       <span className="visually-hidden" role="status">{visibleShareStatus === "copied" ? "Build link copied" : visibleShareStatus === "failed" ? "Copy unavailable. Select the build link to copy it manually." : ""}</span>
 
       <div className="autolab-surfaces" inert={reviewOpen}>
@@ -482,12 +437,14 @@ export function App() {
             paint={paint}
             wheel={wheel}
             interior={interior}
+            headerStart={<SiteNav />}
             headerAside={
               <div className="configuration-facts" aria-label="Current vehicle total">
                 <small>Vehicle total</small>
                 <strong aria-live="polite" aria-atomic="true">{formatCurrency(resolved.price.vehicleTotal)}</strong>
               </div>
             }
+            footerAside={shareControl}
             accessories={{ towHitch: Boolean(resolved.specs.tow_hitch) }}
             mode={canvasMode}
             viewPreset={viewPreset}
@@ -510,6 +467,23 @@ export function App() {
 
         <aside className="configurator-rail" aria-label="Configuration choices">
           <div className="configurator-rail__inner">
+            {/* Agent state at the top of the rail, drawn only while there is
+                something to say. The activity line is always mounted so screen
+                readers hear each call. */}
+            <div className="rail-status">
+              <ToolActivityStrip />
+              {activeAgentTransaction && (
+                <span className="rail-status__item" data-state="running">
+                  <Sparkles aria-hidden="true" />
+                  Agent configuring {activeAgentTransaction.completedCount}/{activeAgentTransaction.stageCount}
+                </span>
+              )}
+              {canUndo && (
+                <button className="rail-status__item" type="button" onClick={handleUndo} aria-label="Undo agent changes">
+                  <Undo2 aria-hidden="true" /> Undo agent
+                </button>
+              )}
+            </div>
             {(changeNotice || (lastTransaction && lastTransaction.id !== dismissedReceiptId)) && (
               <div className="rail-activity">
                 {changeNotice && (
@@ -594,12 +568,6 @@ export function App() {
                 });
               }}
               onReviewBuild={openReview}
-              onViewVehicle={() => {
-                viewportRef.current?.scrollIntoView({
-                  behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-                  block: "start",
-                });
-              }}
             />
           </div>
         </aside>
@@ -615,7 +583,11 @@ export function App() {
           {changeNotice ? `${changeNotice.title}. ${changeNotice.detail}` : ""}
         </p>
 
-        <OwnerGuide active={workspace === "garage"} context={twinContext} />
+        <OwnerGuide
+          active={workspace === "garage"}
+          context={twinContext}
+          nav={<SiteNav buildIsCurrent={false} onBuild={() => ownerGuideBridge.setWorkspace("configure")} />}
+        />
       </div>
 
       {reviewOpen && (
@@ -689,7 +661,7 @@ export function App() {
             <footer>
               {visibleShareStatus === "failed" && <label className="review-sheet__share-link">Copy this build link<input aria-label="Build link" readOnly value={shareUrl} onFocus={(event) => event.target.select()} /></label>}
               <button type="button" onClick={() => void handleShare()} disabled={visibleShareStatus === "copying"}>
-                <Share2 aria-hidden="true" /> {visibleShareStatus === "copied" ? "Build link copied" : visibleShareStatus === "copying" ? "Copying link…" : "Copy build link"}
+                <Share aria-hidden="true" /> {visibleShareStatus === "copied" ? "Build link copied" : visibleShareStatus === "copying" ? "Copying link…" : "Copy build link"}
               </button>
             </footer>
           </aside>

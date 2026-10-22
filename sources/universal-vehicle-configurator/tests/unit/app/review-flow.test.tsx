@@ -6,7 +6,9 @@ import { configuratorMutations, configuratorStore, createConfiguratorStore, r2Ca
 import { ownerGuideBridge } from "../../../src/owner-guide/owner-guide-bridge";
 
 vi.mock("../../../src/features/vehicle-canvas", () => ({
-  VehicleCanvas: ({ headerAside }: { headerAside?: ReactNode }) => <div aria-label="Vehicle preview">{headerAside}</div>,
+  VehicleCanvas: ({ headerStart, headerAside, footerAside }: { headerStart?: ReactNode; headerAside?: ReactNode; footerAside?: ReactNode }) => (
+    <div aria-label="Vehicle preview">{headerStart}{headerAside}{footerAside}</div>
+  ),
 }));
 vi.mock("../../../src/owner-guide/OwnerGuide", () => ({ OwnerGuide: () => null }));
 
@@ -122,16 +124,30 @@ describe("build review and sharing", () => {
     expect(within(dialog).getByRole("button", { name: "Close build review" })).toHaveFocus();
   });
 
-  it("returns to Shop after reviewing a build reached from a My Car deep link", async () => {
+  it("returns to Build after reviewing a build reached from a My Car deep link", async () => {
     ownerGuideBridge.setWorkspace("garage");
-    render(<App />);
-    expect(screen.getByRole("button", { name: "My Car" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Shop" }));
+    const { container } = render(<App />);
+    const shell = container.querySelector(".configurator-shell");
+    expect(shell).toHaveAttribute("data-workspace", "garage");
+    // The visible switch is gone; the Owner's Guide surface's Build link (see
+    // app.test.tsx) calls this same bridge method.
+    act(() => ownerGuideBridge.setWorkspace("configure"));
     const { dialog } = openReview();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close build review" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Review your RX2" })).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Shop" })).toHaveAttribute("aria-pressed", "true");
+    expect(shell).toHaveAttribute("data-workspace", "configure");
     expect(new URL(window.location.href).searchParams.has("workspace")).toBe(false);
+  });
+
+  it("shows the agent's progress and Undo at the top of the rail only while they apply", async () => {
+    const { container } = render(<App />);
+    const status = container.querySelector(".rail-status") as HTMLElement;
+    expect(within(status).queryByRole("button")).toBeNull();
+    expect(within(status).queryByText(/Agent configuring/)).toBeNull();
+    await act(async () => {
+      await configuratorMutations.applyAgentTransaction({ expectedRevision: 1, stages: [{ label: "Paint", patch: { set: { paint: ["paint.glacier_white"] } } }], stageDelayMs: 0 });
+    });
+    expect(within(status).getByRole("button", { name: "Undo agent changes" })).toHaveTextContent("Undo agent");
   });
 
   it("only offers agent Undo while it can restore that exact transaction", async () => {

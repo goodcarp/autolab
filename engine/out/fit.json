@@ -13,8 +13,8 @@
   {
    "dimension": "widthOverBody_m",
    "expected_m": 1.905,
-   "measured_m": 1.896,
-   "deviation_mm": -9,
+   "measured_m": 1.906,
+   "deviation_mm": 1,
    "tolerance_mm": 10,
    "status": "within",
    "measuredFrom": "body, cladding, fasciaFront, fasciaRear only"
@@ -83,21 +83,21 @@
   "compared": 9,
   "within": 9,
   "out": 0,
-  "meanDeviation_mm": 1.11,
-  "worstDeviation_mm": 9,
+  "meanDeviation_mm": 0.22,
+  "worstDeviation_mm": 1,
   "worst": null
  },
  "extremes": {
   "x": {
    "min": {
     "value_m": -2.412,
-    "part": "tailgate",
-    "label": "LIFTGATE & DROP GLASS"
+    "part": "fasciaRear",
+    "label": "REAR FASCIA"
    },
    "max": {
     "value_m": 2.31,
-    "part": "headlamps",
-    "label": "STADIUM HEADLAMPS"
+    "part": "fasciaFront",
+    "label": "FRONT FASCIA"
    }
   },
   "y": {
@@ -137,5 +137,5 @@
   "gate": "passed",
   "line": "selftest: 59/59 passed · gate passed"
  },
- "measuredAt": "2026-09-06T04:35:46.335Z"
+ "measuredAt": "2026-10-22T17:40:50.507Z"
 }

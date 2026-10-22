@@ -1,4 +1,4 @@
-// Synced from roadster-lab 3360319 (src/drive/car.js) by tools/sync-garage.mjs.
+// Synced from roadster-lab c9e9c53 (src/drive/car.js) by tools/sync-garage.mjs.
 // Edit it in the lab and re-sync; a hand edit here makes the next sync refuse.
 // The drivable Roadster as a rigid body on four ray-cast wheels.
 //
@@ -7,6 +7,25 @@
 // frame (roll, yaw, pitch). One call to step(dt) is one fixed step of semi-implicit
 // Euler: every force is worked out from the current state, then the velocities are
 // updated, then the positions with the new velocities.
+//
+// Ahead of the tyre forces, the steering and the stability control:
+//   steering  the steer-by-wire shapes the input (a speed-dependent rate limit away
+//             from the centre, then a short lag: a key's ±1 reaches full over 0.26 s at
+//             25 m/s, and comes back at once), the lock falls with speed and rises with
+//             the wing's downforce (not the fans' pull) so that full input asks for about
+//             what the tyres can give, the rack moves at its rate, and Ackermann splits the
+//             angle between the wheels.
+//             Every source of input (keys, touch, agents, the autopilots) goes through
+//             it, and inputs.steer keeps the raw value.
+//   ESC       the yaw rate about the car's own up against the bicycle model's for this
+//             steer, held to the friction limit and lagged as the car's yaw lags on the
+//             tyres' loads of the moment, and the body slip against a slide's; past either dead band the outside front wheel
+//             is braked and the rear drive cut, in proportion. On the ground only (not on
+//             the ramp), forward, near level, and not while the nose jets fire.
+//             inputs.esc = false turns it off; car.esc says what it did last step.
+//   Why: with a key's instant full lock, 1 MW at the rear and the first lock law, the
+//   car spun at every speed from 15 m/s when the steering was swung left and right with
+//   the throttle held (docs/DRIVE.md §3.6 has the numbers before and after).
 //
 // The forces, in the order they are added:
 //   wheels    a ray from each wheel's top of travel along the car's -y finds the
@@ -29,7 +48,7 @@
 // a monotone function), which keeps a light wheel on a stiff tyre stable at 240 Hz and
 // lets the brakes hold a wheel still.
 
-import { G, RHO, GEOM, MASS, TYRE, SUSPENSION, DRIVE, BRAKES, STEER, ASSISTS, AERO, CHASSIS } from './constants.js';
+import { G, RHO, GEOM, MASS, TYRE, SUSPENSION, DRIVE, BRAKES, STEER, ASSISTS, ESC, AERO, CHASSIS } from './constants.js';
 import { add, sub, scale, dot, cross, length, normalize, clamp, quatAxisAngle, quatIntegrate, quatToMat, matVec, matTVec } from './math.js';
 
 const D2R = Math.PI / 180;
@@ -51,6 +70,32 @@ function bisect(fn, lo, hi) {
   return 0.5 * (lo + hi);
 }
 
+/** What the stability control did in one step (car.esc, run.state.esc). */
+const freshEsc = () => ({ active: false, wheel: null, brakeNm: 0, cut: 0, yaw: 0, ref: 0, over: 0 });
+
+/** A tyre's cornering stiffness at load Fz (N/rad): the slope of its curve at zero slip, 1.5·μ(Fz)·Fz/αp. */
+function corneringStiffness(Fz) {
+  return (1.5 * TYRE.mu * Math.pow(Math.max(Fz, 0.25 * TYRE.Fz0) / TYRE.Fz0, -TYRE.loadSens) * Fz) / TYRE.alphaPeak;
+}
+
+/**
+ * The linear bicycle model of this car at the corner loads fz = [FL, FR, RL, RR] (N; the
+ * static loads when left out): Cf and Cr each axle's cornering stiffness; a and b the
+ * centre of mass to the front and rear axle; the understeer gradient K = (m/L)(b/Cf − a/Cr)
+ * in rad per m/s² (steady yaw rate v·δ/(L + K·v²)); and the yaw time constant per unit
+ * speed, Iz/(a²Cf + b²Cr), so τ = tauPerV·v. At the static loads τ is 0.10 s at 25 m/s;
+ * under the fans' full pull the tyres are about three times stiffer and τ a third of that.
+ */
+export function bicycle(fz = null) {
+  const m = MASS.total, L = GEOM.wheelbase;
+  const a = GEOM.XF - MASS.cg[0], b = MASS.cg[0] - GEOM.XR;
+  const sf = (m * G * b) / L / 2, sr = (m * G * a) / L / 2;
+  const [fl, fr, rl, rr] = fz ?? [sf, sf, sr, sr];
+  const Cf = corneringStiffness(fl) + corneringStiffness(fr), Cr = corneringStiffness(rl) + corneringStiffness(rr);
+  return { a, b, Cf, Cr, K: (m / L) * (b / Cf - a / Cr), tauPerV: MASS.inertia[1] / (a * a * Cf + b * b * Cr) };
+}
+const BIKE = bicycle();
+
 const WHEEL_LAYOUT = [
   { name: 'FL', front: true, side: -1 },
   { name: 'FR', front: true, side: 1 },
@@ -58,7 +103,7 @@ const WHEEL_LAYOUT = [
   { name: 'RR', front: false, side: 1 },
 ];
 
-export const DEFAULT_INPUTS = Object.freeze({ throttle: 0, brake: 0, steer: 0, fans: 0, boost: 0, hop: 0, yawL: 0, yawR: 0, wing: 'road', tc: ASSISTS.tc, abs: ASSISTS.abs });
+export const DEFAULT_INPUTS = Object.freeze({ throttle: 0, brake: 0, steer: 0, fans: 0, boost: 0, hop: 0, yawL: 0, yawR: 0, wing: 'road', tc: ASSISTS.tc, abs: ASSISTS.abs, esc: ASSISTS.esc });
 
 /**
  * createCar({ world, start, extraForces }) → the car. `world` is createWorld().
@@ -102,6 +147,10 @@ export function createCar({ world, start, extraForces = null } = {}) {
     R: quatToMat([0, 0, 0, 1]),
     inputs: { ...DEFAULT_INPUTS },
     steerAngle: 0,                       // rack position as a mean front-wheel angle about +y (rad, + = left)
+    steerShaped: 0,                      // the steer input after the steer-by-wire's rate limit (-1..1, + = right)
+    steerLagged: 0,                      // ... and after its lag: what the lock is asked for
+    yawRef: 0,                           // the stability control's reference yaw rate (rad/s, + = nose left)
+    esc: freshEsc(),                     // what the stability control did in the last step
     aero: { ...AERO.road },              // current coefficients, easing toward the wing mode's
     extraForces,
     t: 0,
@@ -151,7 +200,8 @@ export function createCar({ world, start, extraForces = null } = {}) {
     for (const w of wheels) {
       Object.assign(w, { omega: vFwd / w.r, spin: 0, steer: 0, u: 0, y: 0, hit: null, compression: -w.susp.droop, rate: 0, load: 0, Fx: 0, Fy: 0, Fmax: 0, slipRatio: 0, slipAngle: 0, slip: 0, driveTorque: 0, brakeTorque: 0 });
     }
-    car.steerAngle = 0;
+    car.steerAngle = 0; car.steerShaped = 0; car.steerLagged = 0; car.yawRef = 0;
+    car.esc = freshEsc();
     car.mass = mass0; car.inertia = [...MASS.inertia]; // a full tank again
     car.inputs = { ...DEFAULT_INPUTS };
     car.aero = { ...AERO.road };
@@ -160,7 +210,7 @@ export function createCar({ world, start, extraForces = null } = {}) {
     return car;
   }
 
-  /** Merge new inputs: throttle -1..1 (negative = reverse), brake 0..1, steer -1..1 (+ = right), wing mode; fans, boost, hop, yawL and yawR (booleans or 0..1) are passed through to extraForces. */
+  /** Merge new inputs: throttle -1..1 (negative = reverse), brake 0..1, steer -1..1 (+ = right), wing mode; fans, boost, hop, yawL and yawR (booleans or 0..1) are passed through to extraForces; tc, abs and esc (booleans) switch the assists. */
   function setInputs(inp = {}) {
     const i = car.inputs;
     if (inp.throttle != null) i.throttle = clamp(+inp.throttle || 0, -1, 1);
@@ -174,6 +224,7 @@ export function createCar({ world, start, extraForces = null } = {}) {
     if (inp.wing != null && AERO[inp.wing]?.cdA != null) i.wing = inp.wing;
     if (inp.tc != null) i.tc = !!inp.tc;
     if (inp.abs != null) i.abs = !!inp.abs;
+    if (inp.esc != null) i.esc = !!inp.esc;
     return i;
   }
 
@@ -257,9 +308,28 @@ export function createCar({ world, start, extraForces = null } = {}) {
     const speed = length(car.vel);
     const vFwd = dot(car.vel, fwd);
 
-    // --- steering: speed-sensitive lock, rack rate, Ackermann
-    const lock = Math.max(STEER.minDeg, (STEER.lockDeg * STEER.vRef * STEER.vRef) / (STEER.vRef * STEER.vRef + speed * speed)) * D2R;
-    const want = -inp.steer * lock;
+    // --- steering: the steer-by-wire shapes the input (a rate limit away from the centre,
+    // then a short lag), the lock falls with speed and rises with the wing's downforce, the
+    // rack moves at its rate, and Ackermann splits it between the wheels.
+    // grip counts all the downforce (the ESC's cap below); wingGrip only the wing's, which
+    // is what the lock follows. The fans' pull (up to 4,800 kgf, 2.5 times the car's weight)
+    // stays out of the lock: it sits mid-wheelbase, ahead of the centre of mass, so it loads
+    // the front more than the rear in proportion (48.5% front against the weight's 45%), and
+    // under that load μ falls 12%. The rear then reaches its limit first, so a lock grown
+    // with the pull (10.0° in place of 3.7° at 25 m/s) slid the tail out. With the same lock
+    // as on tyres alone, the car under the pull corners at 1.2-1.9 g with under 3° of body slip.
+    const grip = 1 + Math.max(0, car.last.aeroDownforceN + car.last.extraDownforceN) / (car.mass * G);
+    const wingGrip = 1 + Math.max(0, car.last.aeroDownforceN) / (car.mass * G);
+    const target = inp.steer;
+    let sh = car.steerShaped;
+    if (target * sh < 0) sh = 0;                              // a reversal starts from straight ahead
+    else if (Math.abs(target) < Math.abs(sh)) sh = target;    // back toward the centre at once
+    const ramp = (STEER.rampTime * speed * speed) / (speed * speed + STEER.rampSpeed * STEER.rampSpeed);
+    sh = ramp > 1e-4 ? sh + clamp(target - sh, -dt / ramp, dt / ramp) : target;
+    car.steerShaped = sh;
+    car.steerLagged += (sh - car.steerLagged) * (STEER.lag > 0 ? 1 - Math.exp(-dt / STEER.lag) : 1);
+    const lock = Math.max(STEER.minDeg, STEER.lockDeg / (1 + (speed * speed) / (STEER.vRef * STEER.vRef * wingGrip))) * D2R;
+    const want = -car.steerLagged * lock;
     car.steerAngle += clamp(want - car.steerAngle, -STEER.rate * dt, STEER.rate * dt);
     const d = car.steerAngle;
     if (Math.abs(d) < 1e-6) { wheels[0].steer = d; wheels[1].steer = d; } else {
@@ -298,6 +368,56 @@ export function createCar({ world, start, extraForces = null } = {}) {
       loads[a] += f; loads[b] -= f;
     }
 
+    // --- stability control: the yaw rate the car has against the one the steering asks
+    // for (the bicycle model, held inside what the tyres can give). When the nose swings
+    // further than that, brake the outside front wheel in proportion and cut the rear drive.
+    const esc = car.esc;
+    Object.assign(esc, freshEsc());
+    const yaw = matTVec(R, car.angVel)[1];                   // about the car's own up, + = nose left
+    esc.yaw = yaw;
+    let escWheel = -1, escTb = 0, escCut = 0;
+    // It works on the ground, on at least three wheels, rolling forward, near level: the
+    // bicycle model takes a flat road with gravity along the car's up. On the ramp it
+    // stands aside (the curl and its side edges turn the car in ways no steering asked for).
+    const onGround = wheels.reduce((n, w) => n + (w.hit?.surface === 'ground' ? 1 : 0), 0);
+    const onDeck = wheels.some((w) => w.hit?.surface === 'deck');
+    const inPlay = onGround >= 3 && !onDeck && vFwd > ESC.minSpeed && up[1] > Math.cos(ESC.maxTiltDeg * D2R);
+    if (inPlay) {
+      // the steady yaw rate for this steer, held to what the tyres can give (μ at the mean
+      // corner load, downforce counted), reached with the car's own yaw lag at the tyres'
+      // loads now. The fans' pull makes the tyres about three times stiffer and the car
+      // answers the wheel that much sooner: a lag worked out from the static loads (0.18 s at
+      // 45 m/s, against 0.06 s under the pull) trailed the car, and the ESC braked and cut
+      // the drive in every reversal.
+      const Fz1 = (car.mass * G * grip) / 4;
+      const muN = TYRE.mu * Math.pow(Math.max(Fz1, 0.25 * TYRE.Fz0) / TYRE.Fz0, -TYRE.loadSens);
+      const rMax = (ESC.grip * muN * G * grip) / vFwd;
+      const ss = clamp((vFwd * d) / (L + ESC.kus * vFwd * vFwd), -rMax, rMax);
+      const Cn = (i) => corneringStiffness(clamp(loads[i], 0, SUSPENSION.maxLoad));
+      const tau = (car.inertia[1] * vFwd) / (BIKE.a * BIKE.a * (Cn(0) + Cn(1)) + BIKE.b * BIKE.b * (Cn(2) + Cn(3)));
+      car.yawRef += (ss - car.yawRef) * (1 - Math.exp(-dt / tau));
+    } else car.yawRef = yaw;
+    // Nor does it fight the nose jets: a driver firing yawL or yawR asks for the rotation.
+    if (inp.esc && inPlay && !(inp.yawL > 0 || inp.yawR > 0)) {
+      const ref = car.yawRef;
+      // two signs of a car turning more than asked: a yaw rate past the reference, and a
+      // body slip past betaDeg the same way round (a slow drift under power, whose yaw rate
+      // stays steady while the tail swings out); the larger one counts
+      const sg = Math.sign(yaw);
+      const beta = Math.atan2(dot(car.vel, [R[2], R[5], R[8]]), vFwd);
+      const overYaw = sg * (yaw - ref) - ESC.margin - ESC.marginFrac * Math.abs(ref);
+      const overBeta = ESC.betaGain * (sg * beta - ESC.betaDeg * D2R);
+      const over = Math.max(overYaw, overBeta);
+      esc.ref = ref; esc.over = over;
+      if (over > 0) {
+        escWheel = yaw > 0 ? 1 : 0;                           // FR while the nose swings left
+        const w = wheels[escWheel];
+        escTb = Math.min(w.maxBrake, ((car.inertia[1] * ESC.gain * over) / (GEOM.trackF / 2)) * w.r);
+        escCut = clamp(over / ESC.cutSpan, 0, 1);
+        esc.active = true; esc.wheel = w.name; esc.cut = escCut;
+      }
+    }
+
     // --- tyres, drive and brakes
     for (let i = 0; i < 4; i++) {
       const w = wheels[i];
@@ -316,11 +436,18 @@ export function createCar({ world, start, extraForces = null } = {}) {
       // Grip left for the drive or the brake once the side force is paid for.
       const muNow = Fz > 0 ? TYRE.mu * Math.pow(Math.max(Fz, 0.25 * TYRE.Fz0) / TYRE.Fz0, -TYRE.loadSens) : 0;
       const avail = Math.sqrt(Math.max(0, (muNow * Fz) ** 2 - w.Fy * w.Fy));
+      if (escCut > 0 && !w.front && Td > 0) Td *= 1 - escCut;
       if (inp.tc && Td !== 0) Td = Math.sign(Td) * Math.min(Math.abs(Td), ASSISTS.tcMargin * w.r * avail);
       let Tb = inp.brake * w.maxBrake;
       if (inp.abs && Tb > 0 && Fz > 0) {
         Tb = Math.min(Tb, ASSISTS.absMargin * w.r * avail);
         if (w.slipRatio < -0.5 && Math.abs(vFwd) > 2) Tb *= 0.2; // a locked wheel: let it go
+      }
+      // the stability control's brake fills up to the grip left, never past it (it does
+      // its own pressure control, ABS or not)
+      if (i === escWheel && Fz > 0) {
+        const e = Math.min(escTb, Math.max(0, ASSISTS.absMargin * w.r * avail - Tb));
+        Tb += e; esc.brakeNm = e;
       }
       Tb += TYRE.crr * Fz * w.r;
       w.driveTorque = Td; w.brakeTorque = Tb;

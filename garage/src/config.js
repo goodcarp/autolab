@@ -1,12 +1,11 @@
-// All sheet text lives here so it is easy to edit.
+// All sheet text lives here so it is easy to edit. The sheet has no header titles: the tray names
+// the car and the title block carries its name, so a config starts at the title block.
 //
 // STATUS and CHECKED are deliberately honest. A title block reading RELEASED, REV. C and a checker's
 // name is drawing-office language for "this has been through change control", which this has not --
 // harmless on a personal sheet, misleading the moment the sheet is published. The names, the drawing
 // number and the revision are Alexander's to set; nothing here should invent them for him.
 export const CONFIG = {
-  hdrLeft: { title: "AGENTIC OWNER'S GUIDE", sub: 'Hudian Motors · MY CAR' },
-  hdrRight: { title: 'HUDIAN RX2 · MIDSIZE ELECTRIC WAGON', sub: 'Session ID: 16974 Knowledge Base: Online' },
   title: ['MY HUDIAN RX2 · DUAL-MOTOR AWD', 'LAUNCH EDITION'],
   titleBlock: [
     { lbl: 'ID NO.', val: 'RX2-4715-NY' }, { lbl: 'REF', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'CLASS', val: 'C' },
@@ -82,8 +81,6 @@ export const CONFIG = {
 // placeholders for the owner to set, like the RX2's. Figures come from the model's SPEC and the
 // lab's docs/RESEARCH-specs.md (two rear motors, two seats, the Thrust package's nozzles).
 export const ROADSTER_CONFIG = {
-  hdrLeft: { title: "AGENTIC OWNER'S GUIDE", sub: 'Tesla · MY CAR' },
-  hdrRight: { title: 'TESLA ROADSTER · TWO-SEAT ELECTRIC COUPE', sub: 'Session ID: 16974 Knowledge Base: Online' },
   title: ['MY TESLA ROADSTER · TWO REAR MOTORS', 'THRUST PACKAGE'],
   titleBlock: [
     { lbl: 'ID NO.', val: 'RDSTR-4382' }, { lbl: 'REF', val: '1 OF 1' }, { lbl: 'SCALE', val: '1 : 24' }, { lbl: 'CLASS', val: 'C' },

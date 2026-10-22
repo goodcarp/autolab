@@ -1,6 +1,7 @@
 // The vehicles the Garage can show, and what changes with each: its sheet text (config.js), its
-// camera presets and presentation fit, its compact height floor, and how to build it. The RX2 is
-// in the page from the start; the Roadster's modules are fetched the first time it is chosen.
+// camera presets and presentation fit, its compact height floor, and how to build it. The RX2's
+// model is in the page from the start; the Roadster's modules are fetched when it is chosen (on the
+// Owner's Guide's own page that is at once: it opens on the Roadster, see openingVehicle).
 // Each car is built once and kept, so switching back is instant and keeps nothing stale: the
 // sheet resets motions, selection and camera on every switch (main.js setVehicle).
 import { CONFIG, ROADSTER_CONFIG } from './config.js';
@@ -28,7 +29,7 @@ export const VEHICLES = [
     build: async () => {
       const v = buildVehicle();
       const S = v.SPEC;
-      v.lampFlash = { part: v.parts.headlamps, locals: [[S.NOSE + 0.05, 0.875, -0.595], [S.NOSE + 0.05, 0.875, 0.595]] };
+      v.lampFlash = { part: v.parts.headlamps, locals: [[S.NOSE + 0.05, 0.944, -0.513], [S.NOSE + 0.05, 0.944, 0.513]] }; // the stadium rings' centres (2026-10-22 front end)
       return v;
     },
   },
@@ -43,6 +44,14 @@ export const VEHICLES = [
 ];
 
 export const vehicleEntry = (id) => VEHICLES.find((v) => v.id === id) || null;
+
+// The car a sheet opens with. ?vehicle= names either; without it the Owner's Guide on its own page
+// opens on the Tesla Roadster, and framed (the configurator's My Car, whose build is the RX2) or as
+// the landing page's tour it opens on the RX2. The RX2 stays VEHICLES[0], the car main.js falls
+// back to when another one cannot be loaded.
+export function openingVehicle(id, { framed = false, demo = false } = {}) {
+  return vehicleEntry(id) || vehicleEntry(framed || demo ? 'rx2' : 'roadster');
+}
 
 const built = new Map();
 // Build a car once; later calls get the same object (and a failed build is retried next time).

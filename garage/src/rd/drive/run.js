@@ -1,4 +1,4 @@
-// Synced from roadster-lab 3360319 (src/drive/run.js) by tools/sync-garage.mjs.
+// Synced from roadster-lab c9e9c53 (src/drive/run.js) by tools/sync-garage.mjs.
 // Edit it in the lab and re-sync; a hand edit here makes the next sync refuse.
 // A drive: the world, the car, a fixed-step clock and what the HUD shows.
 //
@@ -16,8 +16,12 @@
 // the vehicle's root. state.wheels[i].spin and .compression drive the wheel meshes
 // (spin is rotation.z of the spinning part, compression the lift of the wheel
 // centre along the car's y), and state.steerDeg is what vehicle.update(dt, { steer })
-// expects (degrees about +y, + = left). rampS is arc length along the ramp profile
-// (world.ramp.at(rampS) is the point; the foot is world.sFoot, the lip world.sLip).
+// expects (degrees about +y, + = left). state.steerInput is the steer input after the
+// steer-by-wire's shaping (-1..1, + = right; state.inputs.steer is the raw one), and
+// state.esc is what the stability control did in the last step: { active, wheel ('FL',
+// 'FR' or null), brakeNm, cut 0..1, yawRate, yawRef } (rad/s, + = nose left). rampS is
+// arc length along the ramp profile (world.ramp.at(rampS) is the point; the foot is
+// world.sFoot, the lip world.sLip).
 //
 // outcome: 'crashed' once a body point hits something at over 4 m/s or the car lies
 // rolled over; 'fell' once it leaves the deck from at least 25° up the curl before
@@ -26,9 +30,10 @@
 // stick until reset, in that order of precedence; state.events has their times.
 //
 // Inputs (setInputs, any subset, any time): throttle -1..1, brake 0..1, steer -1..1
-// (+ = right), wing 'road' | 'lowDrag' | 'highDownforce', and the booleans fans (the
-// suction fans, src/drive/fans.js), boost (the rear nozzles), hop (the corner jets,
-// with their attitude hold and landing burn), yawL / yawR (the nose side jets; see
+// (+ = right), wing 'road' | 'lowDrag' | 'highDownforce', the assists tc, abs and esc
+// (booleans, all on unless set false), and the booleans fans (the suction fans,
+// src/drive/fans.js), boost (the rear nozzles), hop (the corner jets, with their
+// attitude hold and landing burn), yawL / yawR (the nose side jets; see
 // src/drive/thrust.js). state.jets has every jet for rendering ({ name, kind, on,
 // level, pos, dir }: dir is where the gas goes), state.gas the tank, state.fans the
 // fans, and state.mass the car's mass, which falls as the gas is spent.
@@ -173,6 +178,8 @@ export function createRun({ start = DEFAULT_START, world, extraForces = null, sy
       downforceKg: (car.last.aeroDownforceN + car.last.extraDownforceN) / G,
       gForce: track.gF,
       steerDeg: front * R2D,
+      steerInput: car.steerLagged,
+      esc: { active: car.esc.active, wheel: car.esc.wheel, brakeNm: car.esc.brakeNm, cut: car.esc.cut, yawRate: car.esc.yaw, yawRef: car.yawRef },
       wheels,
       onRamp,
       rampS: deckHits.length ? Math.max(...deckHits) : null,

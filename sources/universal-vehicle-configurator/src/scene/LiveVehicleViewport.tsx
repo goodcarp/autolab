@@ -24,7 +24,7 @@ import {
   SRGBColorSpace,
 } from "three";
 import { fitCameraToAspect, getCameraPose, type CameraRigId } from "./camera-presets";
-import { createCycloramaTexture } from "./studio-backdrop";
+import { createCycloramaTexture, createFloorFalloffTexture } from "./studio-backdrop";
 import { CabinInterior } from "./CabinInterior";
 import {
   createVehicleModelComponent,
@@ -65,6 +65,24 @@ export class VehicleModelBoundary extends Component<
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
+
+/**
+ * The studio's visible colours: a white backdrop, and a floor a shade warmer
+ * and darker so the car has something to stand on. Colours and the floor's
+ * material only; the lights, shadow maps and post chain are unchanged (their
+ * per-frame cost is measured before any lighting change ships).
+ */
+const STUDIO_WHITE = "#ffffff";
+const STUDIO_FLOOR = "#e6e3dd";
+
+/**
+ * Width of the floor square, in metres. Its radial alpha (see
+ * createFloorFalloffTexture) holds full grey to 1.5 m from the centre and is
+ * gone by 6.4 m, so the grey is a band around the car: the frame is white
+ * above the horizon and again at its bottom edge, the ground 6 m in front of
+ * the opening camera, as in a real white cyclorama.
+ */
+const STUDIO_FLOOR_SIZE = 14;
 
 /** Idle turntable: rate in radians per second, the wait before it starts, and how long it runs. */
 const TURNTABLE = { rate: 0.05, delay: 2.4, duration: 48 };
@@ -238,6 +256,8 @@ function Studio({
   const blueprint = mode === "blueprint";
   const cyclorama = useMemo(() => createCycloramaTexture(), []);
   useEffect(() => () => cyclorama.dispose(), [cyclorama]);
+  const floorFalloff = useMemo(() => createFloorFalloffTexture(), []);
+  useEffect(() => () => floorFalloff.dispose(), [floorFalloff]);
   return (
     <>
       <ambientLight intensity={(blueprint ? 0.48 : 0.12) * rig} color={blueprint ? "#a7efff" : "#eef4ef"} />
@@ -363,9 +383,20 @@ function Studio({
         />
       )}
       {grounded && !blueprint && (
-        <mesh rotation-x={-Math.PI / 2} position-y={-0.012} receiveShadow>
-          <planeGeometry args={[160, 160]} />
-          <meshStandardMaterial color="#c5c6c3" metalness={0.12} roughness={0.78} />
+        // A very light warm grey that fades out radially into the white
+        // background, so the floor has no edge and no horizon line. It is
+        // drawn first among the see-through things and writes no depth, so
+        // the glass and the contact shadow still draw over it.
+        <mesh rotation-x={-Math.PI / 2} position-y={-0.012} receiveShadow renderOrder={-1}>
+          <planeGeometry args={[STUDIO_FLOOR_SIZE, STUDIO_FLOOR_SIZE]} />
+          <meshStandardMaterial
+            color={STUDIO_FLOOR}
+            metalness={0.12}
+            roughness={0.78}
+            alphaMap={floorFalloff}
+            transparent
+            depthWrite={false}
+          />
         </mesh>
       )}
       {/*
@@ -407,8 +438,8 @@ function VehicleScene(props: LiveVehicleViewportProps & Readonly<{ VehicleBody: 
   return (
     <>
       {props.mode === "showroom" && !insideCabin && <>
-        <color attach="background" args={["#dddedb"]} />
-        <fog attach="fog" args={["#dddedb", 12, 35]} />
+        <color attach="background" args={[STUDIO_WHITE]} />
+        <fog attach="fog" args={[STUDIO_WHITE, 12, 35]} />
       </>}
       <Studio
         mode={props.mode}

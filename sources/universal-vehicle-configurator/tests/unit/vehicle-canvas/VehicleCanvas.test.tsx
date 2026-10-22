@@ -74,7 +74,9 @@ describe("VehicleCanvas", () => {
     expect(canvas).toHaveAttribute("data-paint", "clay");
     expect(canvas).toHaveAttribute("data-wheel", "sport-22");
     expect(canvas.style.getPropertyValue("--paint-color")).toBe("#9b4f38");
-    expect(screen.getByText("Warm clay · 22 in")).toBeVisible();
+    // The on-canvas readout left the chrome; the viewport still names the selection.
+    expect(screen.getByRole("application")).toHaveAccessibleName(/Warm clay\. 22-inch sport wheel\./);
+    expect(screen.queryByText("Warm clay · 22 in")).toBeNull();
 
   });
 
@@ -89,7 +91,7 @@ describe("VehicleCanvas", () => {
     rerender(<VehicleCanvas defaultViewPreset="interior" interior={coastalInterior} />);
     expect(canvas).toHaveAttribute("data-interior", "interior.coastal_cloud");
     expect(canvas.style.getPropertyValue("--interior-color")).toBe("#e6e0d4");
-    expect(screen.getByText("Coastal Cloud Signature · vegan-leather")).toBeVisible();
+    expect(screen.getByRole("application")).toHaveAccessibleName(/Coastal Cloud Signature\./);
   });
 
   it("supports internal and callback-driven view and blueprint controls", () => {

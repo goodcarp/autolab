@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agentic Owner's Guide · Hudian RX2</title>
+<title>Agentic Owner's Guide · Tesla Roadster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261019e">
+<link rel="stylesheet" href="styles.css?v=20261022c">
 <script type="importmap">
 {
   "imports": {
@@ -35,7 +35,13 @@
 <link rel="modulepreload" href="src/drive-controls.js">
 <link rel="modulepreload" href="src/ramp-props.js">
 <link rel="modulepreload" href="src/chase-cam.js">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f6fa'/%3E%3Cpath d='M16 4 28 16 16 28 4 16Z' fill='none' stroke='%231c2b4f' stroke-width='2'/%3E%3Cpath d='M16 11 21 16 16 21 11 16Z' fill='%23c94b31'/%3E%3C/svg%3E">
+<!-- The Owner's Guide opens on the Tesla Roadster (vehicles.js openingVehicle). -->
+<link rel="modulepreload" href="src/roadster-adapter.js">
+<link rel="modulepreload" href="src/rd/roadster/vehicle.js">
+<link rel="modulepreload" href="src/rd/roadster/geom.js">
+<!-- The AutoLab mark, shared with the landing page and the configurator; ui.js re-points it at the
+     site's root (garageSiteBase) wherever the sheet is served. -->
+<link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" data-site-href="assets/brand/favicon.svg">
 </head>
 <body>
 <div id="sheet">
@@ -46,32 +52,22 @@
   <div class="frame frame-outer"></div>
   <div class="frame frame-inner"></div>
 
-  <button id="cards-toggle" type="button" aria-label="Hide the drawing panels" title="Hide panels (H)"><span></span></button>
   <div id="stage">
-    <canvas id="gl" tabindex="0" role="img" aria-label="Interactive Hudian RX2 drawing" aria-describedby="drawing-description"></canvas>
+    <canvas id="gl" tabindex="0" role="img" aria-label="Interactive Tesla Roadster drawing" aria-describedby="drawing-description"></canvas>
     <p id="drawing-description" class="sr-only">Three-dimensional vehicle drawing showing body panels, chassis and named components. Use arrow keys to orbit and brackets to zoom.</p>
     <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div id="hint">DRAG TO ORBIT · SCROLL TO ZOOM</div>
     <div id="viewtitle"><div class="vt-rule"></div><div class="vt-name"></div><div class="vt-sub"></div></div>
     <div id="tooltip"><div class="tt-name"></div><div class="tt-desc"></div></div>
   </div>
 
   <header id="hdr-left">
-    <div class="logo"><span></span></div>
-    <div>
-      <div class="hdr-title" id="hdr-left-title"></div>
-      <div class="hdr-sub" id="hdr-left-sub"></div>
-      <nav class="header-tools" aria-label="Guide tools and home">
-        <button id="agent-chip" type="button" aria-expanded="false" aria-controls="agent-tools">MANUAL MODE</button>
-        <a href="../" data-site-link="" title="AutoLab home">◂ AUTOLAB</a>
-        <a href="../configure/" data-site-link="configure/" title="Shop: the vehicle configurator">SHOP</a>
-        <a href="../engine/" data-site-link="engine/" title="The AutoLab 3D Creation Engine">ENGINE</a>
-      </nav>
-    </div>
-  </header>
-  <header id="hdr-right">
-    <div class="hdr-title" id="hdr-right-title"></div>
-    <div class="hdr-sub" id="hdr-right-sub"></div>
+    <nav class="header-tools" aria-label="AutoLab pages and agent tools">
+      <a href="../" data-site-link="" class="nav-home" title="AutoLab home"><img class="nav-mark" hidden data-site-src="assets/brand/favicon.svg" alt="" width="16" height="16" onerror="this.hidden=true">AUTOLAB</a>
+      <a href="../configure/" data-site-link="configure/" title="Build: the vehicle configurator">BUILD</a>
+      <a href="./" aria-current="page" title="Learn: the Agentic Owner's Guide">LEARN</a>
+      <a href="../engine/" data-site-link="engine/" title="Create: the AutoLab 3D Creation Engine">CREATE</a>
+      <button id="agent-chip" type="button" aria-expanded="false" aria-controls="agent-tools">MANUAL MODE</button>
+    </nav>
   </header>
 
   <section class="panel" id="agent-tools" aria-labelledby="agent-tools-title" hidden>
@@ -93,15 +89,20 @@
   <section class="panel" id="controls">
     <div class="ctl-row"><span class="ctl-label">VIEW</span><div class="ctl-btns" id="view-btns"></div></div>
     <div class="ctl-row"><span class="ctl-label">MOTION</span><div class="ctl-btns" id="motion-btns"></div></div>
+    <!-- With the console on, the tray below is moved into this row (ui.js layoutTray). -->
+    <div class="ctl-row" id="tray-row"><span class="ctl-label" aria-hidden="true"></span></div>
   </section>
 
-  <nav id="primary-controls" aria-label="Drawing controls">
-    <button class="btn" id="vehicle-btn" type="button" data-sheet="vehicles" data-sheet-title="VEHICLE" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false" title="Choose a vehicle (V)">RX2</button>
+  <!-- The tray: one row of equal buttons, centred at the foot of the sheet with the console off and
+       the controls panel's third row with it on (TOUR then stays in the MOTION row). -->
+  <nav id="primary-controls" aria-label="Guide controls">
+    <button class="btn" id="vehicle-btn" type="button" data-sheet="vehicles" data-sheet-title="VEHICLE" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false" title="Choose a vehicle (V)">ROADSTER</button>
     <button class="btn" id="play-btn" type="button" aria-pressed="false" title="Start run mode" hidden>PLAY</button>
     <button class="btn compact-only" type="button" data-sheet="views" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">VIEWS</button>
     <button class="btn compact-only" type="button" data-sheet="parts" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">PARTS</button>
     <button class="btn compact-only" type="button" data-sheet="more" aria-haspopup="dialog" aria-controls="compact-sheet" aria-expanded="false">MORE</button>
     <button class="btn" id="reset-btn" type="button" aria-label="Reset view and vehicle">RESET</button>
+    <button class="btn" id="cards-toggle" type="button" aria-pressed="false" title="Show the console (H)">CONSOLE</button>
   </nav>
 
   <dialog id="compact-sheet" aria-labelledby="compact-sheet-title" aria-modal="false">
@@ -111,7 +112,7 @@
     <div id="compact-parts" class="compact-section" hidden><div id="compact-key-grid"></div></div>
     <div id="compact-more" class="compact-section" hidden>
       <div class="compact-grid" id="compact-motion-btns"></div>
-      <div class="compact-grid compact-secondary"><button class="btn" id="compact-cards-btn" type="button" aria-pressed="false">ANNOTATIONS</button><button class="btn" id="compact-agent-btn" type="button">AGENT TOOLS</button></div>
+      <div class="compact-grid compact-secondary"><button class="btn" id="compact-cards-btn" type="button" aria-pressed="false">CONSOLE</button><button class="btn" id="compact-agent-btn" type="button">AGENT TOOLS</button></div>
     </div>
   </dialog>
   <p id="selected-part" role="status" hidden></p>
@@ -134,7 +135,7 @@
   </section>
 
   <section class="panel" id="titleblock">
-    <div class="tb-title"><div><div class="tb-lbl">TITLE</div><div class="tb-big" id="tb-title"></div></div><button class="panel-min" type="button" aria-label="Minimize title block" title="Minimize">−</button></div>
+    <div class="tb-title"><div><div class="tb-big" id="tb-title"></div></div><button class="panel-min" type="button" aria-label="Minimize title block" title="Minimize">−</button></div>
     <div class="tb-grid" id="tb-grid"></div>
   </section>
 </div>

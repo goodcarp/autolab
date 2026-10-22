@@ -58,6 +58,19 @@ since then is recorded here so the state at the deadline is not misrepresented:
   tolerance; the submission-time state was five of nine, with the overall
   length 54 mm long.
 - Landing page: the Owner's Guide tour can be played in place.
+- 2026-10-22: the navigation reads AutoLab / Build / Learn / Create. The landing
+  hero is a looping film of the Tesla Roadster coming apart while the camera orbits
+  it (`assets/hero/`, rendered from the Owner's Guide), with one call to action,
+  "Fly the Tesla Roadster", that opens `garage/?vehicle=roadster&play=1`. The
+  Owner's Guide opens on the Roadster with the console off (`?vehicle=rx2` for the
+  RX2), its tray is ROADSTER, TOUR, PLAY, RESET, CONSOLE, `?play=1` starts the run,
+  and the Roadster gets a stability control and a speed-dependent steering lock so
+  it no longer spins when steered hard at speed. The configurator lost its top bar
+  and took the layout and sizes of a production configurator: the rail head, trim
+  cards, round swatches, the view pill under the car and a white studio. The R2
+  body and its showroom materials were reworked against the reference
+  photographs and the orthographic drawing, gated by the engine's self-test, fit
+  and aperture reports. One favicon, the AutoLab mark, on every page.
 
 ## How this site is assembled
 

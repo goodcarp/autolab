@@ -63,6 +63,48 @@ describe("VehicleConfigurator", () => {
     expect(summary.previousElementSibling).toHaveClass("configurator-scroll");
   });
 
+  it("lays the rail out like the reference: head, compact trims, round swatches", () => {
+    render(<ConfiguratorHarness />);
+    expect(screen.queryByText("Configure")).toBeNull();
+    expect(screen.queryByText("Choose your balance of range, comfort and power.")).toBeNull();
+    const specs = screen.getByLabelText("Current build specifications");
+    expect(within(specs).getByText("3.6 sec")).toBeVisible();
+    expect(within(specs).getByText("0–60 mph")).toBeVisible();
+    expect(within(specs).getByText("hp")).toBeVisible();
+
+    expect(screen.getByRole("group", { name: "Build" })).toHaveAttribute("data-layout", "cards");
+    const performance = screen.getByRole("radio", { name: /RX2 Performance/i }).closest("label") as HTMLElement;
+    expect(within(performance).getByText("Available now")).toBeVisible();
+    expect(within(performance).getByText(/656 hp dual-motor AWD/)).toBeVisible();
+    const premium = screen.getByRole("radio", { name: /RX2 Premium/i });
+    expect(within(premium.closest("label") as HTMLElement).getByText("Coming late 2026")).toBeVisible();
+    // An unchosen trim keeps its description for assistive technology.
+    expect(premium).toHaveAccessibleDescription("Dual-motor AWD, 330 mi.");
+
+    const paint = screen.getByRole("group", { name: "Paint" });
+    expect(paint).toHaveAttribute("data-layout", "swatches");
+    const current = paint.querySelector(".config-group__current") as HTMLElement;
+    expect(current).toHaveTextContent("Orchard Beach Silver");
+    expect(current).toHaveTextContent("Included");
+    fireEvent.click(screen.getByRole("radio", { name: /Glacier White/i }));
+    expect(current).toHaveTextContent("Glacier White");
+    expect(current).toHaveTextContent("Est.+$1,000");
+    // A chosen colour that can only be reserved says so beside its name.
+    fireEvent.click(screen.getByRole("radio", { name: /Forest Green/i }));
+    expect(current).toHaveTextContent("Forest GreenNotify");
+    // Every unchosen swatch has a line in the list under the row, the chosen
+    // one is named in the heading row instead.
+    const lines = [...paint.querySelectorAll(".config-option:not([data-selected]) .config-option__body")];
+    expect(lines).toHaveLength(5);
+    expect(paint.querySelectorAll(".config-option__mini")).toHaveLength(6);
+
+    const wheels = screen.getByRole("group", { name: "Wheels" });
+    expect(wheels).toHaveAttribute("data-layout", "swatches");
+    expect(within(wheels).getByText("Est. range")).toBeVisible();
+    expect(within(wheels).getByText("330 mi")).toBeVisible();
+    expect(screen.getByRole("group", { name: "Interior" })).toHaveAttribute("data-layout", "swatches");
+  });
+
   it("previews price, range, timing, and compatibility before committing a choice", () => {
     render(<ConfiguratorHarness />);
 
@@ -75,6 +117,10 @@ describe("VehicleConfigurator", () => {
     const forestGreenCard = forestGreen.closest("label");
     expect(forestGreenCard).not.toBeNull();
     expect(within(forestGreenCard as HTMLElement).getByText("Late 2026")).toBeVisible();
+    // A swatch's card opens on hover only, so its input also carries the
+    // card's orderability and what the choice would change.
+    expect(forestGreen).toHaveAccessibleDescription("Notify, delivery Late 2026.");
+    expect(allTerrain).toHaveAccessibleDescription(/Range −23 mi/);
 
     const standardRwd = screen.getByRole("radio", { name: /RX2 Standard RWD,/i });
     const standardRwdCard = standardRwd.closest("label");
@@ -159,8 +205,9 @@ describe("VehicleConfigurator", () => {
     expect(screen.getByRole("checkbox", { name: /hitch \+ tow software/i })).toBeChecked();
 
     const summary = screen.getByRole("contentinfo", { name: "Current build summary" });
+    const specs = screen.getByLabelText("Current build specifications");
     expect(within(summary).getByText("$61,935")).toBeVisible();
-    expect(within(summary).getByText("307 mi estimated range")).toBeVisible();
+    expect(within(specs).getByText("307 mi")).toBeVisible();
     expect(within(summary).getByText("Late 2026")).toBeVisible();
   });
 
@@ -168,13 +215,16 @@ describe("VehicleConfigurator", () => {
     render(<ConfiguratorHarness />);
 
     const summary = screen.getByRole("contentinfo", { name: "Current build summary" });
+    const specs = screen.getByLabelText("Current build specifications");
     expect(within(summary).getByText("$59,485")).toBeVisible();
-    expect(within(summary).getByText("330 mi estimated range")).toBeVisible();
+    expect(within(specs).getByText("330 mi")).toBeVisible();
+    // The delivery window sits beside the total; the range moved to the head.
     expect(within(summary).getByText("Available now")).toBeVisible();
+    expect(within(summary).queryByText(/estimated range/)).toBeNull();
 
     fireEvent.click(screen.getByRole("radio", { name: /20.*Black Sand All-Terrain/i }));
     expect(within(summary).getByText("$60,485")).toBeVisible();
-    expect(within(summary).getByText("307 mi estimated range")).toBeVisible();
+    expect(within(specs).getByText("307 mi")).toBeVisible();
 
     fireEvent.click(screen.getByRole("radio", { name: /Forest Green/i }));
     expect(within(summary).getByText("$61,485")).toBeVisible();
@@ -212,7 +262,7 @@ describe("VehicleConfigurator", () => {
 
     expect(screen.getByRole("radio", { name: /RX2 Standard RWD,/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /19.*Machined Graphite/i })).toBeChecked();
-    expect(screen.getByText("275 mi estimated range")).toBeVisible();
+    expect(within(screen.getByLabelText("Current build specifications")).getByText("275 mi")).toBeVisible();
 
     expect(onSelectionPatch).toHaveBeenCalledWith(
       {

@@ -142,6 +142,10 @@ void main(){
 // with LIGHTS). A mesh may say so itself (userData.lamp, the Roadster's adapter); otherwise the
 // RX2's rule: its lamp parts glow whole, and the tail strip is the tail-pill part's sub 0 plus
 // the bar across the tail that the liftgate carries as its sub 8.
+// The lamps' lit look when a car does not give its own (vehicle.lampStyle, the Roadster's adapter):
+// a pale warm white, 75 % of the way there at full glow, no halo. The idle pulse is main.js's.
+// halo, when a car has one: { colour: [r, g, b], strength } on the 1-2 px around its lamps.
+export const LAMP_STYLE = Object.freeze({ colour: Object.freeze([1.0, 0.93, 0.70]), mix: 0.75, halo: null });
 export function lampKind(v, p, m) {
   if (m.userData.lamp !== undefined) return m.userData.lamp;
   if (v.lampIds?.includes(p.id)) return 1;
@@ -161,6 +165,10 @@ uniform sampler2D tBeauty, tNormal, tData;
 uniform vec2 uRes; uniform float uDpr;
 uniform mat4 uInvVP; uniform float uGridOffset; uniform float uGridAlpha; uniform float uShadowAlpha;
 uniform float uHoverId; uniform float uLampGlow; uniform float uLights; uniform float uNose; uniform float uTail; uniform float uSil;
+// the car's lamp style (Blueprint.addVehicle, from vehicle.lampStyle): the lit colour and how far a
+// lamp pixel goes to it at full glow; the halo's colour and strength (0: no halo) on the pixels
+// around a lamp
+uniform vec4 uLampCol; uniform vec4 uLampHalo;
 uniform vec3 uInk, uFill, uFillLight, uAccent;
 uniform vec2 uFocus; uniform float uPools; uniform float uGridReach;
 uniform vec3 uSunV, uGasPaper, uGasPale, uGasTint; uniform float uGasLine, uGasLineVar; uniform vec4 uGasShade;
@@ -246,7 +254,7 @@ void main(){
   // ---- edge detection: one radius, coverage count → anti-aliased single-weight ink ----
   float r1 = 0.95 * uDpr;
   vec2 O[4]; O[0] = vec2(1.0,0.0); O[1] = vec2(0.0,1.0); O[2] = vec2(0.7071,0.7071); O[3] = vec2(-0.7071,0.7071);
-  float cnt = 0.0, silD = 0.0, crease = 0.0, idE = 0.0, hoverN = 0.0;
+  float cnt = 0.0, silD = 0.0, crease = 0.0, idE = 0.0, hoverN = 0.0, lampN = 0.0;
   float thr = 0.006 + 0.0012 * dep0;
   for (int k = 0; k < 4; k++){
     vec2 o = O[k] * px * r1;
@@ -260,11 +268,31 @@ void main(){
       if (hb){ crease = max(crease, smoothstep(0.22, 0.5, 1.0 - dot(nb, n0))); idE = max(idE, float(abs(db.y-id0) > 0.01 || abs(db.z-sub0) > 0.01)); }
     }
     if (floor(da.y + 0.5) == uHoverId || floor(db.y + 0.5) == uHoverId) hoverN = 1.0;
+    lampN = max(lampN, max(float(isLamp(da.w)), float(isLamp(db.w))));   // a lamp beside this pixel
   }
   float sil = min(cnt / 3.0, 1.0);
   float line = max(max(sil, silD), max(crease, idE));
   bool hov = floor(id0 + 0.5) == uHoverId && uHoverId > 0.5;
   vec3 lineCol = (hov || (hoverN > 0.5 && uHoverId > 0.5)) ? uAccent : uInk;
+
+  // A lit lamp too thin to read between its own outlines (the Roadster's light bar is 14 mm tall):
+  // its outline gives way to the lamp colour and a soft halo of it spills 1-2 px around it: the
+  // edge taps above give the first pixel, four more taps the second. Off (uLampHalo.a 0, the RX2)
+  // it costs nothing.
+  float halo = 0.0;
+  bool lamp0 = isLamp(d0.w);
+  if (uLampHalo.a > 0.001 && uLampGlow > 0.01){
+    if (!lamp0){
+      halo = lampN;
+      for (int k = 0; k < 2 && halo < 0.5; k++){
+        vec2 o2 = O[k] * px * 2.3 * uDpr;
+        halo = max(halo, 0.55 * max(float(isLamp(texture(tData, vUv + o2).w)), float(isLamp(texture(tData, vUv - o2).w))));
+      }
+    } else line *= 1.0 - 0.85 * uLampGlow;
+  }
+  float haloA = halo * uLampGlow * uLampHalo.a;
+  vec3 haloCol = uLampHalo.rgb;
+  line *= 1.0 - 0.85 * haloA;   // the glow takes the place of the ink right beside the lamp
 
   if (hit){
     float per = 4.2 * uDpr;
@@ -277,9 +305,10 @@ void main(){
     float h2 = smoothstep(0.46, 0.40, lit) * 0.45;
     col = mix(col, uInk, h2 * hatch(p, -0.7854, 5.5 * uDpr, 1.0 * uDpr));
     if (hov) col = mix(col, uAccent, 0.16);
-    if (isLamp(d0.w)) col = mix(col, vec3(1.0, 0.93, 0.70), uLampGlow * 0.75);
+    if (lamp0) col = mix(col, uLampCol.rgb, uLampGlow * uLampCol.a);
     if (isTail(d0.w)) col = mix(col, vec3(0.93, 0.28, 0.20), uLights * 0.75);
     col = mix(col, lineCol, line);
+    col = mix(col, haloCol, haloA);
     fragColor = vec4(col, 1.0);
   } else {
     // ground: shadow hatch + perspective grid + vehicle silhouette line
@@ -314,6 +343,7 @@ void main(){
       if (ba > 0.002 || ta > 0.002){ vec3 lc = (ba >= ta) ? warm : red; float la = max(ba, ta); col = mix(lc, col, a / max(a + la, 1e-4)); a = max(a, la); }
     }
     if (line > 0.01){ col = lineCol; a = max(a, line); }
+    if (haloA > 0.001){ col = mix(col, haloCol, haloA / max(a + haloA, 1e-4)); a = max(a, haloA); }
     fragColor = vec4(col, a);
   }
 }`;
@@ -370,6 +400,7 @@ export class Blueprint {
         uRes: { value: new THREE.Vector2(2, 2) }, uDpr: { value: this.dpr }, uInvVP: { value: new THREE.Matrix4() },
         uGridOffset: { value: 0 }, uGridAlpha: { value: 1 }, uShadowAlpha: { value: 1 }, uHoverId: { value: -1 },
         uLampGlow: { value: 0 }, uLights: { value: 0 }, uNose: { value: 2.31 }, uTail: { value: -2.41 }, uSil: { value: 0 },
+        uLampCol: { value: new THREE.Vector4(...LAMP_STYLE.colour, LAMP_STYLE.mix) }, uLampHalo: { value: new THREE.Vector4(1, 1, 1, 0) },
         uInk: { value: c('--ink', '#1c2b4f') }, uFill: { value: srgb('#cbd3e2') }, uFillLight: { value: srgb('#eaeef5') },
         uAccent: { value: c('--accent', '#c94b31') },
         // a run: the grid fades around the car instead of the origin; the lamp pools can go off
@@ -397,6 +428,10 @@ export class Blueprint {
       m.userData.gMat = gm; m.userData.beautyMat = m.material; m.userData.shell = p.category === 'shell'; this.vehicleMeshes.push(m);
     }
     this.compMat.uniforms.uNose.value = v.SPEC.NOSE; this.compMat.uniforms.uTail.value = v.SPEC.TAIL;
+    // how its lamps look lit: the RX2's (LAMP_STYLE) unless the car says otherwise
+    const ls = { ...LAMP_STYLE, ...v.lampStyle };
+    this.compMat.uniforms.uLampCol.value.set(...ls.colour, ls.mix);
+    this.compMat.uniforms.uLampHalo.value.set(...(ls.halo?.colour ?? [1, 1, 1]), ls.halo?.strength ?? 0);
   }
   // One vehicle is drawn at a time (part ids restart at 1 in every build). Only the per-mesh
   // G-buffer clones made above are disposed; the vehicle's own materials are shared module

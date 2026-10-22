@@ -1,99 +1,29 @@
+/*
+ * The configuration rail, sized after the maker's own configurator: a 13 px
+ * base, 11 px secondary text, 10 px radii, 10-12 px paddings and 24 px between
+ * sections. The head scrolls with the choices; the review footer stays put.
+ */
 .uvc-configurator {
-  --rail-paper: #fbfaf6;
-  --rail-ink: #111411;
-  --rail-muted: #696d65;
-  --rail-line: rgba(17, 20, 17, 0.13);
+  --rail-ink: #111;
+  --rail-muted: #6b6b6b;
+  --rail-faint: #8c8c8c;
+  --rail-line: #e2e2e2;
+  --rail-tint: #f6f6f4;
   --rail-green: #36564c;
-  --rail-acid: #c7ff39;
-  width: min(100%, 40rem);
+  --rail-now: #f7c23f;
+  --rail-pad-start: 24px;
+  --rail-pad-end: 20px;
+  width: 100%;
   height: 100%;
-  min-height: 42rem;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   color: var(--rail-ink);
-  background: var(--rail-paper);
-  border-left: 1px solid var(--rail-line);
+  background: #fff;
   font-family: var(--font-display, "Helvetica Neue", "Inter", system-ui, sans-serif);
+  font-size: 0.8125rem;
+  line-height: 1.4;
   isolation: isolate;
-}
-
-.configurator-head {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1rem;
-  padding: clamp(1.15rem, 2vw, 1.55rem);
-  border-bottom: 1px solid var(--rail-line);
-  background: color-mix(in srgb, var(--rail-paper) 92%, transparent);
-  backdrop-filter: blur(24px) saturate(1.2);
-}
-
-.configurator-head__model > span,
-.config-group__intro,
-.config-option__meta,
-.configurator-total small,
-.configurator-total > p,
-.buyer-context__label,
-.compatibility-guide__kicker {
-  font-family: var(--font-mono, ui-monospace, monospace);
-}
-
-.configurator-head__model > span {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--rail-green);
-  font-size: 0.61rem;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.configurator-head__model h2 {
-  margin: 0;
-  font-size: clamp(2.6rem, 4vw, 3.75rem);
-  font-weight: 480;
-  line-height: 0.94;
-  letter-spacing: -0.038em;
-}
-
-.configurator-head__model p {
-  margin: 0.65rem 0 0;
-  color: var(--rail-muted);
-  font-size: 0.82rem;
-}
-
-.configurator-head__specs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(4rem, 1fr));
-  align-self: end;
-  min-width: 0;
-}
-
-.configurator-head__specs div {
-  min-width: 0;
-  padding: 0 0.45rem;
-  border-left: 1px solid var(--rail-line);
-}
-
-.configurator-head__specs strong,
-.configurator-head__specs span {
-  display: block;
-  white-space: nowrap;
-}
-
-.configurator-head__specs strong {
-  font-size: 1.2rem;
-  font-weight: 620;
-  letter-spacing: -0.03em;
-}
-
-.configurator-head__specs span {
-  margin-top: 0.3rem;
-  color: var(--rail-muted);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .configurator-scroll {
@@ -101,101 +31,177 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 0 var(--rail-pad-end) 28px var(--rail-pad-start);
   scrollbar-width: thin;
-  scrollbar-color: rgba(17, 20, 17, 0.2) transparent;
+  scrollbar-color: rgba(17, 17, 17, 0.18) transparent;
 }
 
+.config-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Head: model, trim, the three headline figures, then the price line. */
+.configurator-head {
+  display: grid;
+  gap: 14px;
+  padding: 26px 0 0;
+}
+
+.configurator-head__model h2 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.configurator-head__model p {
+  margin: 0.3rem 0 0;
+  color: var(--rail-muted);
+  font-size: 0.8125rem;
+}
+
+.configurator-head__specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+}
+
+.configurator-head__specs div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.configurator-head__specs strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.configurator-head__specs span {
+  color: var(--rail-muted);
+  font-size: 0.625rem;
+  white-space: nowrap;
+}
+
+.configurator-head__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.configurator-head__price span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.configurator-head__price small {
+  color: var(--rail-muted);
+  font-size: 0.6875rem;
+}
+
+/* Sections. */
 .config-group-wrap {
-  border-bottom: 1px solid var(--rail-line);
+  padding-top: 24px;
 }
 
 .config-group {
   min-inline-size: 0;
   margin: 0;
-  padding: clamp(1.55rem, 3vw, 2.15rem);
+  padding: 0;
   border: 0;
 }
 
 .config-group legend {
   width: 100%;
-  display: flex;
-  align-items: baseline;
-  gap: 0.8rem;
+  margin: 0 0 10px;
   padding: 0;
-  font-size: clamp(1.2rem, 2.5vw, 1.55rem);
-  font-weight: 560;
-  letter-spacing: -0.045em;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.config-group__number {
-  color: var(--rail-green);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0;
-  font-weight: 600;
+/* The chosen name and its price under a swatch section's heading. */
+.config-group__current {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 10px;
+  color: #333;
+  font-size: 0.75rem;
+}
+
+.config-group__current-price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: none;
+  color: var(--rail-ink);
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+}
+
+.config-group__current-price abbr,
+.config-option__price abbr {
+  color: var(--rail-faint);
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-decoration: none;
+  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.config-group__number::before {
-  content: var(--group-number);
-  font-size: 0.6rem;
+.config-group__intro,
+.config-group__note {
+  max-width: 32rem;
+  margin: 0 0 10px;
+  color: var(--rail-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
-.config-group__intro {
-  max-width: 31rem;
-  margin: 0.55rem 0 1rem 2rem;
-  color: var(--rail-muted);
-  font-size: 0.63rem;
-  line-height: 1.5;
-  letter-spacing: 0.015em;
+.config-group__note {
+  margin: 10px 0 0;
+}
+
+.config-group__range {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rail-line);
+  font-size: 0.75rem;
+}
+
+.config-group__range span {
+  color: #333;
+}
+
+.config-group__range strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .config-group__options {
   display: grid;
-  gap: 0.55rem;
-}
-
-.config-group--paint .config-group__options {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
-}
-
-.config-option {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  min-height: 4.65rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--rail-line);
-  border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.57);
-  cursor: pointer;
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.config-option:hover {
-  border-color: rgba(17, 20, 17, 0.36);
-  transform: translateY(-1px);
-}
-
-.config-option:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--rail-green) 24%, transparent);
-  outline-offset: 2px;
-}
-
-.config-option[data-selected] {
-  border-color: var(--rail-ink);
-  background: #fff;
-  box-shadow: 0 8px 30px rgba(22, 29, 23, 0.07);
-}
-
-.config-option[data-invalid] {
-  border-style: dashed;
+  gap: 8px;
 }
 
 .config-option input {
@@ -206,44 +212,69 @@
   pointer-events: none;
 }
 
+/* Stacked cards: trims and the tow package. */
+.config-group[data-layout="cards"] .config-option {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--rail-line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.config-group[data-layout="cards"] .config-option:hover {
+  border-color: #b9b9b9;
+}
+
+.config-group[data-layout="cards"] .config-option[data-selected] {
+  border-color: var(--rail-ink);
+  box-shadow: inset 0 0 0 0.5px var(--rail-ink);
+}
+
+.config-group[data-layout="cards"] .config-option[data-invalid] {
+  border-style: dashed;
+}
+
+.config-group[data-layout="cards"] .config-option:has(input:focus-visible) {
+  outline: 2px solid var(--rail-ink);
+  outline-offset: 2px;
+}
+
 .config-option__body {
   min-width: 0;
   flex: 1;
 }
 
 .config-option__heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.35rem 0.75rem;
+  display: grid;
+  gap: 2px;
 }
 
 .config-option__heading strong {
   min-width: 0;
-  flex: 1 1 8rem;
   overflow-wrap: anywhere;
-  font-size: 0.88rem;
-  font-weight: 610;
-  line-height: 1.24;
-  letter-spacing: -0.025em;
-}
-
-.config-group--build .config-option__heading strong {
-  flex-basis: auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .config-option__price {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.1rem 0.3rem;
-  flex: 0 1 auto;
+  gap: 0 4px;
   min-width: 0;
-  max-width: 100%;
-  font-size: 0.7rem;
-  line-height: 1.4;
-  white-space: normal;
+  color: var(--rail-muted);
+  font-size: 0.6875rem;
+  line-height: 1.35;
 }
 
 .config-option__amount {
@@ -253,351 +284,466 @@
 }
 
 .config-option__price-basis {
-  flex-basis: 100%;
-  color: var(--rail-muted);
-  font-size: 0.65rem;
-  line-height: 1.3;
-}
-
-.config-option__price abbr {
-  color: var(--rail-muted);
-  font-size: 0.56rem;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--rail-faint);
+  font-size: 0.6875rem;
 }
 
 .config-option__description {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: 4px;
   color: var(--rail-muted);
-  font-size: 0.7rem;
-  line-height: 1.45;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.config-option__side {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  flex: none;
+  max-width: 48%;
+  text-align: right;
+}
+
+.config-option__availability,
+.configurator-total__delivery {
+  color: var(--rail-muted);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.config-option__availability[data-now],
+.configurator-total__delivery[data-now] {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--rail-ink);
+  background: var(--rail-now);
+  font-weight: 560;
 }
 
 .config-option__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
+  gap: 4px;
+  margin-top: 4px;
   color: var(--rail-muted);
-  font-size: 0.53rem;
-  text-transform: uppercase;
-  letter-spacing: 0.045em;
+  font-size: 0.625rem;
+}
+
+.config-option__side .config-option__meta {
+  justify-content: flex-end;
+  margin-top: 0;
 }
 
 .config-option__meta > span {
-  padding: 0.22rem 0.38rem;
+  padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(17, 20, 17, 0.055);
-}
-
-.config-option__meta [data-orderability="orderable_now"] {
-  color: #284b37;
-  background: #e5f4e8;
+  background: #f1f1ef;
+  white-space: nowrap;
 }
 
 .config-option__meta [data-orderability="concept_only"] {
-  color: #775e2e;
+  color: #6f5525;
   background: #f5ecd6;
 }
 
 .config-option__impact {
-  color: var(--rail-green);
+  color: var(--rail-ink);
 }
 
-.config-option__check {
-  width: 1.35rem;
-  height: 1.35rem;
+/* Tow package cards. */
+.config-option__capability {
+  width: 20px;
+  height: 20px;
   flex: none;
   display: grid;
   place-items: center;
+  order: 2;
   border: 1px solid var(--rail-line);
   border-radius: 50%;
+  color: var(--rail-muted);
 }
 
-.config-option__check svg {
-  width: 0.72rem;
-  height: 0.72rem;
+.config-option__capability svg {
+  width: 12px;
+  height: 12px;
   stroke-width: 2.2;
 }
 
-.config-option[data-selected] .config-option__check {
+.config-option[data-selected] .config-option__capability {
   border-color: var(--rail-ink);
   color: #fff;
   background: var(--rail-ink);
 }
 
-.config-option__paint {
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: none;
-  display: grid;
-  place-items: center;
-  padding: 0.22rem;
-  border: 1px solid var(--rail-line);
-  border-radius: 50%;
-  background: #fff;
-}
-
-.config-option__paint span {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.75), transparent 34%),
-    var(--swatch);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.config-group--paint .config-option {
-  min-height: 7.2rem;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.75rem;
-}
-
-.config-group--paint .config-option__body,
-.config-group--paint .config-option__heading {
-  width: 100%;
-}
-
-.config-group--paint .config-option__heading {
-  display: block;
-}
-
-.config-group--paint .config-option__heading strong {
-  display: block;
-}
-
-.config-group--paint .config-option__heading strong {
-  padding-right: 0;
-  font-size: 0.75rem;
-}
-
-.config-group--paint .config-option__price {
-  margin-top: 0.25rem;
-}
-
-.config-group--paint .config-option__description,
-.config-group--paint .config-option__meta > [data-orderability],
-.config-group--paint .config-option__check {
-  display: none;
-}
-
-.config-option__wheel,
-.config-option__interior,
-.config-option__capability {
-  width: 3.15rem;
-  height: 3.15rem;
-  flex: none;
-}
-
-.config-option__wheel {
-  position: relative;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.config-option__wheel svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.config-option__wheel[data-selected] {
-  box-shadow: 0 0 0 0.2rem rgba(199, 255, 57, 0.72);
-}
-
-.config-option__interior {
-  overflow: hidden;
-  display: grid;
-  place-items: end center;
-  border-radius: 0.85rem;
-  background: linear-gradient(145deg, #3e413d 0 48%, #151715 49%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.13);
-}
-
-.config-option__interior[data-light] {
-  background: linear-gradient(145deg, #eeeae0 0 48%, #a6a298 49%);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.config-option__interior span {
-  width: 72%;
-  height: 35%;
-  margin-bottom: 0.34rem;
-  border-radius: 0.7rem 0.7rem 0.32rem 0.32rem;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.config-option__capability {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--rail-green);
-  background: #e6ece6;
-}
-
-.config-option__capability svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  stroke-width: 1.5;
-}
-
-.config-group--towing .config-option {
-  display: block;
-  min-height: 0;
-}
-
-.config-group--towing .config-option__heading {
-  display: block;
-  padding-right: 2rem;
-}
-
-.config-group--towing .config-option__price {
-  width: fit-content;
-  margin-top: 0.35rem;
-}
-
-.config-group--towing .config-option__capability {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.95rem;
-  width: 1.35rem;
-  height: 1.35rem;
-  background: transparent;
-}
-
-.config-group--towing .config-option__check {
-  display: none;
-}
-
 .config-group--towing .config-option[data-secondary] {
-  margin-top: 0.2rem;
-  border: 0;
-  border-top: 1px solid var(--rail-line);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border-style: dashed;
+  background: var(--rail-tint);
 }
 
 .config-option__eligibility,
 .config-option__other-builds,
 .config-option__explore {
   display: block;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: 0.6875rem;
+  line-height: 1.4;
 }
 
 .config-option__eligibility {
-  margin-top: 0.45rem;
+  margin-top: 2px;
   color: var(--rail-muted);
 }
 
 .config-option__other-builds {
-  margin-bottom: 0.5rem;
-  color: var(--rail-muted);
+  margin-bottom: 4px;
+  color: var(--rail-faint);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .config-option__explore {
-  margin-top: 0.6rem;
-  color: var(--rail-green);
-  font-weight: 650;
+  margin-top: 4px;
+  color: var(--rail-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
 }
 
+/*
+ * Round swatches: paint, wheels, interior.
+ *
+ * Each option is one label holding its round swatch and a body with its name,
+ * price, orderability and what choosing it would change. By default (touch
+ * screens, and any screen while the keyboard is in the row) the labels
+ * dissolve into the row: every swatch sits on the top line and each unchosen
+ * option's body becomes one line of a list under them, so nothing waits on a
+ * hover and a tap on a line chooses it. With a mouse, the body is a card that
+ * opens on hover instead (the @media (hover: hover) block below).
+ */
+.config-group[data-layout="swatches"] .config-group__options {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+}
+
+.config-group[data-layout="swatches"] .config-option {
+  display: contents;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.config-option__paint,
+.config-option__interior,
+.config-option__wheel {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 2.5px;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 140ms ease;
+}
+
+.config-option__wheel {
+  width: 46px;
+  height: 46px;
+}
+
+.config-group[data-layout="swatches"] .config-option > :is(.config-option__paint, .config-option__interior, .config-option__wheel) {
+  margin-bottom: 8px;
+}
+
+.config-option[data-selected] .config-option__paint,
+.config-option[data-selected] .config-option__interior,
+.config-option[data-selected] .config-option__wheel {
+  border-color: var(--rail-ink);
+}
+
+.config-option:has(input:focus-visible) .config-option__paint,
+.config-option:has(input:focus-visible) .config-option__interior,
+.config-option:has(input:focus-visible) .config-option__wheel {
+  outline: 2px solid var(--rail-ink);
+  outline-offset: 2px;
+}
+
+/* A choice that needs a paired change: a faded, dashed swatch. Its line in
+   the list says why. */
+.config-group[data-layout="swatches"] .config-option[data-invalid] > :is(.config-option__paint, .config-option__interior, .config-option__wheel) {
+  border-style: dashed;
+  border-color: #b9b9b9;
+  opacity: 0.45;
+}
+
+.config-option__paint span,
+.config-option__interior span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.config-option__paint span {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at 60% 78%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 55%),
+    var(--swatch);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.config-option__interior span {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(160deg, #3c3e3b, #151715);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.config-option__interior[data-light] span {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(160deg, #f2eee6, #b8b2a5);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.config-option__wheel svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* The chosen option's orderability, beside its name in the heading row. */
+.config-group__current-orderability {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: var(--rail-muted);
+  background: #f1f1ef;
+  font-size: 0.625rem;
+  white-space: nowrap;
+}
+
+/* The list under the swatches: one line per unchosen option. */
+.config-group[data-layout="swatches"] .config-option__body {
+  order: 1;
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-height: 32px;
+  padding: 6px 0;
+  border-top: 1px solid var(--rail-line);
+  cursor: pointer;
+}
+
+/* The heading row above the swatches already names the chosen one. */
+.config-group[data-layout="swatches"] .config-option[data-selected] .config-option__body {
+  display: none;
+}
+
+.config-option__mini {
+  display: none;
+}
+
+.config-group[data-layout="swatches"] .config-option__mini {
+  display: flex;
+  flex: none;
+}
+
+/* The swatch again, small, so each line reads against its swatch. */
+.config-group[data-layout="swatches"] .config-option .config-option__mini > * {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  outline: none;
+}
+
+.config-group[data-layout="swatches"] .config-option__heading {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+  min-width: 0;
+}
+
+.config-group[data-layout="swatches"] .config-option__heading strong {
+  font-size: 0.75rem;
+  font-weight: 560;
+}
+
+.config-group[data-layout="swatches"] .config-option__price {
+  color: var(--rail-ink);
+}
+
+.config-group[data-layout="swatches"] .config-option__meta {
+  margin: 0 0 0 auto;
+}
+
+/*
+ * With a mouse, and while the keyboard is not in the row: the swatches stand
+ * alone and each body is a card that opens under the row on hover.
+ */
+@media (hover: hover) {
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-group__options {
+    gap: 6px;
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option {
+    display: block;
+    border-radius: 50%;
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option > :is(.config-option__paint, .config-option__interior, .config-option__wheel) {
+    margin-bottom: 0;
+  }
+
+  .config-option:hover .config-option__paint,
+  .config-option:hover .config-option__interior,
+  .config-option:hover .config-option__wheel {
+    border-color: #c9c9c9;
+  }
+
+  .config-option[data-selected]:hover .config-option__paint,
+  .config-option[data-selected]:hover .config-option__interior,
+  .config-option[data-selected]:hover .config-option__wheel {
+    border-color: var(--rail-ink);
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option__body,
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option[data-selected] .config-option__body {
+    position: absolute;
+    z-index: 6;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    display: grid;
+    gap: 4px;
+    min-height: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--rail-line);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(17, 17, 17, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-2px);
+    transition: opacity 120ms ease, transform 120ms ease, visibility 0s linear 120ms;
+    pointer-events: none;
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option:hover .config-option__body {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option__mini {
+    display: none;
+  }
+
+  .config-group[data-layout="swatches"]:not(:has(input:focus-visible)) .config-option__meta {
+    margin: 0;
+  }
+}
+
+/* Compatibility guidance. */
 .compatibility-guide {
   position: relative;
-  margin: 1rem clamp(1rem, 3vw, 2rem) 0;
-  padding: 1.15rem;
-  border: 1px solid rgba(129, 83, 21, 0.35);
-  border-radius: 1.15rem;
-  background: #fbf3de;
-  box-shadow: 0 15px 45px rgba(72, 47, 16, 0.12);
+  margin: 20px 0 0;
+  padding: 12px;
+  border: 1px solid rgba(129, 83, 21, 0.3);
+  border-radius: 10px;
+  background: #fbf5e4;
 }
 
 .compatibility-guide__close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 1.8rem;
-  height: 1.8rem;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   border-radius: 50%;
   color: #76541f;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   cursor: pointer;
 }
 
 .compatibility-guide__close svg {
-  width: 0.85rem;
+  width: 14px;
 }
 
 .compatibility-guide__kicker {
   display: inline-flex;
   align-items: center;
-  gap: 0.38rem;
+  gap: 5px;
   color: #76541f;
-  font-size: 0.55rem;
-  font-weight: 700;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .compatibility-guide__kicker svg {
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 12px;
+  height: 12px;
 }
 
 .compatibility-guide h3 {
-  max-width: 28rem;
-  margin: 0.55rem 2rem 0;
-  margin-left: 0;
-  font-size: 1.05rem;
-  line-height: 1.2;
-  letter-spacing: -0.035em;
+  max-width: 26rem;
+  margin: 6px 32px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .compatibility-guide__reasons {
-  margin: 0.55rem 0 0;
-  padding-left: 1rem;
+  margin: 6px 0 0;
+  padding-left: 16px;
   color: #735b36;
-  font-size: 0.68rem;
-  line-height: 1.5;
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 .compatibility-guide__alternatives {
   display: grid;
-  gap: 0.35rem;
-  margin-top: 0.85rem;
+  gap: 4px;
+  margin-top: 10px;
 }
 
 .compatibility-guide__alternatives > span {
-  margin-bottom: 0.1rem;
   color: #76541f;
-  font-size: 0.58rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  font-weight: 600;
 }
 
 .compatibility-guide__alternatives button {
   width: 100%;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.7rem 0.75rem;
+  gap: 10px;
+  padding: 8px 10px;
   border: 0;
-  border-radius: 0.72rem;
+  border-radius: 8px;
   text-align: left;
-  background: rgba(255, 255, 255, 0.67);
+  background: rgba(255, 255, 255, 0.72);
   cursor: pointer;
 }
 
@@ -613,100 +759,136 @@
 }
 
 .compatibility-guide__alternatives button strong {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .compatibility-guide__alternatives button small {
-  margin-top: 0.22rem;
+  margin-top: 2px;
   color: #735b36;
-  font-size: 0.61rem;
+  font-size: 0.6875rem;
 }
 
 .compatibility-guide__alternatives button svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 14px;
+  height: 14px;
   flex: none;
 }
 
 .configurator-warnings {
   display: flex;
-  gap: 0.75rem;
-  margin: 1.25rem clamp(1.25rem, 3vw, 2rem);
-  padding: 1rem;
-  border-radius: 1rem;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
   color: #4f4a37;
-  background: #eeecdf;
+  background: #f1efe4;
 }
 
 .configurator-warnings > svg {
-  width: 1rem;
-  height: 1rem;
+  width: 14px;
+  height: 14px;
   flex: none;
+  margin-top: 1px;
 }
 
 .configurator-warnings strong {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .configurator-warnings p {
-  margin: 0.3rem 0 0;
+  margin: 2px 0 0;
   color: #6a6552;
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   line-height: 1.45;
+}
+
+/* Buyer facts behind a disclosure at the end of the rail. */
+.buyer-disclosure {
+  margin-top: 24px;
+  border-top: 1px solid var(--rail-line);
+}
+
+.buyer-disclosure > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+.buyer-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.buyer-disclosure > summary svg {
+  width: 14px;
+  height: 14px;
+}
+
+.buyer-disclosure[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.buyer-disclosure > summary:focus-visible {
+  outline: 2px solid var(--rail-ink);
+  outline-offset: 2px;
 }
 
 .buyer-context {
   min-inline-size: 0;
   margin: 0;
-  padding: clamp(1.55rem, 3vw, 2.15rem);
+  padding: 12px;
   border: 0;
-  background: #e9ece4;
+  border-radius: 10px;
+  background: var(--rail-tint);
 }
 
 .buyer-context legend {
-  width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
   padding: 0;
-  font-size: 1rem;
-  font-weight: 620;
-  letter-spacing: -0.03em;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .buyer-context legend svg {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 14px;
+  height: 14px;
   color: var(--rail-green);
 }
 
 .buyer-context > p {
   max-width: 31rem;
-  margin: 0.5rem 0 1.25rem;
+  margin: 4px 0 12px;
   color: var(--rail-muted);
-  font-size: 0.7rem;
-  line-height: 1.5;
+  font-size: 0.6875rem;
+  line-height: 1.45;
 }
 
 .buyer-context__block + .buyer-context__block {
-  margin-top: 1rem;
+  margin-top: 12px;
 }
 
 .buyer-context__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-  margin-bottom: 1.15rem;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .buyer-context label.buyer-context__field {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.3rem;
+  gap: 2px;
   min-height: 0;
-  padding: 0.6rem 0.7rem;
+  padding: 6px 10px;
   cursor: default;
 }
 
@@ -717,18 +899,19 @@
 .buyer-context__field select {
   width: 100%;
   min-width: 0;
-  padding: 0.3rem 0.1rem;
+  min-height: 32px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--rail-ink);
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 560;
   cursor: pointer;
 }
 
 .buyer-context__field:has(select:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--rail-green) 24%, transparent);
+  outline: 2px solid var(--rail-ink);
   outline-offset: 2px;
 }
 
@@ -738,18 +921,16 @@
 
 .buyer-context__label {
   display: block;
-  margin-bottom: 0.55rem;
-  color: var(--rail-green);
-  font-size: 0.55rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  color: var(--rail-muted);
+  font-size: 0.6875rem;
+  font-weight: 560;
 }
 
 .buyer-context__segments,
 .buyer-context__checks {
   display: grid;
-  gap: 0.4rem;
+  gap: 6px;
 }
 
 .buyer-context__segments {
@@ -765,22 +946,21 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  min-height: 3.35rem;
-  padding: 0.65rem;
-  border: 1px solid rgba(17, 20, 17, 0.11);
-  border-radius: 0.8rem;
-  background: rgba(255, 255, 255, 0.53);
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--rail-line);
+  border-radius: 10px;
+  background: #fff;
   cursor: pointer;
 }
 
 .buyer-context label[data-selected] {
-  border-color: var(--rail-green);
-  background: #fff;
+  border-color: var(--rail-ink);
 }
 
 .buyer-context label:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--rail-green) 24%, transparent);
+  outline: 2px solid var(--rail-ink);
   outline-offset: 2px;
 }
 
@@ -800,293 +980,243 @@
 
 .buyer-context__segments strong,
 .buyer-context__checks > label > span:not(.buyer-context__checkmark) {
-  font-size: 0.67rem;
+  font-size: 0.75rem;
+  font-weight: 560;
   line-height: 1.25;
 }
 
 .buyer-context__segments small {
-  margin-top: 0.25rem;
+  margin-top: 1px;
   color: var(--rail-muted);
-  font-size: 0.55rem;
+  font-size: 0.625rem;
 }
 
 .buyer-context__checkmark {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 16px;
+  height: 16px;
   flex: none;
   display: grid;
   place-items: center;
   margin-left: auto;
   border: 1px solid var(--rail-line);
-  border-radius: 0.28rem;
+  border-radius: 4px;
 }
 
 .buyer-context__checkmark svg {
-  width: 0.65rem;
+  width: 10px;
   opacity: 0;
 }
 
 .buyer-context label[data-selected] .buyer-context__checkmark {
   color: #fff;
-  border-color: var(--rail-green);
-  background: var(--rail-green);
+  border-color: var(--rail-ink);
+  background: var(--rail-ink);
 }
 
 .buyer-context label[data-selected] .buyer-context__checkmark svg {
   opacity: 1;
 }
 
+/* The review footer: total and delivery on the left, Review build on the right. */
 .configurator-total {
   position: relative;
   z-index: 4;
-  padding: 0.85rem clamp(1.1rem, 3vw, 1.6rem) 0.75rem;
+  padding: 10px var(--rail-pad-end) 10px var(--rail-pad-start);
   border-top: 1px solid var(--rail-line);
-  background: color-mix(in srgb, var(--rail-paper) 94%, transparent);
-  box-shadow: 0 -20px 50px rgba(29, 36, 30, 0.06);
-  backdrop-filter: blur(24px) saturate(1.15);
-}
-
-.configurator-total__consequences {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1rem;
-  margin-bottom: 0.6rem;
-  color: var(--rail-muted);
-  font-size: 0.61rem;
-}
-
-.configurator-total__consequences span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-}
-
-.configurator-total__consequences svg {
-  width: 0.73rem;
-  height: 0.73rem;
-  color: var(--rail-green);
+  background: #fff;
 }
 
 .configurator-total__price {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 12px;
 }
 
-.configurator-total__price > span,
-.configurator-total__price small,
-.configurator-total__price strong {
-  display: block;
+.configurator-total__figure {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
-.configurator-total__price small {
+.configurator-total__figure small {
   color: var(--rail-muted);
-  font-size: 0.53rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-size: 0.6875rem;
 }
 
-.configurator-total__price strong {
-  margin-top: 0.16rem;
-  font-size: 1.28rem;
-  font-weight: 620;
-  letter-spacing: -0.045em;
+.configurator-total__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.configurator-total__line strong {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .configurator-total__price button {
-  min-height: 2.85rem;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
-  padding: 0.75rem 1rem;
-  border: 0;
+  gap: 8px;
+  flex: none;
+  padding: 0 18px;
+  border: 1px solid var(--rail-ink);
   border-radius: 999px;
-  color: #10130e;
-  background: var(--rail-acid);
-  font-size: 0.74rem;
-  font-weight: 650;
+  color: #fff;
+  background: var(--rail-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
 }
 
-.configurator-total__price button:hover {
-  filter: brightness(0.96);
+.configurator-total__price button:hover:not(:disabled) {
+  color: var(--rail-ink);
+  background: #fff;
 }
 
 .configurator-total__price button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--rail-green) 28%, transparent);
+  outline: 2px solid var(--rail-ink);
   outline-offset: 2px;
 }
 
+.configurator-total__price button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .configurator-total__price button svg {
-  width: 0.86rem;
-  height: 0.86rem;
+  width: 14px;
+  height: 14px;
 }
 
 .configurator-total > p {
-  margin: 0.42rem 0 0;
+  margin: 6px 0 0;
   color: var(--rail-muted);
-  font-size: 0.47rem;
+  font-size: 0.6875rem;
   line-height: 1.35;
 }
 
-@media (max-width: 560px) {
+/* Narrow layouts fold each section behind its heading. */
+.config-group__toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.config-group__toggle > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.config-group__toggle strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.config-group__toggle small {
+  overflow: hidden;
+  color: var(--rail-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-group__toggle > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.config-group__toggle[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+
+.config-group__toggle:focus-visible {
+  outline: 2px solid var(--rail-ink);
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
   .uvc-configurator {
-    width: 100%;
-    min-height: 100svh;
+    --rail-pad-start: 16px;
+    --rail-pad-end: 16px;
     height: auto;
-    border-left: 0;
-  }
-
-  .configurator-head {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 1.2rem 1rem;
-  }
-
-  .configurator-head__specs {
-    width: 100%;
-  }
-
-  .configurator-head__specs div:first-child {
-    padding-left: 0;
-    border-left: 0;
+    display: block;
   }
 
   .configurator-scroll {
     overflow: visible;
   }
 
-  .config-group {
-    padding: 1.4rem 1rem;
+  .configurator-head {
+    padding-top: 18px;
   }
 
-  .config-group__intro {
-    margin-left: 1.8rem;
+  .configurator-head__model h2 {
+    font-size: 2rem;
   }
 
-  .config-option {
-    min-height: 4.9rem;
-    padding: 0.82rem;
+  .config-group-wrap {
+    padding-top: 6px;
+    border-bottom: 1px solid var(--rail-line);
   }
 
-  .config-option__heading {
-    align-items: flex-start;
+  .config-group legend {
+    margin-bottom: 6px;
   }
 
-  .config-option__description {
-    font-size: 0.66rem;
+  .config-group > div:not([hidden]) {
+    padding-bottom: 14px;
   }
 
-  .compatibility-guide {
-    margin: 0.75rem 0.75rem 0;
+  .buyer-disclosure {
+    margin-top: 0;
+    border-top: 0;
   }
+}
 
-  .buyer-context {
-    padding: 1.4rem 1rem;
-  }
-
-  .buyer-context__segments {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 560px) {
+  .buyer-context__segments,
   .buyer-context__grid {
     grid-template-columns: 1fr;
   }
 
-  .buyer-context__segments label {
-    min-height: 3rem;
+  .configurator-total__line strong {
+    font-size: 1.25rem;
   }
 
-  .configurator-total {
-    position: sticky;
-    bottom: 0;
-    padding-inline: 1rem;
+  .configurator-total__price button {
+    padding: 0 14px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .config-option {
-    transition: none;
+  .config-option,
+  .config-option__body,
+  .config-option__paint,
+  .config-option__interior,
+  .config-option__wheel,
+  .configurator-total__price button {
+    transition: none !important;
   }
-}
-
-@media (max-width: 640px) {
-  .configurator-total__price small {
-    font-size: max(0.53rem, 10px);
-  }
-}
-
-@media (max-width: 640px) {
-  .config-option__meta > span,
-  .config-option__impact {
-    font-size: max(0.55rem, 10px);
-  }
-}
-
-@media (max-width: 640px) {
-  .config-option__price abbr,
-  .buyer-context__label,
-  .buyer-context label small,
-  .configurator-total > p {
-    font-size: max(0.6rem, 10px);
-  }
-}
-
-
-.config-group__toggle {
-  width: 100%; min-height: 44px; display: flex; align-items: center; gap: 0.85rem;
-  padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
-}
-.config-group__toggle > span:nth-child(2) { display: grid; min-width: 0; flex: 1; gap: 0.35rem; }
-.config-group__toggle strong { font: inherit; }
-.config-group__toggle small { font-size: 0.78rem; color: var(--rail-muted); letter-spacing: 0; line-height: 1.45; }
-.config-group__toggle > svg { width: 1rem; height: 1rem; flex: none; }
-.config-group__toggle[aria-expanded="true"] > svg { transform: rotate(180deg); }
-.config-group__toggle:focus-visible, .buyer-disclosure > summary:focus-visible { outline: 2px solid var(--rail-green, #36564c); outline-offset: 4px; }
-.buyer-disclosure { border-bottom: 1px solid var(--rail-line, rgba(17, 20, 17, 0.13)); }
-.buyer-disclosure > summary {
-  min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-  padding: 1rem; cursor: pointer; font-size: 0.9rem; font-weight: 600;
-}
-.buyer-disclosure > summary svg { width: 1rem; height: 1rem; }
-.buyer-disclosure[open] > summary svg { transform: rotate(180deg); }
-.config-group__intro, .config-option__description, .buyer-context > p, .configurator-warnings p { font-size: 0.8rem; }
-.config-option__meta, .config-option__meta > span, .config-option__impact { font-size: 0.65rem; }
-.config-option__price { font-size: 0.8rem; }
-.config-group--paint .config-option__heading strong { font-size: 0.82rem; }
-.config-option__price abbr, .buyer-context__label, .buyer-context label small, .configurator-total > p { font-size: 0.65rem; }
-.buyer-context__segments strong, .buyer-context__checks > label > span:not(.buyer-context__checkmark) { font-size: 0.8rem; }
-.buyer-context__field select { min-height: 44px; font-size: 1rem; }
-.configurator-total__price button:disabled { opacity: 0.5; cursor: not-allowed; }
-@media (max-width: 980px) {
-  .uvc-configurator { height: auto; min-height: 0; }
-  .configurator-scroll { overflow: visible; }
-  .config-group { padding: 1.25rem 1rem; }
-  .config-group legend { padding: 0; }
-  .config-group__intro { margin: 1rem 0; }
-  .configurator-shell .configurator-total {
-    position: fixed; z-index: 35; left: 0; right: 0; bottom: 0;
-    padding: 0.7rem 1rem max(0.7rem, env(safe-area-inset-bottom));
-  }
-  .configurator-total__consequences { margin-bottom: 0.4rem; font-size: 0.7rem; }
-  .configurator-total__price small { font-size: 0.65rem; }
-  .configurator-total > p { font-size: 0.6rem; }
-}
-@media (max-width: 560px) {
-  .config-option__heading { flex-wrap: wrap; gap: 0.35rem 0.75rem; }
-  .config-option__wheel, .config-option__interior, .config-option__capability { width: 2.6rem; height: 2.6rem; }
-  .configurator-total__price button { font-size: 0.8rem; }
-  .configurator-head__specs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .configurator-head__specs span { font-size: 0.6rem; }
-}
-
-.configurator-total__preview { display: none; }
-@media (max-width: 980px) {
-  .configurator-total__preview {
-    display: inline-flex; min-height: 44px; align-items: center; padding: 0; border: 0;
-    color: var(--rail-green); background: transparent; font: inherit; font-weight: 650; cursor: pointer;
-  }
-  .configurator-total__consequences { align-items: center; gap: 0.3rem 0.7rem; margin-block: -0.4rem 0; }
 }

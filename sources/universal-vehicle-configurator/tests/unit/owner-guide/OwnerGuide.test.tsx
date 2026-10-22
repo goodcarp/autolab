@@ -83,7 +83,7 @@ describe("My Car presentation and recovery", () => {
     remote = normal();
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(screen.getByRole("button", { name: "Tour" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Drag to rotate · Pinch to zoom", { selector: "output" })).toBeInTheDocument();
+    expect(document.querySelector("output")?.textContent).toBe("");
     expect(screen.queryByText("Guided tour running")).not.toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe("My Car presentation and recovery", () => {
     remote = normal();
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(screen.getByRole("button", { name: button })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Drag to rotate · Pinch to zoom", { selector: "output" })).toBeInTheDocument();
+    expect(document.querySelector("output")?.textContent).toBe("");
     expect(screen.queryByText(announcement)).not.toBeInTheDocument();
   });
 
@@ -125,7 +125,7 @@ describe("My Car presentation and recovery", () => {
     expect(pendingSignal?.aborted).toBe(true);
     expect(bridge.call.mock.calls.some(([tool]) => tool === "frame_part" || tool === "highlight_part")).toBe(false);
     expect(remote).toEqual(normal());
-    expect(screen.getByText("Drag to rotate · Pinch to zoom")).toBeInTheDocument();
+    expect(document.querySelector("output")?.textContent).toBe("");
   });
 
   it("keeps shortcuts disabled on connection failure, offers Shop, and retries with a fresh frame", async () => {

@@ -10,6 +10,8 @@
   --dim:#2f7d76;
   --btn-active:#1c2b4f;
   --btn-toggle:#4c5d84;
+  --race:#d7141a;     /* PLAY: racecar red */
+  --race-2:#b30f14;
   --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --minor:14px;
   --major:70px;
@@ -48,13 +50,9 @@ body{
 #overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;font-family:var(--mono)}
 #overlay text{font-family:var(--mono)}
 
-header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;pointer-events:none}
+/* the header is the page links and the agent chip, top left; the sheet carries no title here */
+header{position:absolute;top:50px;display:flex;gap:12px;align-items:flex-start;pointer-events:none}
 #hdr-left{left:52px}
-#hdr-right{right:52px;text-align:right;flex-direction:column;align-items:flex-end;gap:0}
-.hdr-title{font-size:14px;font-weight:600;letter-spacing:.32em;color:var(--ink)}
-.hdr-sub{font-size:10.5px;letter-spacing:.12em;color:var(--ink-soft);margin-top:4px}
-.logo{width:30px;height:30px;border:1.5px solid var(--ink);transform:rotate(45deg);display:flex;align-items:center;justify-content:center;margin:1px 8px 0 4px}
-.logo span{width:12px;height:12px;border:1.5px solid var(--accent)}
 
 .panel{position:absolute;background:rgba(244,246,250,.92);border:1.5px solid var(--ink);box-shadow:0 0 0 3px rgba(244,246,250,.6);
   transition:opacity .35s ease, transform .35s ease;pointer-events:auto}
@@ -68,7 +66,7 @@ header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;p
 .panel.min{width:auto;min-width:0}
 .panel.min .tb-big{font-size:12px;line-height:1.4}
 .panel.min .tb-lbl{display:none}
-#key{left:52px;top:116px;width:470px}
+#key{left:52px;top:92px;width:470px}
 .key-grid{display:grid;grid-template-columns:1fr 1fr;padding:8px 10px 4px 10px;gap:0 8px}
 .key-grid > div:nth-child(odd){border-right:1px solid rgba(28,43,79,.25);padding-right:8px}
 .key-item{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-2);height:27px;white-space:nowrap;cursor:pointer}
@@ -78,7 +76,7 @@ header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;p
 .key-foot{display:flex;justify-content:space-between;border-top:1px solid rgba(28,43,79,.35);padding:6px 12px;font-size:9.5px;letter-spacing:.14em;color:var(--ink-soft)}
 .key-foot b{color:var(--ink);font-weight:600}
 
-#instr{right:52px;top:116px;width:292px}
+#instr{right:52px;top:92px;width:292px}
 .instr-grid{padding:8px 12px 10px 12px;display:grid;grid-template-columns:1fr auto;row-gap:5px;font-size:10.5px;letter-spacing:.06em}
 .instr-grid .k{color:var(--ink-soft)}
 .instr-grid .v{color:var(--ink);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
@@ -108,8 +106,7 @@ header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;p
 .tb-cell .tb-val{font-size:11.5px;font-weight:600;letter-spacing:.08em;margin-top:2px;white-space:nowrap}
 .tb-cell .tb-val.red{color:var(--accent)}
 
-#hint{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);font-size:9.5px;letter-spacing:.22em;color:var(--ink-soft);opacity:.8;pointer-events:none}
-#viewtitle{position:absolute;left:50%;bottom:66px;transform:translateX(-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity .4s ease}
+#viewtitle{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity .4s ease}
 #viewtitle.show{opacity:1}
 .vt-rule{width:175px;height:1.5px;background:var(--ink);margin:0 auto 7px auto}
 .vt-name{font-size:16px;font-weight:600;letter-spacing:.36em}
@@ -139,26 +136,14 @@ header{position:absolute;top:52px;display:flex;gap:12px;align-items:flex-start;p
   #instr{width:250px}
 }
 
-/* ---- sheet cards: one control fades them all away, matching the PANELS dissolve ---- */
-#cards-toggle{position:absolute;top:52px;right:52px;width:26px;height:26px;padding:0;z-index:6;
-  border:1.5px solid var(--ink);background:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .18s ease,opacity .3s ease}
-#cards-toggle:hover{background:rgba(28,43,79,.1)}
-#cards-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#cards-toggle span{display:block;width:12px;height:12px;border:1.5px solid var(--ink);position:relative}
-#cards-toggle span::after{content:"";position:absolute;inset:-1.5px;border-top:1.5px solid var(--ink);
-  transform:rotate(45deg);transform-origin:center;opacity:0;transition:opacity .2s ease}
-body.cards-off #cards-toggle span::after{opacity:1}
-body.cards-off #cards-toggle{opacity:.45}
-body.cards-off #cards-toggle:hover{opacity:1}
-/* the dissolve: the cards fade and lift the way the shell does under PANELS */
-#key,#instr,#controls,#titleblock,#hdr-left,#hdr-right{transition:opacity .45s ease,transform .45s ease}
+/* ---- the console: CONSOLE (the tray's last button) fades every card away, matching the PANELS
+   dissolve, and brings them back ---- */
+#key,#instr,#controls,#titleblock,#hdr-left{transition:opacity .45s ease,transform .45s ease}
 /* the very first paint must not animate: a page opened with the cards hidden should simply have none */
 body.no-card-anim #key,body.no-card-anim #instr,body.no-card-anim #controls,
-body.no-card-anim #titleblock,body.no-card-anim #hdr-left,body.no-card-anim #hdr-right,
-body.no-card-anim #cards-toggle{transition:none}
+body.no-card-anim #titleblock,body.no-card-anim #hdr-left{transition:none}
 body.cards-off #key,body.cards-off #instr,body.cards-off #controls,
-body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
+body.cards-off #titleblock,body.cards-off #hdr-left{
   opacity:0;transform:translateY(-8px);pointer-events:none}
 
 /* ---- narrow sheets ------------------------------------------------------------------
@@ -173,10 +158,10 @@ body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
   #instr{width:262px}
 }
 @media (max-width:1240px){
-  #hdr-right{display:none}
-  #controls{bottom:auto;top:112px;left:52px}
-  #key{top:196px;width:392px}
-  #instr{top:112px;width:236px}
+  /* the controls panel (with the tray as its third row) moves up under the page links */
+  #controls{bottom:auto;top:92px;left:52px}
+  #key{top:252px;width:392px}
+  #instr{top:92px;width:236px}
   .instr-grid{font-size:9.5px}
   #titleblock{width:320px}
   .tb-grid{grid-template-columns:repeat(2,1fr)}
@@ -193,10 +178,6 @@ body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
   .zone-right{top:27px;bottom:27px;right:10px;width:19px}
   header{top:40px}
   #hdr-left{left:40px}
-  .hdr-title{font-size:12px;letter-spacing:.22em}
-  .hdr-sub{font-size:9px}
-  .logo{width:24px;height:24px}
-  #cards-toggle{top:40px;right:40px}
   #controls{top:88px;left:40px;padding:6px 9px}
   .btn{min-width:62px;height:24px;font-size:10px;padding:0 5px}
   .ctl-label{width:46px;font-size:8.5px;letter-spacing:.14em}
@@ -211,11 +192,6 @@ body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
   .zone-top,.zone-bottom,.zone-left,.zone-right{display:none}
   header{top:28px}
   #hdr-left{left:26px;gap:8px}
-  .hdr-sub{display:none}
-  .hdr-title{font-size:10.5px;letter-spacing:.16em}
-  .logo{width:20px;height:20px;margin:0 5px 0 0}
-  .logo span{width:8px;height:8px}
-  #cards-toggle{top:26px;right:26px;width:22px;height:22px}
   #controls{top:60px;left:26px;right:26px;padding:5px 7px}
   .ctl-row{gap:6px;margin:3px 0;min-width:0}
   .ctl-label{width:38px;font-size:8px;letter-spacing:.1em}
@@ -230,29 +206,27 @@ body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
   .vt-name{font-size:11px;letter-spacing:.18em}
   .vt-rule{width:110px;margin-bottom:4px}
   .vt-sub{font-size:8px}
-  #hint{display:none}
 }
 
 /* short viewports (phone held sideways, or a squat browser pane): the cards have to give up
    the vertical space, so the title block loses its grid and the controls sit in one strip */
 @media (max-height:520px){
   #key,#instr{display:none}
-  .hdr-sub{display:none}
   #controls{top:auto;bottom:20px;left:20px;padding:5px 8px}
   #titleblock{bottom:20px;right:20px;width:auto;max-width:44vw}
   .tb-grid{display:none}
   .tb-big{font-size:10.5px;line-height:1.35}
-  #viewtitle,#hint{display:none}
+  #viewtitle{display:none}
   header{top:22px}
   #hdr-left{left:22px}
-  #cards-toggle{top:22px;right:22px}
   #stage{inset:16px 18px}
   .frame-outer{inset:5px 6px}
   .frame-inner{inset:15px 17px}
   .zone-top,.zone-bottom,.zone-left,.zone-right{display:none}
 }
 
-/* The tour sits above the controls on wide sheets, beside the title block below 1240. */
+/* The tour sits above the controls on wide sheets (above the tray too, when the console puts it in
+   the controls panel), beside the title block below 1240. */
 #tour-card{position:absolute;left:52px;bottom:166px;width:460px;max-width:calc(100vw - 104px);
   padding:12px 14px;background:rgba(244,246,250,.96);border-top:1.5px solid var(--ink);
   color:var(--ink);font-family:var(--mono);pointer-events:none}
@@ -261,34 +235,30 @@ body.cards-off #titleblock,body.cards-off #hdr-left,body.cards-off #hdr-right{
 .tour-title{font-size:13px;font-weight:600;letter-spacing:.16em;margin-top:7px}
 .tour-caption{font-size:11px;line-height:1.6;margin:7px 0 10px;color:var(--ink-2)}
 .tour-hint{font-size:9px;letter-spacing:.1em;color:var(--ink-soft)}
-@media (max-width:1240px){#tour-card{bottom:52px;width:460px}}
+body.tray-in-panel #tour-card{bottom:208px}
+@media (max-width:1240px){#tour-card,body.tray-in-panel #tour-card{bottom:52px;width:460px}}
+/* console off, the tray holds the foot of the sheet: a held tour capture with ?cards=0 sits above it */
+@media (min-width:981px) and (min-height:521px){body.cards-off #tour-card{bottom:108px}}
 @media (max-width:980px){#tour-card{left:40px;bottom:240px;width:400px}}
 @media (max-width:640px){#tour-card{left:26px;bottom:110px;width:calc(100vw - 52px);max-width:none}}
 @media (max-height:520px){#tour-card{left:22px;top:70px;bottom:auto;width:400px}}
 
-/* Keep the single tour launcher reachable when the sheet opens with its cards hidden. */
-body.cards-off #controls{opacity:1;transform:none;pointer-events:none;
-  background:transparent;border-color:transparent;box-shadow:none}
-body.cards-off #controls .ctl-row{visibility:hidden}
-body.cards-off #tour-btn{visibility:visible;pointer-events:auto}
-
 /* Registration and navigation use the same ink, rules and type as the sheet. */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-.header-tools{display:flex;align-items:center;gap:12px;margin-top:5px;pointer-events:auto}
+.header-tools{display:flex;align-items:center;gap:10px;pointer-events:auto}
 .header-tools button,.header-tools a{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink);background:var(--paper)}
 #agent-chip{border:1px solid var(--ink);padding:2px 6px;cursor:pointer;line-height:1.3}
 #agent-chip.registered{color:var(--accent);border-color:var(--accent)}
 .header-tools a{text-decoration:none;border-bottom:1px solid var(--ink-soft)}
 .header-tools a:hover,#agent-chip:hover{color:var(--accent)}
 .header-tools :focus-visible,.key-item:focus-visible,#gl:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#agent-tools{left:52px;top:116px;width:530px;max-width:calc(100vw - 104px);max-height:calc(100vh - 168px);overflow:auto;z-index:8;background:var(--paper)}
+#agent-tools{left:52px;top:88px;width:530px;max-width:calc(100vw - 104px);max-height:calc(100vh - 168px);overflow:auto;z-index:8;background:var(--paper)}
 #agent-tools[hidden]{display:none}
 #agent-tools-list{display:grid;grid-template-columns:max-content 1fr;gap:8px 14px;padding:12px;margin:0;font-size:10px;line-height:1.5}
 #agent-tools-list dt{color:var(--accent);font-weight:500}
 #agent-tools-list dd{margin:0;color:var(--ink-2)}
 body.cards-off #hdr-left{opacity:1;transform:none}
-body.cards-off #hdr-left .logo,body.cards-off #hdr-left .hdr-title,body.cards-off #hdr-left .hdr-sub{visibility:hidden}
-body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:hidden}
+body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock,body.cards-off #controls{visibility:hidden}
 .panel.hidden .key-item{visibility:hidden}
 @media (max-width:640px){
   #controls{top:82px}
@@ -298,9 +268,17 @@ body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:
 }
 @media (max-height:520px){#agent-tools{top:76px;max-height:calc(100vh - 96px)}}
 
-/* header links: legible as buttons, not only as labels */
-.header-tools a{border:1px solid var(--ink-soft);border-radius:3px;padding:2px 7px;text-decoration:none;color:var(--ink);letter-spacing:.16em}
+/* header links: legible as buttons, not only as labels; AUTOLAB carries the mark, LEARN (this page)
+   is the filled one */
+.header-tools a{border:1px solid var(--ink-soft);border-radius:3px;padding:2px 7px;text-decoration:none;color:var(--ink);letter-spacing:.16em;
+  min-height:22px;display:inline-flex;align-items:center}
+#agent-chip{min-height:22px}
+.header-tools .nav-home{gap:6px;padding-left:4px;font-weight:600}
+.nav-mark{width:16px;height:16px;display:block;flex:none}
+.nav-mark[hidden]{display:none}
+.header-tools a[aria-current="page"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .header-tools a:hover,.header-tools a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.header-tools a[aria-current="page"]:hover,.header-tools a[aria-current="page"]:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff}
 body.nav-off .header-tools a{display:none}
 
 /* phones: the sheet is a drawing designed for a desk, so on a phone the drawing panels stay off but the
@@ -313,7 +291,6 @@ body.nav-off .header-tools a{display:none}
      moves to the top, clear of the host's bottom sheet */
   body.framed #controls{display:none}
   body.framed #tour-card{top:150px;bottom:auto}
-  #cards-toggle{width:32px;height:32px;top:22px;right:22px}
   body.cards-off #controls{visibility:visible;opacity:1;pointer-events:auto;transform:none}
   body.cards-off #controls .ctl-row{visibility:visible}
   body.cards-off #key,body.cards-off #instr,body.cards-off #titleblock{visibility:hidden}
@@ -328,25 +305,32 @@ body.nav-off .header-tools a{display:none}
   #tour-card{bottom:26px;left:22px;width:calc(100vw - 44px)}
 }
 
-/* Primary actions stay reachable while the drawing panels are tucked away: the vehicle, the
-   Roadster's PLAY, and RESET; the compact tray adds VIEWS, PARTS and MORE. */
-#primary-controls{position:absolute;right:92px;top:44px;z-index:7;display:flex;gap:6px}
-#primary-controls .btn{height:44px;min-width:76px}
+/* ---- the tray: the vehicle, TOUR, the Roadster's PLAY, RESET and CONSOLE, one row of equal
+   buttons. Console off it is centred at the foot of the sheet; console on it is the controls
+   panel's third row (ui.js layoutTray moves it, and TOUR goes back to the MOTION row); the compact
+   tray adds VIEWS, PARTS and MORE and keeps CONSOLE in MORE. ---- */
+#primary-controls{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:7;display:flex;gap:6px}
+#primary-controls .btn{height:44px;min-width:100px;padding:0 10px}
 #primary-controls .btn[hidden]{display:none}
-#hdr-right{right:280px}
-body.has-play #hdr-right{right:380px}
-@media (max-width:1380px){body.has-play #hdr-right{display:none}}
+#tray-row{display:none;margin-top:8px}
+body.tray-in-panel #tray-row{display:flex}
+#tray-row #primary-controls{position:static;transform:none;flex:1;min-width:0;z-index:auto}
+#tray-row #primary-controls .btn{flex:1 1 0;min-width:0}
+/* PLAY in racecar red, and STOP (the same button in a run) too */
+#play-btn,#play-btn.toggled{background:var(--race);border-color:var(--race);color:#fff;font-weight:600;letter-spacing:.14em}
+#play-btn:hover,#play-btn.toggled:hover{background:var(--race-2);border-color:var(--race-2)}
+#play-btn:focus-visible{outline-color:var(--ink)}
 .compact-only{display:none}
-/* The run controller's one line, under the tray on wide sheets and above it on compact ones. On
-   a wide sheet it fits the gap between the tray (bottom 88px) and the panels (top 112-116px), and
-   an open sheet or vehicle menu covers its place, so it steps aside until that closes. */
-#run-status{position:absolute;right:92px;top:90px;z-index:7;margin:0;padding:3px 9px;font-size:10.5px;line-height:14px;letter-spacing:.08em;color:var(--ink);background:var(--paper);border:1px solid var(--ink-soft)}
+/* The run controller's one line, just above the tray at the foot of a wide sheet and above the
+   compact toolbar. An open sheet or vehicle menu covers its place, so it steps aside until that
+   closes. */
+#run-status{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);max-width:calc(100% - 104px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:7;margin:0;padding:3px 9px;font-size:10.5px;line-height:14px;letter-spacing:.08em;color:var(--ink);background:var(--paper);border:1px solid var(--ink-soft)}
 #run-status[hidden]{display:none}
 #compact-sheet[open] ~ #run-status{visibility:hidden}
 #compact-vehicle-btns{grid-template-columns:repeat(2,minmax(0,1fr))}
-/* On a wide sheet the vehicle choice is a small menu under its tray button. */
+/* On a wide sheet the vehicle choice is a small menu just above its tray button (ui.js sets where). */
 @media (min-width:981px) and (min-height:521px){
-  #compact-sheet[aria-modal="false"][data-section="vehicles"]{inset:96px 92px auto auto;width:240px;max-height:none;margin:0;border:1.5px solid var(--ink);border-radius:0;box-shadow:0 0 0 3px rgba(244,246,250,.6)}
+  #compact-sheet[aria-modal="false"][data-section="vehicles"]{inset:auto auto var(--menu-bottom,104px) var(--menu-left,52px);width:240px;max-height:none;margin:0;border:1.5px solid var(--ink);border-radius:0;box-shadow:0 0 0 3px rgba(244,246,250,.6)}
   #compact-sheet[data-section="vehicles"] .compact-section{padding:8px}
   #compact-vehicle-btns{grid-template-columns:1fr;gap:5px}
   #compact-vehicle-btns .btn{min-height:40px;border:1.5px solid var(--ink);border-radius:0}
@@ -377,40 +361,36 @@ body.has-play #hdr-right{right:380px}
 #tooltip{max-width:min(280px,calc(100% - 16px))}
 .tt-desc{white-space:normal;line-height:1.45}
 body.cards-off #overlay{opacity:0}
-body.cards-off #controls .ctl-row{visibility:hidden}
-body.cards-off #tour-btn{visibility:visible}
 
 /* A compact sheet reserves real space for navigation and a four-action toolbar. */
 @media (max-width:980px),(max-height:520px){
   :root{--minor:28px;--major:140px;--tour-space:0px}
-  #stage{inset:112px 16px 100px}
+  /* the page links are the only header, so the drawing starts just under them */
+  #stage{inset:76px 16px 100px}
   #hdr-left{top:20px;left:20px;right:20px;gap:10px;align-items:center}
-  #hdr-left>div:last-child{min-width:0;flex:1}
-  .hdr-title{font-size:11px;letter-spacing:.1em;line-height:1.5}
-  #hdr-left .logo{width:20px;height:20px;margin:0 8px 0 0;align-self:flex-start}
-  #hdr-left .logo span{width:8px;height:8px}
-  #hdr-left .hdr-sub,#hdr-right,#key,#instr,#titleblock,#controls,#cards-toggle{display:none}
-  body.cards-off #hdr-left .logo,body.cards-off #hdr-left .hdr-title{visibility:visible}
-  .header-tools{gap:6px;margin-top:7px;flex-wrap:nowrap}
+  #key,#instr,#titleblock,#controls,#primary-controls #cards-toggle,#primary-controls #tour-btn{display:none}
+  .header-tools{gap:6px;flex-wrap:nowrap;min-width:0}
   .header-tools a{min-height:44px;font-size:10px;padding:6px 9px;display:inline-flex;align-items:center;border-color:var(--grid-major);letter-spacing:.06em;white-space:nowrap}
+  .header-tools a[aria-current="page"]{border-color:var(--ink)}
+  .header-tools .nav-home{padding-left:6px}
   .header-tools #agent-chip{display:none}
-  #primary-controls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));padding:7px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(min-content,1fr);gap:5px;border:1px solid var(--grid-major);border-radius:10px;background:var(--paper);box-shadow:0 4px 18px #1c2b4f0a}
+  #primary-controls{left:16px;right:16px;top:auto;transform:none;bottom:max(16px,env(safe-area-inset-bottom));padding:7px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(min-content,1fr);gap:5px;border:1px solid var(--grid-major);border-radius:10px;background:var(--paper);box-shadow:0 4px 18px #1c2b4f0a}
   #primary-controls .btn{display:block;min-width:0;height:44px;font-size:11px;letter-spacing:.04em;border:0;border-radius:5px;background:transparent}
   #primary-controls .btn[hidden]{display:none}
   #primary-controls .btn{padding:0 2px}
   #primary-controls #vehicle-btn{font-size:10px;letter-spacing:0}
-  #primary-controls #play-btn.toggled{background:var(--btn-active);color:var(--paper)}
-  #run-status{left:16px;right:16px;top:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 64px);padding:3px 8px;font-size:10px;text-align:center;border-color:var(--grid-major);border-radius:6px}
+  #primary-controls #play-btn,#primary-controls #play-btn.toggled{background:var(--race);color:#fff}
+  #primary-controls #play-btn:hover{background:var(--race-2)}
+  #run-status{left:16px;right:16px;top:auto;transform:none;max-width:none;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 64px);padding:3px 8px;font-size:10px;text-align:center;border-color:var(--grid-major);border-radius:6px}
   #primary-controls .btn:hover,#primary-controls .btn[aria-expanded="true"]{background:var(--paper-2)}
   #primary-controls #reset-btn{background:var(--ink);color:var(--paper)}
-  #hint{display:block;bottom:4px;max-width:100%;width:max-content;font-size:9px;letter-spacing:.08em;white-space:nowrap;background:var(--paper);padding:4px 8px;border-radius:4px}
   #viewtitle{bottom:26px;max-width:100%;width:max-content}
   .vt-name{font-size:11px;letter-spacing:.14em}.vt-sub{display:none}.vt-rule{width:96px}
   .frame,.zone{display:none}
-  #tour-card{left:16px;right:16px;top:100px;bottom:auto;width:auto;max-width:none;max-height:35dvh;overflow:auto;margin:0;padding:10px 12px;border-color:var(--grid-major);pointer-events:auto}
+  #tour-card,body.tray-in-panel #tour-card,body.cards-off #tour-card{left:16px;right:16px;top:72px;bottom:auto;width:auto;max-width:none;max-height:35dvh;overflow:auto;margin:0;padding:10px 12px;border-color:var(--grid-major);pointer-events:auto}
   .tour-title{font-size:12px;letter-spacing:.08em;margin-top:4px}.tour-caption{margin:4px 0;font-size:11px}.tour-hint{font-size:8px}
-  body.tour-active #stage{top:calc(112px + var(--tour-space,0px))}
-  #agent-tools{left:16px;right:16px;top:104px;width:auto;max-width:none;max-height:calc(100dvh - 190px)}
+  body.tour-active #stage{top:calc(76px + var(--tour-space,0px))}
+  #agent-tools{left:16px;right:16px;top:72px;width:auto;max-width:none;max-height:calc(100dvh - 190px)}
   #agent-tools .panel-min{height:44px;width:44px;font-size:22px}
   #agent-tools-list{grid-template-columns:1fr;gap:3px;font-size:11px}
   #agent-tools-list dd{margin-bottom:10px}
@@ -418,23 +398,20 @@ body.cards-off #tour-btn{visibility:visible}
 @media (max-height:520px) and (min-width:641px){
   :root{--landscape-controls-width:clamp(288px,39vw,360px)}
   #hdr-left{top:12px;left:18px;right:18px}
-  #hdr-left>div:last-child{display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .header-tools{margin-top:0}
   /* Reserve the controls column even when its tray is closed, so trying a
      combination of actions never moves the vehicle underneath the pointer. */
   #stage{inset:72px calc(var(--landscape-controls-width) + 36px) 18px 18px}
   #primary-controls{left:auto;right:18px;transform:none;width:var(--landscape-controls-width);bottom:10px}
   #run-status{left:auto;right:18px;width:var(--landscape-controls-width);bottom:76px}
   #compact-sheet[aria-modal="false"]{left:auto;right:18px;bottom:78px;width:var(--landscape-controls-width);max-height:calc(100dvh - 150px);margin:0}
-  #hint{font-size:8px;bottom:0}
-  #tour-card{left:18px;right:calc(var(--landscape-controls-width) + 36px);top:68px;max-height:32dvh}
+  #tour-card,body.tray-in-panel #tour-card,body.cards-off #tour-card{left:18px;right:calc(var(--landscape-controls-width) + 36px);top:68px;max-height:32dvh}
   body.tour-active #stage{top:calc(72px + var(--tour-space,0px))}
 }
 
 /* The host provides the My Car navigation and controls; only its drawing occupies this frame. */
-body.framed #hdr-left,body.framed #hdr-right,body.framed #controls,body.framed #key,body.framed #instr,body.framed #titleblock,body.framed #cards-toggle,body.framed #primary-controls,body.framed #run-status,body.framed #selected-part,body.framed .frame,body.framed .zone,body.framed #hint,body.framed #viewtitle{display:none}
+body.framed #hdr-left,body.framed #controls,body.framed #key,body.framed #instr,body.framed #titleblock,body.framed #primary-controls,body.framed #run-status,body.framed #selected-part,body.framed .frame,body.framed .zone,body.framed #viewtitle{display:none}
 body.framed #stage{inset:0}
-body.framed #tour-card{left:12px;right:12px;top:8px;bottom:auto;width:auto;max-width:none;max-height:36dvh;overflow:auto;margin:0;padding:10px 12px;pointer-events:auto}
+body.framed #tour-card,body.framed.cards-off #tour-card{left:12px;right:12px;top:8px;bottom:auto;width:auto;max-width:none;max-height:36dvh;overflow:auto;margin:0;padding:10px 12px;pointer-events:auto}
 body.framed.tour-active #stage{top:var(--tour-space,0px)}
 @media (prefers-reduced-motion:reduce){.btn,.panel,#overlay{transition:none}}
 
@@ -442,11 +419,11 @@ body.framed.tour-active #stage{top:var(--tour-space,0px)}
    controls once the short guided sequence ends or the visitor interrupts it. */
 html:has(body.demo),body.demo{background:#fff;background-image:none}
 body.demo{--paper:#fff;--paper-2:#f7f7f7;--ink:#202020;--ink-soft:#737373}
-body.demo #hdr-left,body.demo #hdr-right,body.demo #controls,body.demo #key,body.demo #instr,body.demo #titleblock,body.demo #cards-toggle,body.demo #primary-controls,body.demo #run-status,body.demo #selected-part,body.demo .frame,body.demo .zone,body.demo #hint,body.demo #viewtitle,body.demo #tooltip,body.demo #overlay,body.demo #agent-tools{display:none}
+body.demo #hdr-left,body.demo #controls,body.demo #key,body.demo #instr,body.demo #titleblock,body.demo #primary-controls,body.demo #run-status,body.demo #selected-part,body.demo .frame,body.demo .zone,body.demo #viewtitle,body.demo #tooltip,body.demo #overlay,body.demo #agent-tools{display:none}
 body.demo #stage{inset:0}
 body.demo.tour-active #stage{top:var(--tour-space,0px)}
 body.demo.demo-exploring #stage{bottom:var(--demo-space,88px)}
-body.demo #tour-card{left:16px;right:16px;top:0;bottom:auto;max-height:38dvh;width:auto;max-width:none;padding:10px 4px 6px;background:#fff;border:0;box-shadow:none;text-align:center}
+body.demo #tour-card,body.demo.cards-off #tour-card{left:16px;right:16px;top:0;bottom:auto;max-height:38dvh;width:auto;max-width:none;padding:10px 4px 6px;background:#fff;border:0;box-shadow:none;text-align:center}
 body.demo #tour-card .tour-step,body.demo #tour-card .tour-hint{display:none}
 body.demo #tour-card .tour-title{margin:0;font-size:12px;line-height:1.4;letter-spacing:.06em}
 body.demo #tour-card .tour-caption{margin:5px auto 0;max-width:540px;color:#737373;font-size:11px;line-height:1.45}
@@ -464,12 +441,12 @@ body.demo #demo-discovery:not([hidden]){position:absolute;left:12px;right:12px;b
 
 /* ---- Run mode (the Roadster's PLAY) -----------------------------------------------------
    The drive owns the camera, so the callouts, dimensions, tooltip and part key leave the sheet;
-   the frame, the header and the TELEMETRY panel stay, the panel carrying the run's figures and
-   the keys whatever the cards are set to. The tray keeps STOP (the PLAY button) and RETRY on a
-   wide sheet; on a compact one it becomes the drive pad: FANS HOP BOOST RETRY STOP over
+   the frame, the page links and the TELEMETRY panel stay, the panel carrying the run's figures and
+   the keys whatever the console is set to. The tray keeps STOP (the PLAY button) and RETRY at the
+   foot of a wide sheet; on a compact one it becomes the drive pad: FANS HOP BOOST RETRY STOP over
    steer left, steer right, BRAKE and a wide GO, with the figures in a strip above the drawing. */
 body.run-active #overlay,body.run-active #tooltip,body.run-active #part-pointer,body.run-active #viewtitle,
-body.run-active #key,body.run-active #controls,body.run-active #hdr-right,body.run-active #tour-card,body.run-active #selected-part{display:none}
+body.run-active #key,body.run-active #controls,body.run-active #tour-card,body.run-active #selected-part{display:none}
 body.run-active #primary-controls > .btn:not(#play-btn){display:none}
 body.run-active #instr{visibility:visible;opacity:1;transform:none;pointer-events:auto}
 .drive-pad{display:contents}
@@ -489,8 +466,8 @@ body.run-active #play-btn{grid-column:5;grid-row:1}
 body.framed #run-hud{display:none}
 /* a tablet held wide is still a touch screen: the pad sits at the bottom right */
 @media (min-width:981px) and (min-height:521px) and (hover:none) and (pointer:coarse){
-  body.run-active #primary-controls{top:auto;bottom:24px;right:24px;display:grid;grid-template-columns:repeat(5,80px);grid-template-rows:56px 56px;gap:6px}
-  body.run-active #primary-controls .btn{height:auto}
+  body.run-active #primary-controls{top:auto;bottom:24px;right:24px;left:auto;transform:none;display:grid;grid-template-columns:repeat(5,80px);grid-template-rows:56px 56px;gap:6px}
+  body.run-active #primary-controls .btn{height:auto;min-width:0}
   #primary-controls .drive-btn{display:block;touch-action:none;-webkit-touch-callout:none}
 }
 @media (max-width:980px),(max-height:520px){
@@ -499,8 +476,8 @@ body.framed #run-hud{display:none}
   #primary-controls .drive-btn.held,#primary-controls .drive-btn.toggled{background:var(--btn-active);color:var(--paper);border-color:var(--ink)}
   #primary-controls .drive-btn.drive-go{border:1.5px solid var(--ink);font-weight:600;letter-spacing:.12em}
   body.run-active #run-status{bottom:calc(max(16px,env(safe-area-inset-bottom)) + 115px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  body.run-active #stage{top:178px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 145px)}
-  #run-hud{display:grid;position:absolute;left:16px;right:16px;top:112px;z-index:6;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px 8px;padding:6px 10px;background:var(--paper);border:1px solid var(--grid-major);border-radius:6px}
+  body.run-active #stage{top:142px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 145px)}
+  #run-hud{display:grid;position:absolute;left:16px;right:16px;top:76px;z-index:6;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px 8px;padding:6px 10px;background:var(--paper);border:1px solid var(--grid-major);border-radius:6px}
   #run-hud .k{display:block;font-size:8px;letter-spacing:.1em;color:var(--ink-soft);white-space:nowrap}
   #run-hud .v{display:block;font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 }
@@ -511,5 +488,5 @@ body.framed #run-hud{display:none}
 }
 @media (max-height:520px) and (max-width:640px){
   #run-hud{display:none}
-  body.run-active #stage{top:112px}
+  body.run-active #stage{top:76px}
 }

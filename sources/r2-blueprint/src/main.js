@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toggleMotionState } from './config.js';
 import { CUT } from './vehicle.js';
-import { VEHICLES, vehicleEntry, loadVehicle } from './vehicles.js';
+import { VEHICLES, vehicleEntry, openingVehicle, loadVehicle } from './vehicles.js';
 import { createRunMode, AUTOPILOTS } from './run-mode.js';
 import { Blueprint } from './blueprint.js';
 import { Rig, presentationFit } from './camera.js';
@@ -41,10 +41,11 @@ const stage = document.getElementById('stage');
 
 let bp;
 try { bp = new Blueprint(canvas); } catch (e) { postDemo('autolab-demo-error'); document.getElementById('fallback').hidden = false; throw e; }
-// The car on the sheet. ?vehicle=roadster opens with the Roadster; without it (and so in the
-// landing page's ?demo=1 tour) the sheet opens with the RX2. setVehicle swaps all three, and every
-// handler below reads them when it runs rather than keeping the car it started with.
-let entry = vehicleEntry(q.get('vehicle')) || VEHICLES[0];
+// The car on the sheet. On its own page the Owner's Guide opens on the Tesla Roadster; framed (the
+// configurator's My Car) and as the landing page's ?demo=1 tour it opens on the RX2; ?vehicle=rx2
+// or ?vehicle=roadster picks either (vehicles.js openingVehicle). setVehicle swaps all three, and
+// every handler below reads them when it runs rather than keeping the car it started with.
+let entry = openingVehicle(q.get('vehicle'), { framed, demo });
 let config = entry.config;
 let vehicle;
 try { vehicle = await loadVehicle(entry.id); } catch (e) {
@@ -68,7 +69,9 @@ const ui = new UI(config, {
   onView: (v) => { stopTour('view'); setView(v); },
   onTour: () => tourState().running ? stopTour('button') : startTour(),
   onMotion: (m) => { stopTour('motion'); motion(m); },
-  onReset: () => { void api.call('reset'); },
+  // RESET puts the view and the car back and leaves the console as the person set it (the reset
+  // tool itself turns the annotations on, which the tour and agents rely on)
+  onReset: () => { ui.keepCards(() => { void api.call('reset'); }); },
   onKeyHover: (part) => { if (tourState().running) return; keyHover = part ? vehicle.parts[part] : null; },
   onKeySelect: (part) => { stopTour('part'); selectedPart = part ? vehicle.parts[part] : null; pointerHit = null; pointerDirty = false; keyHover = null; ui.selectPart(selectedPart); },
   onVehicle: (id) => { setVehicle(id).catch(e => console.error('[garage] vehicle switch failed:', e)); },
@@ -92,9 +95,12 @@ const run = createRunMode({
 });
 function togglePlay() {
   if (!entry.play && !run.active()) return;
+  if (run.active()) { stopTour('play'); run.stop(); }
+  else startPlay();
+}
+function startPlay(autopilot = null) {
   stopTour('play');
-  if (run.active()) run.stop();
-  else run.start().catch(e => { console.error('[garage] the run could not start:', e); ui.showRunStatus('The drive could not load.'); });
+  run.start({ autopilot }).catch(e => { console.error('[garage] the run could not start:', e); ui.showRunStatus('The drive could not load.'); });
 }
 // Into drive mode: motions off, doors shut, the shell on, nothing selected or flashing, and the
 // callouts, dimensions and explode guides off the sheet (body.run-active).
@@ -109,10 +115,12 @@ function enterRun() {
   flashT = 99; overlay.flashes = [];
   dragging = false; canvas.classList.remove('dragging', 'hovering'); pinch.clear(); pinchSpan = 0;
   document.body.classList.add('run-active');
+  ui.layoutTray();   // STOP and the drive's buttons sit at the foot of the sheet, whatever the console
 }
 // Back to the garage: the car is parked at the origin (run-mode.js), the sheet idles in ISO.
 function leaveRun() {
   document.body.classList.remove('run-active');
+  ui.layoutTray();
   st.run = true; st.lightsT = 0; ui.setToggle('run', true);
   vehicle.update(0, st); vehicle.root.updateMatrixWorld(true);
   setView('iso');
@@ -321,8 +329,6 @@ const endPinch = (e) => {
   }
 };
 canvas.addEventListener('pointerup', endPinch); canvas.addEventListener('pointercancel', endPinch);
-// Name the gesture the device actually has.
-{ const hint = document.getElementById('hint'); if (hint && window.matchMedia('(hover: none) and (pointer: coarse)').matches) hint.textContent = 'DRAG TO ORBIT · PINCH TO ZOOM'; }
 // arrows orbit and [ ] dolly, so the camera is reachable without a pointer (and from a screen reader
 // or an agent driving the page by keystroke rather than through window.r2)
 function camKey(k, shift) {
@@ -441,7 +447,7 @@ if (q.get('cards') === '0' || q.get('cards') === '1') ui.setCards(q.get('cards')
 if (q.get('min')) for (const id of q.get('min').split(',')) { if (!/^[a-z]+$/.test(id)) continue; const el = document.getElementById(id); const b = el && el.querySelector('.panel-min'); if (b && !el.classList.contains('min')) { b.dataset.noPersist = '1'; b.click(); delete b.dataset.noPersist; } }
 // ?nav=0 hides the header links when the sheet is embedded somewhere that has its own navigation
 if (q.get('nav') === '0') document.body.classList.add('nav-off');
-if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'primary-controls', 'run-status', 'cards-toggle', 'titleblock', 'viewtitle', 'hint', 'hdr-left', 'hdr-right']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
+if (q.get('bare') === '1') { document.getElementById('overlay').style.display = 'none'; for (const id of ['key', 'instr', 'controls', 'primary-controls', 'run-status', 'titleblock', 'viewtitle', 'hdr-left']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; } }
 if (q.get('nodrift') === '1') rig.driftOn = false;
 if (q.get('snap') === '1' || q.get('az') || q.get('el')) { rig.goTo(st.view || 'iso', 0); rig.driftOn = false; if (q.get('az')) rig.cur.az = +q.get('az'); if (q.get('el')) rig.cur.el = +q.get('el'); rig.onSettle(st.view); }
 // WebMCP + window.r2: the sheet is operable by an agent, not only by a person with a pointer
@@ -537,7 +543,10 @@ function step(dt, render = true) {
   vehicle.panelsT += ((st.panels ? 1 : 0) - vehicle.panelsT) * Math.min(1, dt * 6);
   if (Math.abs(vehicle.panelsT - (st.panels ? 1 : 0)) < 0.01) vehicle.panelsT = st.panels ? 1 : 0;
   flashT += dt; const flashGlow = flashT < 0.6 ? (1 - flashT / 0.6) : 0;
-  st.lampGlow = Math.max(st.lights ? 1 : (st.run ? 0.30 + 0.04 * Math.sin(st.time * 3) : 0), flashGlow);
+  // the running lights' idle pulse: the RX2's 0.30, or the car's own (the Roadster's light bar
+  // stays plainly lit, roadster-adapter.js lampStyle)
+  const idle = vehicle.lampStyle?.idle ?? 0.30;
+  st.lampGlow = Math.max(st.lights ? 1 : (st.run ? idle + 0.04 * Math.sin(st.time * 3) : 0), flashGlow);
   st.lightsT = (st.lightsT ?? 0) + ((st.lights ? 1 : 0) - (st.lightsT ?? 0)) * Math.min(1, dt * 6);
   st.shellDissolve = vehicle.panelsT;
 
@@ -582,7 +591,7 @@ function stepRun(dt, render) {
   run.step(dt);
   const brake = run.lamps().brake ? 1 : 0;
   st.lightsT = (st.lightsT ?? 0) + (brake - (st.lightsT ?? 0)) * Math.min(1, dt * 12);
-  Object.assign(st, { lampGlow: 0.34, shellDissolve: 1, hoverId: -1, hoverPart: null, gridOffset: 0, ortho: 0, shadowAlpha: 1 });
+  Object.assign(st, { lampGlow: Math.max(0.34, vehicle.lampStyle?.idle ?? 0), shellDissolve: 1, hoverId: -1, hoverPart: null, gridOffset: 0, ortho: 0, shadowAlpha: 1 });
   st.gridAlpha = demo ? 0 : ui.compactMedia.matches ? 0.32 : 0.65;
   rig.apply(W / H);
   if (render) bp.render(rig.camera, st);
@@ -606,8 +615,14 @@ if (q.get('adv')) { const n = Math.round(+q.get('adv') * 60); for (let i = 0; i 
 animationReady = true; last = performance.now(); scheduleFrame();
 postDemo('autolab-demo-ready');
 if (!demo) window.__app = { rig, get vehicle() { return vehicle; }, get vehicleId() { return entry.id; }, setVehicle, run, st, overlay, bp, THREE };
-// ?play=1 starts a run as PLAY does; ?play=wallride or ?play=hop starts it on that autopilot.
-if (!demo && q.get('play') && entry.play) run.start({ autopilot: AUTOPILOTS.includes(q.get('play')) ? q.get('play') : null }).catch(e => console.error('[garage] the run could not start:', e));
+// ?play=1 starts a run once the car is on the sheet, by PLAY's own path (startPlay), on a car
+// with a run mode and only standalone (framed, the host has no STOP); ?play=wallride or ?play=hop
+// starts it on that autopilot. The landing page's "Fly the Tesla Roadster" links here
+// (garage/?vehicle=roadster&play=1), so the run opens with the console off unless ?cards= says.
+if (!demo && !framed && q.get('play') && entry.play) {
+  if (!q.has('cards')) ui.setCards(false, true);
+  startPlay(AUTOPILOTS.includes(q.get('play')) ? q.get('play') : null);
+}
 if (!demo && q.get('debug') === '1') { const el = document.documentElement;
   const wide = [...document.querySelectorAll('#sheet *')].filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; })
     .map(e => `${e.id || e.className || e.tagName}:${Math.round(e.getBoundingClientRect().left)}..${Math.round(e.getBoundingClientRect().right)}`);

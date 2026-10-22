@@ -208,7 +208,8 @@ bool inAperture(vec3 p){
       return `\n             + ${f(m)} * clamp(p.y - ${f(k[0])}, 0.0, ${f(n[0] - k[0])})`;
     }).join('')};
     bool rear = lower ? (p.x > rs && p.x < ${f(C.rearX1)}) : (p.x > ${f(C.rearFrameX0)} && p.x < ${f(C.rearGlassX1)});
-    bool quarter = !lower && p.y > qf && p.x > ${f(C.quarterX0)} && p.x < ${f(C.quarterX1)};
+    // the quarter light's two ends rake forward above quarterYR (0 for a model without the rake)
+    bool quarter = !lower && p.y > qf && p.x > ${f(C.quarterX0)} + max(p.y - ${f(C.quarterYR ?? 0)}, 0.0) * ${f(C.quarterRake ?? 0)} && p.x < ${f(C.quarterX1)} + max(p.y - ${f(C.quarterYR ?? 0)}, 0.0) * ${f(C.quarterRakeF ?? 0)};
     if (quarter) return true;
     float xg = p.y >= ${f(C.sailY)} ? (${f(C.qa)} + ${f(C.qb)} * p.y + ${f(C.qc)} * p.y * p.y) : ${f(C.frontGlassX1)} - (p.y - ${f(C.beltY)}) * ${f(C.sailSlope)};
     float xmax = lower ? ${f(C.frontX1)} : min(${f(C.frontX1)}, xg);

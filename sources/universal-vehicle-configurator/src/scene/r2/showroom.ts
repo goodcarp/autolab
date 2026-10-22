@@ -14,10 +14,16 @@ import {
   Vector2,
 } from "three";
 import { surfaceFinish } from "./surface-finish";
-import { buildDetailGroup } from "./detail";
+import { buildDetailGroup, type WheelArch } from "./detail";
 import { cutGLSL } from "./geom.js";
 import { CUT, SPEC, type R2Vehicle } from "./vehicle.js";
 import { createPresentationScan, type PresentationScan } from "./presentation-scan";
+
+/**
+ * The wheel opening for a model that does not publish one on SPEC (the
+ * September copy of the drawing). It equals the current model's own numbers.
+ */
+const ARCH_FALLBACK: WheelArch = { rx: 0.48, ry: 0.50, n: 2.5 };
 
 /**
  * Showroom dressing for the engineering body.
@@ -89,15 +95,17 @@ const PAINT_DEFAULT: Omit<PaintSpec, "color"> = {
 
 /** Keyed by catalog id: see `src/data/catalogs/r2.catalog.json`. */
 const PAINT_SPECS: Record<string, Partial<PaintSpec> & { color: string }> = {
-  // Warm silver: high metallic, most of its colour is the studio.
+  // Cool silver: high metallic, most of its colour is the studio. The base and
+  // the highlight are both kept neutral to slightly blue; a warm highlight
+  // turns this paint champagne in a white studio.
   "paint.esker_silver": {
-    color: "#c0bdb8",
-    metalness: 0.86,
-    roughness: 0.33,
-    clearcoatRoughness: 0.09,
-    flake: 0.09,
-    envMapIntensity: 1.55,
-    specularColor: "#fff6ea",
+    color: "#b0b4b8",
+    metalness: 0.8,
+    roughness: 0.3,
+    clearcoatRoughness: 0.04,
+    flake: 0.06,
+    envMapIntensity: 1.5,
+    specularColor: "#ffffff",
   },
   // Pearl white: a dielectric coat with a faint thin-film flop, and the env
   // held down so a white flank never blows out under the strips.
@@ -193,6 +201,8 @@ type Role =
   | "lampEmitter"
   | "tailEmitter"
   | "reflector"
+  | "amber"
+  | "plate"
   | "tyre"
   | "rim"
   | "rimPocket"
@@ -218,45 +228,54 @@ const ROLE_BY_MESH: Record<string, Role> = {
   hood: "paint",
   "hood#2": "chrome",
   tailgate: "paint",
-  // Sub 1 is the backlight: the greenhouse's own section lofted on aft of where
-  // the greenhouse itself stops. On paint it is a body-coloured panel filling
-  // the bottom of the rear window, with a hard seam where the two meet.
-  "tailgate#1": "glass",
-  "tailgate#3": "trim",
+  // Sub 1 is the upper liftgate, the greenhouse's own section lofted on aft of
+  // where the greenhouse stops. It is body colour: the D-pillar faces and the
+  // band above the lamp bar round the rear window. The window is its own panel
+  // inset in it: sub 11 the glass, sub 12 the black frame round it.
+  "tailgate#1": "paint",
   "tailgate#4": "chrome",
   "tailgate#5": "chrome",
   "tailgate#6": "trim",
   "tailgate#7": "reflector",
+  // the lamp bar's run across the tail: sub 8 the lit lens, sub 9 its surround
   "tailgate#8": "tailEmitter",
   "tailgate#9": "gloss",
-  "tailgate#10": "paint",
+  "tailgate#11": "glass",
+  "tailgate#12": "gloss",
   // Each door carries its own glazing and trim, so a door is not one material.
   // Sub 1 is the window panel: leaving it on paint puts a body-coloured
   // rectangle over every window, sitting proud of the greenhouse behind it.
+  // Sub 6 is the black mirror arm, sub 8 the body-colour mirror housing. On the
+  // rear doors sub 8 is the body-colour frame aft of the glass (the door's share
+  // of the C pillar) and sub 7 the black strip that frames the glass.
   doorFL: "paint",
   "doorFL#1": "glass",
   "doorFL#3": "cabin",
   "doorFL#4": "cabinDark",
   "doorFL#5": "paint",
   "doorFL#6": "gloss",
+  "doorFL#8": "paint",
   doorFR: "paint",
   "doorFR#1": "glass",
   "doorFR#3": "cabin",
   "doorFR#4": "cabinDark",
   "doorFR#5": "paint",
   "doorFR#6": "gloss",
+  "doorFR#8": "paint",
   doorRL: "paint",
   "doorRL#1": "glass",
   "doorRL#3": "cabin",
   "doorRL#4": "cabinDark",
   "doorRL#5": "paint",
   "doorRL#7": "gloss",
+  "doorRL#8": "paint",
   doorRR: "paint",
   "doorRR#1": "glass",
   "doorRR#3": "cabin",
   "doorRR#4": "cabinDark",
   "doorRR#5": "paint",
   "doorRR#7": "gloss",
+  "doorRR#8": "paint",
   chargePort: "paint",
 
   // glasshouse
@@ -264,30 +283,42 @@ const ROLE_BY_MESH: Record<string, Role> = {
   roofGlass: "roof",
   "roofGlass#1": "trim",
   "roofGlass#2": "tailEmitter",
-  "roofGlass#3": "paint",
+  // The spoiler lip is black with the roof on every paint, and follows a
+  // two-tone roof colour.
+  "roofGlass#3": "roof",
   pillars: "gloss",
   "pillars#5": "glass",
+  // the body-colour panel over the surround: C pillar, under the quarter light, D pillar
+  "pillars#6": "paint",
 
   // lower body
   cladding: "cladding",
+  // sub 2 is the pair of amber side markers on each front flare
+  "cladding#2": "amber",
   fasciaFront: "trim",
   "fasciaFront#1": "gloss",
   "fasciaFront#2": "skid",
-  "fasciaFront#3": "sensor",
+  // sub 3 is the pair of tusk pods (silver), sub 5 the strip lamp each one carries
+  "fasciaFront#3": "skid",
   "fasciaFront#4": "sensor",
+  "fasciaFront#5": "chrome", // the tow-hook bars on the tusk pods are unlit satin metal on the reference
+  // The rear bumper: sub 0 the black band, 2 its top ledge and bottom lip,
+  // 1 the skid (the underside under it), 3 the flank reflectors, 4 the plate.
   fasciaRear: "trim",
   "fasciaRear#1": "skid",
+  "fasciaRear#2": "trim",
   "fasciaRear#3": "reflector",
+  "fasciaRear#4": "plate",
 
   // lamps — the lens is a separate part from what lights it
   headlamps: "lampLens",
   "headlamps#1": "lampEmitter",
   lightBar: "lampEmitter",
-  "lightBar#1": "lampEmitter",
+  // the bar's housing is dark gloss; only the strip in front of it glows
+  "lightBar#1": "gloss",
+  // the lamp bar's rounded ends on the quarters: sub 0 the lit lens, sub 1 its surround
   tailPills: "tailEmitter",
   "tailPills#1": "gloss",
-  "tailPills#2": "paint",
-  "tailPills#3": "trim",
 
   // cabin
   dash: "cabin",
@@ -314,15 +345,21 @@ const ROLE_BY_MESH: Record<string, Role> = {
   "brakes#4": "carrier",
 };
 
-/** Wheels share one part per corner, so the rim/tyre split is by sub-id. */
+/**
+ * Wheels share one part per corner, so the rim/tyre split is by sub-id: 0 the
+ * tyre, 1 the barrel, 2 the hub disc, 3 the centre badge, 4 the spoke stems,
+ * 6 the lug nuts, 7 the rim lip, 8 the spoke arms. The barrel is the dark inner
+ * well: lit as bright as the face it showed as a second ring inside the lip.
+ */
 const WHEEL_ROLE: Record<number, Role> = {
   0: "tyre",
-  1: "rim",
+  1: "rimPocket",
   2: "rim",
-  3: "rim",
+  3: "chrome",
   4: "rim",
-  5: "rimPocket",
   6: "lug",
+  7: "rim",
+  8: "rim",
 };
 
 /**
@@ -338,19 +375,32 @@ interface RimFinishSpec {
   color: string;
   metalness: number;
   roughness: number;
-  /** Colour of the pockets between the spokes: the second tone of a bicolor. */
+  /** Lacquer over the face; the defaults are a light satin coat. */
+  clearcoat?: number;
+  clearcoatRoughness?: number;
+  envMapIntensity?: number;
+  /** Colour of the inner barrel and the pockets: the second tone of a bicolor. */
   pocket: string;
-  /** Spoke section width in metres; the drawing's own is 85 mm. */
+  /**
+   * Spoke section width in metres. With yArms it is the drawing's own stem
+   * (50 mm) and the drawn face is kept as it is; without, every stem is
+   * replaced by a straight spoke of this width that reaches the lip.
+   */
   spokeWidth: number;
   /** Twin every spoke with a second one a tenth-turn on: a ten-spoke face. */
   twin: boolean;
+  /** Keep the drawing's forked arms: the five-Y face of Liquid Tungsten. */
+  yArms: boolean;
 }
 
 const RIM_FINISH: Record<RimFinish, RimFinishSpec> = {
-  tungsten: { color: "#6e767b", metalness: 0.92, roughness: 0.33, pocket: "#26292b", spokeWidth: 0.085, twin: false },
-  blackSand: { color: "#2a2e30", metalness: 0.86, roughness: 0.46, pocket: "#1a1c1e", spokeWidth: 0.105, twin: false },
-  bicolor: { color: "#9aa3a8", metalness: 0.96, roughness: 0.21, pocket: "#141618", spokeWidth: 0.042, twin: true },
-  graphite: { color: "#5d6569", metalness: 0.94, roughness: 0.28, pocket: "#202325", spokeWidth: 0.058, twin: true },
+  tungsten: {
+    color: "#8a9096", metalness: 0.72, roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.7,
+    pocket: "#141617", spokeWidth: 0.050, twin: false, yArms: true,
+  },
+  blackSand: { color: "#2a2e30", metalness: 0.86, roughness: 0.46, pocket: "#1a1c1e", spokeWidth: 0.105, twin: false, yArms: false },
+  bicolor: { color: "#9aa3a8", metalness: 0.96, roughness: 0.21, pocket: "#141618", spokeWidth: 0.042, twin: true, yArms: false },
+  graphite: { color: "#5d6569", metalness: 0.94, roughness: 0.28, pocket: "#202325", spokeWidth: 0.058, twin: true, yArms: false },
 };
 
 /** The catalog's wheel ids, so the render matches the option by name. */
@@ -398,7 +448,9 @@ export function rimFinishFor(optionId: string | undefined, style: string): RimFi
  * loft is correctly wound, and it is the only surface you ever genuinely look
  * into — through the wheel arches.
  */
-function patchShell<T extends Material>(material: T, aperture: boolean, cavity = false, flake?: { value: number }): T {
+function patchShell<T extends Material>(
+  material: T, aperture: boolean, cavity = false, flake?: { value: number }, arch: WheelArch = ARCH_FALLBACK,
+): T {
   const finish = surfaceFinish(String(material.userData.finishRole ?? ""));
   material.onBeforeCompile = (shader) => {
     if (finish) {
@@ -437,10 +489,13 @@ function patchShell<T extends Material>(material: T, aperture: boolean, cavity =
         `
         if (!gl_FrontFacing) gl_FragColor.rgb *= 0.16;
         // The procedural shell folds into each wheelhouse. Treat that hidden
-        // return as a dark liner, including front-facing triangles at the fold.
+        // return as a dark liner, including front-facing triangles at the fold:
+        // everything inside the model's own arch superellipse, 5 mm oversize,
+        // from the centreline out to past the skin, so the outboard ledge of
+        // the well under the lip is dark too, not only the inner wall.
         float wellX = min(abs(vObjPos.x - ${SPEC.XF}), abs(vObjPos.x - ${SPEC.XR}));
         float wellY = max(vObjPos.y - ${SPEC.tireR}, 0.0);
-        if (abs(vObjPos.z) < 0.82 && pow(wellX, 2.7) + pow(wellY, 2.7) < pow(0.51, 2.7))
+        if (abs(vObjPos.z) < 0.97 && pow(wellX / ${(arch.rx + 0.005).toFixed(4)}, ${arch.n.toFixed(4)}) + pow(wellY / ${(arch.ry + 0.005).toFixed(4)}, ${arch.n.toFixed(4)}) < 1.0)
           gl_FragColor.rgb *= 0.035;
         #include <tonemapping_fragment>`,
       );
@@ -514,7 +569,7 @@ function buildMaterials(
       side: DoubleSide,
     }),
     trim: new MeshStandardMaterial({
-      color: new Color("#171a1b"),
+      color: new Color("#242627"),
       metalness: 0.15,
       roughness: 0.62,
       envMapIntensity: 0.85,
@@ -523,10 +578,10 @@ function buildMaterials(
     // Structural-grain composite: rougher and flatter than the bumper skin, so
     // the two-tone break reads even in a single-colour environment.
     cladding: new MeshStandardMaterial({
-      color: new Color("#101314"),
+      color: new Color("#1e2021"),
       metalness: 0.05,
       roughness: 0.88,
-      envMapIntensity: 0.55,
+      envMapIntensity: 0.75,
       side: DoubleSide,
     }),
     skid: new MeshStandardMaterial({
@@ -546,16 +601,16 @@ function buildMaterials(
     // low — a fully transmissive windscreen costs a render pass and reads worse
     // than a tinted reflector at showroom distance.
     glass: new MeshPhysicalMaterial({
-      color: new Color("#263832"),
+      color: new Color("#0b0d0e"),
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.88,
       depthWrite: false,
       metalness: 0.02,
       roughness: 0.045,
       clearcoat: 1,
       clearcoatRoughness: 0.02,
       ior: 1.52,
-      envMapIntensity: 0.9,
+      envMapIntensity: 1.5,
       side: DoubleSide,
     }),
     // Lamp lens: clear, thick, and refracting, with the emitter behind it.
@@ -570,22 +625,30 @@ function buildMaterials(
     }),
     lampEmitter: new MeshStandardMaterial({
       color: new Color("#dceaf5"),
-      emissive: new Color("#bcdcff"),
-      // Held below full blow-out. These are daytime running lamps in a lit
-      // studio, not headlights on main beam at night, and untoned emissive at
-      // 3+ turns the whole lamp into a white slab with no visible internals.
-      emissiveIntensity: 0.15 + lamp * 2.1,
+      emissive: new Color("#f4f6f8"),
+      // Held well below blow-out. These are daytime running lamps in a lit
+      // studio, not headlights on main beam at night. Measured in the studio:
+      // at 1.25 the light bar's core still clips to one flat white; at 0.5 it
+      // keeps a bright top edge falling to light grey, as the reference does.
+      emissiveIntensity: 0.15 + lamp * 0.35,
       metalness: 0.1,
       roughness: 0.2,
       toneMapped: false,
     }),
-    tailEmitter: new MeshStandardMaterial({
-      color: new Color("#7a0f0c"),
-      emissive: new Color("#ff2a18"),
-      emissiveIntensity: 0.45 + lamp * 1.35,
-      metalness: 0.1,
-      roughness: 0.25,
-      toneMapped: false,
+    // The tail lamps are a dark crimson lens with only a faint glow of their
+    // own, not a lit bar. Daytime running lamps light the front only, so this
+    // does not follow the lamp switch. A strong red glow turns orange once the
+    // studio's tone curve compresses it. The high-mounted stop lamp on the
+    // roof uses the same lens.
+    tailEmitter: new MeshPhysicalMaterial({
+      color: new Color("#5c0a10"),
+      emissive: new Color("#ff1e14"),
+      emissiveIntensity: 0.1,
+      metalness: 0,
+      roughness: 0.15,
+      clearcoat: 1,
+      clearcoatRoughness: 0.04,
+      envMapIntensity: 1.2,
       side: DoubleSide,
     }),
     reflector: new MeshStandardMaterial({
@@ -594,25 +657,41 @@ function buildMaterials(
       emissiveIntensity: 0.4,
       roughness: 0.3,
     }),
+    // The amber side reflector and repeater on each front flare: a lens with a
+    // faint glow of its own, one of the car's few colour accents from the side.
+    amber: new MeshStandardMaterial({
+      color: new Color("#c96a12"),
+      emissive: new Color("#7a3a05"),
+      emissiveIntensity: 0.4,
+      roughness: 0.3,
+      side: DoubleSide,
+    }),
+    // The licence plate: a plain light blank in the bumper.
+    plate: new MeshStandardMaterial({
+      color: new Color("#d9dcd8"),
+      roughness: 0.5,
+      metalness: 0.2,
+      side: DoubleSide,
+    }),
     // Rubber: no reflection to speak of, and darker on the sidewall than the
     // tread. One roughness value across both is what makes tyres read as vinyl.
     // Fresh rubber has a low, broad sheen on the sidewall — not the dead matte
     // that makes a tyre read as a black hole in the arch.
     tyre: new MeshPhysicalMaterial({
-      color: new Color("#111314"),
+      color: new Color("#262727"),
       metalness: 0,
       roughness: 0.74,
       clearcoat: 0.25,
       clearcoatRoughness: 0.55,
-      envMapIntensity: 0.55,
+      envMapIntensity: 0.9,
     }),
     rim: new MeshPhysicalMaterial({
       color: new Color(rim.color),
       metalness: rim.metalness,
       roughness: rim.roughness,
-      clearcoat: 0.35,
-      clearcoatRoughness: 0.18,
-      envMapIntensity: 1.5,
+      clearcoat: rim.clearcoat ?? 0.35,
+      clearcoatRoughness: rim.clearcoatRoughness ?? 0.18,
+      envMapIntensity: rim.envMapIntensity ?? 1.5,
       side: DoubleSide,
     }),
     rimPocket: new MeshStandardMaterial({
@@ -640,9 +719,9 @@ function buildMaterials(
     }),
     caliper: new MeshPhysicalMaterial({
       color: new Color(options.caliperColor),
-      metalness: 0.35,
-      roughness: 0.3,
-      clearcoat: 0.7,
+      metalness: 0.2,
+      roughness: 0.35,
+      clearcoat: 0.8,
       clearcoatRoughness: 0.15,
       envMapIntensity: 1.2,
     }),
@@ -722,16 +801,31 @@ export interface ShowroomHandle {
  */
 export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): ShowroomHandle {
   const flake = { value: 0 };
+  // The wheel opening, from the model itself, for the liners and the well darkening.
+  const arch: WheelArch = {
+    rx: vehicle.SPEC.archRX ?? ARCH_FALLBACK.rx,
+    ry: vehicle.SPEC.archRY ?? ARCH_FALLBACK.ry,
+    n: vehicle.SPEC.archN ?? ARCH_FALLBACK.n,
+  };
   const base = buildMaterials(options, flake);
   const assignments: (() => void)[] = [];
   // Every material needs a cut twin, because the same paint appears on both cut
-  // shells and uncut panels.
-  const cutTwins = new Map<Material, Material>();
+  // shells and uncut panels. A twin with the cavity darkening and one without are
+  // different materials, so they are cached apart: the body loft is the only
+  // surface wound so that gl_FrontFacing can be trusted (see patchShell), and
+  // handing its cavity twin to another cut panel, such as the painted C pillar,
+  // would darken that panel on one side of the car.
+  const cavityTwins = new Map<Material, Material>();
+  const plainTwins = new Map<Material, Material>();
+  const twinCaches = [cavityTwins, plainTwins];
+  const allTwins = () => twinCaches.flatMap(cache => [...cache.values()]);
   const cutDepth = patchShell(new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide }), true);
   const cutVariant = (material: Material, cavity: boolean) => {
+    const cutTwins = cavity ? cavityTwins : plainTwins;
     const existing = cutTwins.get(material);
     if (existing) return existing;
-    const twin = patchShell(material.clone(), true, cavity, cavity ? flake : undefined);
+    // Every paint twin keeps the metallic flake, cavity or not.
+    const twin = patchShell(material.clone(), true, cavity, material === base.paint ? flake : undefined, arch);
     // The twin has to keep sharing its colour with the original, not a copy of
     // it: the body shell is the cut variant of the paint, so a cloned colour
     // means changing the paint repaints the doors and leaves the shell behind.
@@ -760,7 +854,7 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
         ? WHEEL_ROLE[sub] ?? "rim"
         : ROLE_BY_MESH[`${part.name}#${sub}`] ?? ROLE_BY_MESH[part.name] ?? "trim";
       const material = base[role];
-      const assigned = mesh.userData.cut ? cutVariant(material, role === "paint") : material;
+      const assigned = mesh.userData.cut ? cutVariant(material, role === "paint" && part.name === "body") : material;
       assignments.push(() => {
         mesh.material = assigned;
         // Only the big shapes throw the contact shadow; small trim doubles the shadow pass for nothing visible.
@@ -781,7 +875,7 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
     bezel: base.gloss,
     lens: base.lampLens,
     rubber: base.cladding,
-  }, (vehicle.parts.headlamps.meshes[0] as Mesh).position.x - 0.010);
+  }, (vehicle.parts.headlamps.meshes[0] as Mesh).position, arch);
 
   let restoreWheels = () => {};
   let scan: PresentationScan | undefined;
@@ -795,21 +889,23 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       restoreWheels = styleWheels(vehicle, RIM_FINISH[options.rimFinish] ?? RIM_FINISH.tungsten, base.rim);
     },
     get scan() {
-      return scan ??= createPresentationScan([vehicle.root, detail], [...Object.values(base), ...cutTwins.values()]);
+      return scan ??= createPresentationScan([vehicle.root, detail], [...Object.values(base), ...allTwins()]);
     },
     materials: base,
     paint: base.paint as MeshPhysicalMaterial,
     setPaint(spec) {
       applyPaintSpec(base.paint as MeshPhysicalMaterial, spec, flake);
-      const twin = cutTwins.get(base.paint) as MeshPhysicalMaterial | undefined;
-      if (twin) applyPaintSpec(twin, spec);
+      for (const cache of twinCaches) {
+        const twin = cache.get(base.paint) as MeshPhysicalMaterial | undefined;
+        if (twin) applyPaintSpec(twin, spec);
+      }
     },
     caliper: base.caliper as MeshPhysicalMaterial,
     cabin: base.cabin as MeshStandardMaterial,
     detail,
     forEachMaterial(fn) {
       for (const material of Object.values(base)) fn(material);
-      for (const material of cutTwins.values()) fn(material);
+      for (const material of allTwins()) fn(material);
     },
     dispose() {
       scan?.dispose();
@@ -817,7 +913,7 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
       detail.removeFromParent();
       (detail.userData.dispose as (() => void) | undefined)?.();
       for (const material of Object.values(base)) material.dispose();
-      for (const material of cutTwins.values()) material.dispose();
+      for (const material of allTwins()) material.dispose();
       cutDepth.dispose();
     },
   };
@@ -826,28 +922,36 @@ export function dressForShowroom(vehicle: R2Vehicle, options: ShowroomOptions): 
 /**
  * Give each wheel option its own face.
  *
- * The drawing casts one wheel: five 85 mm spokes with a pocket between each
- * pair. The catalog sells four, and they do not share a face. This keeps the
- * drawing's spokes as the carriers — so the refit's diameter scaling, the spin
- * and the steer all still apply — and changes their section, or twins each one
- * with a second spoke a tenth of a turn on for the split-spoke designs. Twins
- * are children of the spoke they double, which is what lets them ride the
- * refit's scale and offset without knowing about it.
+ * The drawing casts one wheel: five Y spokes, each a 50 mm stem from the hub
+ * (sub 4) that forks into two arms landing on the lip (sub 8). The catalog
+ * sells four, and they do not share a face. Liquid Tungsten is the drawn face
+ * and keeps it. The others hide the arms and swap each stem for a straight
+ * spoke of their own section that reaches the lip from the hub, or twin each
+ * one with a second spoke a tenth of a turn on for the split-spoke designs.
+ * The stems stay the carriers, so the refit's diameter scaling, the spin and
+ * the steer all still apply. Twins are children of the spoke they double, which
+ * is what lets them ride the refit's scale and offset without knowing about it.
  *
  * Returns the undo, so a dispose leaves the drawing exactly as it found it.
  */
 function styleWheels(vehicle: R2Vehicle, finish: RimFinishSpec, rim: Material): () => void {
-  const asDrawn = 0.085;
-  const section = Math.abs(finish.spokeWidth - asDrawn) > 1e-4
-    ? new BoxGeometry(0.17, finish.spokeWidth, 0.03)
-    : null;
+  // The stem's origin is 155 mm out along it: this section runs from r 70 mm,
+  // under the hub disc, to r 255 mm, under the lip.
+  const section = finish.yArms ? null : new BoxGeometry(0.185, finish.spokeWidth, 0.03).translate(0.0075, 0, 0);
   const swapped: { mesh: Mesh; original: BufferGeometry }[] = [];
+  const arms: { mesh: Mesh; visible: boolean }[] = [];
   const twins: Mesh[] = [];
   const step = Math.PI / 10;
   for (const wheel of vehicle.wheels) {
     for (const object of wheel.part.meshes) {
       const mesh = object as Mesh;
-      if ((mesh.userData.subId as number) !== 4) continue;
+      const sub = (mesh.userData.subId as number) ?? 0;
+      if (sub === 8) {
+        arms.push({ mesh, visible: mesh.visible });
+        mesh.visible = finish.yArms;
+        continue;
+      }
+      if (sub !== 4) continue;
       if (section) {
         swapped.push({ mesh, original: mesh.geometry });
         mesh.geometry = section;
@@ -868,6 +972,7 @@ function styleWheels(vehicle: R2Vehicle, finish: RimFinishSpec, rim: Material): 
   }
   return () => {
     for (const twin of twins) twin.removeFromParent();
+    for (const entry of arms) entry.mesh.visible = entry.visible;
     for (const entry of swapped) {
       if (entry.mesh.geometry === section) entry.mesh.geometry = entry.original;
     }
@@ -882,26 +987,32 @@ function styleWheels(vehicle: R2Vehicle, finish: RimFinishSpec, rim: Material): 
  * sidewall for rim, so the tyre profile is rebuilt around the new bead rather
  * than the whole assembly being scaled — scaling would move the contact patch
  * off the ground and change the ride height with the wheel option.
+ *
+ * The new tyre is the drawn one with its sidewall re-spanned: every profile
+ * point under the shoulder keeps its share of the sidewall's height between the
+ * new bead and the shoulder, and the shoulder and tread stay as drawn. Reading
+ * the drawn profile, rather than a copy of it, keeps the refit true to
+ * whichever model is vendored.
  */
 export function fitWheelDiameter(vehicle: R2Vehicle, diameterInches: number): () => void {
   const rimRadius = (diameterInches * 0.0254) / 2;
   const k = rimRadius / SPEC.rimR;
-  const bead = rimRadius + 0.014;
-  const r = SPEC.tireR;
-  const hw = SPEC.tireW / 2;
-  const profile = [
-    [bead, hw - 0.025],
-    [bead + 0.062, hw],
-    [bead + 0.107, hw],
-    [r - 0.008, hw - 0.012],
-    [r, hw - 0.03],
-    [r, -(hw - 0.03)],
-    [r - 0.008, -(hw - 0.012)],
-    [bead + 0.107, -hw],
-    [bead + 0.062, -hw],
-    [bead, -(hw - 0.025)],
-  ].map(([a, b]) => new Vector2(a, b));
-  const tyre = new LatheGeometry(profile, 60);
+  const drawn = vehicle.wheels
+    .flatMap(wheel => wheel.part.meshes as Mesh[])
+    .find(mesh => ((mesh.userData.subId as number) ?? 0) === 0);
+  const points = (drawn?.geometry as LatheGeometry | undefined)?.parameters?.points;
+  let tyre: LatheGeometry | undefined;
+  if (points?.length) {
+    const bead0 = Math.min(...points.map(point => point.x));
+    const shoulder = SPEC.tireR - 0.025;
+    // The bead sits 6 mm under the top of the 24 mm lip, as drawn.
+    const bead1 = rimRadius + 0.018;
+    const squeeze = (shoulder - bead1) / (shoulder - bead0);
+    tyre = new LatheGeometry(points.map(point => new Vector2(
+      point.x < shoulder ? shoulder - (shoulder - point.x) * squeeze : point.x,
+      point.y,
+    )), 96);
+  }
 
   const previous: { mesh: Mesh; scale: [number, number, number]; position: [number, number, number] }[] = [];
   const tyreMeshes: { mesh: Mesh; geometry: Mesh["geometry"] }[] = [];
@@ -910,8 +1021,10 @@ export function fitWheelDiameter(vehicle: R2Vehicle, diameterInches: number): ()
       const mesh = object as Mesh;
       const sub = (mesh.userData.subId as number) ?? 0;
       if (sub === 0) {
-        tyreMeshes.push({ mesh, geometry: mesh.geometry });
-        mesh.geometry = tyre;
+        if (tyre) {
+          tyreMeshes.push({ mesh, geometry: mesh.geometry });
+          mesh.geometry = tyre;
+        }
         continue;
       }
       previous.push({
@@ -919,12 +1032,12 @@ export function fitWheelDiameter(vehicle: R2Vehicle, diameterInches: number): ()
         scale: [mesh.scale.x, mesh.scale.y, mesh.scale.z],
         position: [mesh.position.x, mesh.position.y, mesh.position.z],
       });
-      if (sub === 1) {
-        // The barrel is a cylinder lying on its side: radius is in local X/Z,
-        // width in local Y, so the width must not follow the diameter.
+      if (sub === 1 || sub === 7) {
+        // The barrel and the lip are turned on their side: radius is in local
+        // X/Z, width in local Y, so the width must not follow the diameter.
         mesh.scale.set(k, 1, k);
-      } else if (sub === 4 || sub === 5) {
-        // Spokes and pockets sit in the wheel face plane on a polar layout.
+      } else if (sub === 4 || sub === 8) {
+        // Stems and arms sit in the wheel face plane on a polar layout.
         mesh.scale.set(k, k, 1);
         mesh.position.set(mesh.position.x * k, mesh.position.y * k, mesh.position.z);
       }
@@ -935,7 +1048,7 @@ export function fitWheelDiameter(vehicle: R2Vehicle, diameterInches: number): ()
     // Put the drawing's own tyre back before dropping the refitted one, or the
     // wheels end up pointing at disposed geometry.
     for (const entry of tyreMeshes) entry.mesh.geometry = entry.geometry;
-    tyre.dispose();
+    tyre?.dispose();
     for (const entry of previous) {
       entry.mesh.scale.set(...entry.scale);
       entry.mesh.position.set(...entry.position);

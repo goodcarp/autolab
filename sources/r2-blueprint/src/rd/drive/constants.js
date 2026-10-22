@@ -1,4 +1,4 @@
-// Synced from roadster-lab 3360319 (src/drive/constants.js) by tools/sync-garage.mjs.
+// Synced from roadster-lab c9e9c53 (src/drive/constants.js) by tools/sync-garage.mjs.
 // Edit it in the lab and re-sync; a hand edit here makes the next sync refuse.
 // One reconciled set of numbers for the drivable Roadster.
 //
@@ -124,15 +124,72 @@ export const DRIVE = {
 export const BRAKES = { front: 6000, rear: 3500 };
 
 // ---------- steering ----------
-// Ackermann geometry from the wheelbase and front track. The lock falls with
-// speed so full input stays near the grip limit: lock·vRef²/(vRef² + v²), never
-// under `minDeg`. The rack turns the wheels at most `rate` rad/s.
-export const STEER = { lockDeg: 32, vRef: 10, minDeg: 2.5, rate: 1.2 };
+// The Roadster steers by wire (src/roadster/drivetrain.js: an actuator on the rack, no
+// column), so what an input of ±1 means is the controller's choice. Ackermann geometry
+// from the wheelbase and front track.
+//   lockDeg   full lock at a crawl.
+//   vRef      the lock falls with speed as lockDeg / (1 + v²/(vRef²·g)), g = 1 + the
+//             wing's downforce/weight (the wing adds grip, mostly at the rear, and the lock
+//             rises with it). The fans' pull is left out of g: it acts mid-wheelbase, ahead
+//             of the centre of mass, so the rear gains less than its share, and μ falls 12%
+//             under it; a lock grown with it (10° at 25 m/s) slid the tail out.
+//             At speed the lock is lockDeg·vRef²·g/v², a path whose kinematic lateral acceleration
+//             v²·δ/L tends to lockDeg·vRef²/L = 1.63 g on tyres alone: enough over the
+//             tyres' 1.3 g for the front tyres to reach their peak, not so much that the
+//             rear lets go. Measured (docs/DRIVE.md §3.6): full input held at 15-40 m/s
+//             corners at 1.18-1.23 g with under 4° of body slip. The first law (vRef 10 and
+//             a 2.5° floor) asked for 1.7 g at 25 m/s and, on its floor, 3.2 g at 45 m/s:
+//             a keyboard's full input was a spin.
+//   minDeg    a floor that never binds below the 210 mph top speed (0.29° there).
+//   rate      the rack turns the wheels at most this fast, rad/s.
+//   rampTime, rampSpeed   input shaping: a step of the input (a key) reaches full over
+//             rampTime·v²/(v² + rampSpeed²) s: 0.12 s at 8 m/s, 0.26 s at 25, 0.29 s at
+//             45, nothing at a crawl, so parking stays direct. Toward the centre it goes
+//             at once, and a reversal passes through the centre first.
+//   lag       a first-order lag (s) after the ramp, which rounds off its corners so the
+//             yaw is not kicked at the start and end of a ramp.
+export const STEER = { lockDeg: 32, vRef: 9, minDeg: 0.2, rate: 1.2, rampTime: 0.3, rampSpeed: 10, lag: 0.05 };
 
-// ---------- assists (on by default; inputs.tc / inputs.abs turn them off) ----------
+// ---------- assists (on by default; inputs.tc / inputs.abs / inputs.esc turn them off) ----------
 // Traction control caps each rear motor at what its tyre can take; ABS caps each
-// brake the same way and lets go of a wheel that has locked.
-export const ASSISTS = { tc: true, abs: true, tcMargin: 0.95, absMargin: 0.95 };
+// brake the same way and lets go of a wheel that has locked; the stability control
+// (ESC below) brakes a wheel and cuts the drive when the car turns more than asked.
+export const ASSISTS = { tc: true, abs: true, esc: true, tcMargin: 0.95, absMargin: 0.95 };
+
+// ---------- stability control (ESC) ----------
+// A yaw-rate controller like a road car's. The reference is the bicycle model's steady
+// yaw rate v·δ/(L + kus·v²) for the mean front steer δ, held to the most the tyres can
+// turn the car at this speed, grip·μ·g·(1 + downforce/weight)/v (μ at the mean corner
+// load; here the fans' pull counts), and reached with the car's own yaw lag Iz·v/(a²Cf +
+// b²Cr) with the tyres' stiffness at their loads of the moment (0.10 s at 25 m/s on the
+// static loads, 0.03 s under the fans' full pull; car.js bicycle()), so a quick reversal
+// is not taken for a spin. The excess is the larger of two: how far the yaw rate passes
+// the reference in the direction the car turns, beyond margin + marginFrac·|reference|;
+// and betaGain × how far the body slip passes
+// betaDeg the same way round (a slow drift under power keeps a steady yaw rate while the
+// tail swings out). Then the outside front wheel is braked for a yaw moment of
+// Iz·gain·excess (within the grip that wheel has left) and the rear drive is cut by
+// excess/cutSpan. It works on the ground only, rolling forward, near level, and not while
+// the nose jets fire: the ramp and the jets are left to the driver.
+//   minSpeed    m/s: below this nothing spins, and the tyres are in their parked regime.
+//   maxTiltDeg  the car's up within this of the world's up (the model takes a flat road).
+//   kus         rad per m/s²: the understeer gradient (m/L)(b/Cf − a/Cr) from the tyre
+//               stiffnesses is −1.0e-4 (−0.06°/g; load sensitivity makes the heavier rear
+//               a shade less stiff per newton): the car is neutral, and a road car's ESC
+//               never asks for oversteer, so 0.
+//   grip        the reference's cap as a share of the friction limit.
+//   margin, marginFrac   the dead band, 0.05 rad/s (2.9°/s) plus 10%: a car at its limit is
+//               left alone; one whose nose swings past it is not.
+//   gain        1/s: an excess of 0.1 rad/s asks for 2.9 kN·m of yaw moment. Measured: a
+//               1 rad/s yaw kick at 45 m/s, throttle held, settles in 0.5 s (a spin
+//               without it).
+//   cutSpan     rad/s of excess over which the rear drive falls to nothing: short, so a
+//               car sliding under power gets its rear tyres back for cornering.
+//   betaDeg     body slip that counts as a slide: above the 5.5° a car at its limit
+//               reaches in the hardest lane changes; full steer held at the limit with
+//               full throttle then levels off at 7-9° instead of spinning.
+//   betaGain    rad/s of excess per radian of body slip past betaDeg (3° past it is 0.16).
+export const ESC = { minSpeed: 5, maxTiltDeg: 20, kus: 0, grip: 1.0, margin: 0.05, marginFrac: 0.1, gain: 10, cutSpan: 0.05, betaDeg: 6, betaGain: 3 };
 
 // ---------- aero, per wing mode (vehicle.js WING_POSE names) ----------
 // cdA m² drag area, clA m² downforce area (+ = pushes the car onto its wheels),

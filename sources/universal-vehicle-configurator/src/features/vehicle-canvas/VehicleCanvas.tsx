@@ -6,7 +6,6 @@ import {
   Crosshair,
   ImageOff,
   LoaderCircle,
-  Move,
   Palette,
   RotateCcw,
 } from "lucide-react";
@@ -111,8 +110,12 @@ export type VehicleCanvasProps = Readonly<{
   activeHotspotId?: VehicleHotspotId | null;
   hotspots?: readonly VehicleHotspot[];
   className?: string;
-  /** A compact summary in the reserved viewer header. */
+  /** The viewport's top-left corner: the page's brand and site navigation. */
+  headerStart?: ReactNode;
+  /** A compact summary in the viewport's top-right corner. */
   headerAside?: ReactNode;
+  /** Extra controls in the bottom-right corner, after Reset view (the Share icon). */
+  footerAside?: ReactNode;
   onModeChange?: (mode: VehicleCanvasMode) => void;
   onViewPresetChange?: (preset: VehicleViewPreset) => void;
   onHotspotChange?: (hotspotId: VehicleHotspotId | null) => void;
@@ -249,7 +252,9 @@ export function VehicleCanvas({
   activeHotspotId,
   hotspots,
   className = "",
+  headerStart,
   headerAside,
+  footerAside,
   onModeChange,
   onViewPresetChange,
   onHotspotChange,
@@ -309,7 +314,6 @@ export function VehicleCanvas({
 
   const activeBody = resolveVehicleModelSource(activeModelSource);
   const bodyAnchors = anchorsFor(activeBody);
-  const modelAttribution = liveRendererActive ? activeBody.attribution : "";
   const modelTitle = liveRendererActive
     ? activeBody.sceneTitle
     : liveLoading ? `Preparing ${activeBody.sceneTitle}` : "Vehicle view unavailable";
@@ -472,7 +476,9 @@ export function VehicleCanvas({
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (liveRendererActive) return;
-    if ((event.target as HTMLElement).closest("button")) return;
+    // Controls drawn over the studio (view presets, links, the share field)
+    // keep their own clicks; capturing the pointer here would swallow them.
+    if ((event.target as HTMLElement).closest("button, a, input, label")) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
     pointer.current = {
       id: event.pointerId,
@@ -513,6 +519,9 @@ export function VehicleCanvas({
   }, [haptic, liveRendererActive]);
 
   const onKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Typing in a field over the studio (the share link fallback) is not a
+    // camera command.
+    if ((event.target as HTMLElement).closest("input, textarea, select")) return;
     const increments: Partial<Record<string, { x: number; y: number }>> = {
       ArrowLeft: { x: -1.5, y: 0 },
       ArrowRight: { x: 1.5, y: 0 },
@@ -621,11 +630,7 @@ export function VehicleCanvas({
         )}
 
         <header className="vc-hud">
-          <div className="vc-hud__identity">
-            <span className="vc-hud__index">UVC / 01</span>
-            <strong>{modelTitle}</strong>
-            <span>{modelAttribution}</span>
-          </div>
+          {headerStart && <div className="vc-hud__start">{headerStart}</div>}
           {headerAside}
           {/* The Showroom/Blueprint switch and the Open body button left the
               visible chrome for the demo. Both paths stay live for agents:
@@ -633,21 +638,24 @@ export function VehicleCanvas({
               the "b" key still drive them. */}
         </header>
 
-        <div className="vc-status" aria-live="polite">
-          <span className="vc-status__dot" aria-hidden="true" />
-          {liveLoading && <><LoaderCircle aria-hidden="true" /> Preparing real-time vehicle</>}
-          {liveRendererActive && <>Live 3D · Agent vision active</>}
-          {liveStatus === "failed" && <>Vehicle preview unavailable · controls still active</>}
-        </div>
+        {/* The studio carries no status line. Screen readers still hear the
+            renderer arrive, fail or recover. */}
+        <p className="vc-sr-only" aria-live="polite">
+          {liveLoading && "Preparing real-time vehicle"}
+          {liveRendererActive && `${modelTitle} ready`}
+          {liveStatus === "failed" && "Vehicle preview unavailable · controls still active"}
+        </p>
         {liveLoading && <div className="vc-loading" role="status">
           <LoaderCircle aria-hidden="true" /> Preparing real-time vehicle
         </div>}
 
         {liveStatus === "failed" && <AssetFallback onRetry={webglSupport === "supported" ? retryLivePreview : undefined} />}
 
-        {liveRendererActive && <div className="vc-object" aria-live="polite">
-          {currentPreset === "interior" && <InteriorView interior={interior} />}
+        {/* The upholstery swatch belongs to the studio corner, under the
+            vehicle total, not to the centred object box. */}
+        {liveRendererActive && currentPreset === "interior" && <InteriorView interior={interior} />}
 
+        {liveRendererActive && <div className="vc-object" aria-live="polite">
           <div className="vc-hotspots" aria-label="Vehicle focus points">
             {resolvedHotspots.map((hotspot) => (
               <button
@@ -684,7 +692,7 @@ export function VehicleCanvas({
           </aside>
         )}
 
-        <div className="vc-view-picker" aria-label="Vehicle view presets">
+        <div className="vc-view-picker" role="group" aria-label="Vehicle view presets">
           {PRESETS.map((preset) => (
             <button
               key={preset.id}
@@ -696,25 +704,16 @@ export function VehicleCanvas({
                 {preset.id === "angle" ? <Camera /> : preset.id === "profile" ? <Car /> :
                   preset.id === "wheel" ? <CircleDot /> : <Armchair />}
               </span>
-              <span>{preset.label}</span>
+              <span className="vc-view-picker__label">{preset.label}</span>
             </button>
           ))}
         </div>
 
         <footer className="vc-footer">
-          {liveRendererActive && <span className="vc-drag-hint"><Move aria-hidden="true" /> Drag to orbit</span>}
-          <span className="vc-selection-readout">
-            <span
-              style={{ backgroundColor: currentPreset === "interior" ? interior.color : paint.color }}
-              aria-hidden="true"
-            />
-            {currentPreset === "interior"
-              ? `${interior.label} · ${interior.material ?? "textile"}`
-              : `${paint.label} · ${wheel.diameterInches} in`}
-          </span>
           <button type="button" className="vc-reset" onClick={resetView}>
-            <RotateCcw aria-hidden="true" /> Reset view
+            <RotateCcw aria-hidden="true" /> <span>Reset view</span>
           </button>
+          {footerAside}
         </footer>
       </div>
     </section>

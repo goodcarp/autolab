@@ -5,9 +5,9 @@ import './node-three.js';
 // The real modules, three.js and both cars, under plain Node: no WebGL is needed to build a car,
 // adapt it, frame it or swap it in and out of the drawing's scene.
 const THREE = await import('three');
-const { VEHICLES, vehicleEntry, loadVehicle, ROADSTER_PRESETS, ROADSTER_PRESENTATION } = await import('./vehicles.js');
+const { VEHICLES, vehicleEntry, openingVehicle, loadVehicle, ROADSTER_PRESETS, ROADSTER_PRESENTATION } = await import('./vehicles.js');
 const { Rig, PRESETS, presentationFit } = await import('./camera.js');
-const { Blueprint, lampKind } = await import('./blueprint.js');
+const { Blueprint, lampKind, LAMP_STYLE } = await import('./blueprint.js');
 const rx2 = await loadVehicle('rx2');
 const roadster = await loadVehicle('roadster');
 const rest = { run: false, drive: false, time: 0, speed: 0, steer: 0 };
@@ -19,7 +19,10 @@ test('the registry lists the RX2 and the Roadster, each with a complete sheet', 
   for (const v of VEHICLES) {
     const c = v.config;
     assert.ok(v.label && v.short, v.id);
-    for (const key of ['hdrLeft', 'hdrRight', 'title', 'titleBlock', 'instr', 'views', 'motions', 'tour', 'viewTitles', 'opens', 'specBasis', 'cabin']) assert.ok(c[key], `${v.id}.${key}`);
+    for (const key of ['title', 'titleBlock', 'instr', 'views', 'motions', 'tour', 'viewTitles', 'opens', 'specBasis', 'cabin']) assert.ok(c[key], `${v.id}.${key}`);
+    // the sheet has no header titles any more, and no constant "Session ID" line anywhere
+    assert.ok(!('hdrLeft' in c) && !('hdrRight' in c), `${v.id} has no header text`);
+    assert.doesNotMatch(JSON.stringify(c), /Session ID|Knowledge Base/, v.id);
     assert.equal(c.keyItems.length, 10, v.id);
     assert.deepEqual(c.keyItems.map(k => k.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], v.id);
     assert.deepEqual(Object.keys(v.presets).sort(), c.views.map(x => x.id).sort(), `${v.id} has a preset for every view`);
@@ -29,6 +32,16 @@ test('the registry lists the RX2 and the Roadster, each with a complete sheet', 
   assert.equal(vehicleEntry('roadster').play, true);
   assert.equal(await loadVehicle('roadster'), roadster, 'each car is built once');
   await assert.rejects(loadVehicle('nope'), /unknown vehicle "nope"/);
+});
+
+test('the Owner\'s Guide opens on the Roadster on its own page, on the RX2 framed or as the tour, and ?vehicle= picks either', () => {
+  assert.equal(openingVehicle(null).id, 'roadster', 'standalone, no ?vehicle=');
+  assert.equal(openingVehicle('nope').id, 'roadster', 'an unknown id falls to the default');
+  assert.equal(openingVehicle(null, { framed: true }).id, 'rx2', 'the configurator\'s My Car stays the RX2');
+  assert.equal(openingVehicle(null, { demo: true }).id, 'rx2', 'the landing page\'s tour stays the RX2');
+  assert.equal(openingVehicle('rx2').id, 'rx2');
+  assert.equal(openingVehicle('roadster', { framed: true }).id, 'roadster');
+  assert.equal(VEHICLES[0].id, 'rx2', 'the RX2 stays the car main.js falls back to');
 });
 
 test('every part, view and motion a sheet names exists on its own car', () => {
@@ -89,6 +102,9 @@ test('lamps are flagged per mesh; the RX2 keeps its old part rule', () => {
   assert.ok(centreX(2).some(x => x < -1.9), 'tail lamps across the tail');
   // Which sub-meshes carry the lamps changes as the lab refines the car; the parts do not.
   assert.ok(flagged(roadster, 1).some(id => id.startsWith('fasciaFront:')), 'a head lamp in the nose fascia');
+  // the light bar itself: one lit mesh across the nose, most of the car's width
+  const bar = roadster.parts.fasciaFront.meshes.filter(m => m.userData.lamp === 1).map(m => new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3()));
+  assert.ok(bar.some(size => size.z > 1.0 && size.y < 0.05), `the light bar is flagged as a lamp (${bar.map(b => b.z.toFixed(2)).join(', ')} m wide)`);
   assert.ok(flagged(roadster, 2).some(id => id.startsWith('fasciaRear:')), 'a tail lamp in the rear fascia');
   const lampParts = new Set(rx2.lampIds);
   for (const p of rx2.order) for (const m of p.meshes) {
@@ -177,7 +193,8 @@ test('the drawing swaps cars: removeVehicle disposes only its own G-buffer clone
   const bp = Object.create(Blueprint.prototype);
   Object.assign(bp, { scene: new THREE.Scene(), vehicleMeshes: [],
     gMatProto: new THREE.ShaderMaterial({ uniforms: { uId: { value: 0 }, uSub: { value: 0 }, uDissolve: { value: 1 }, uCut: { value: 0 }, uLamp: { value: 0 } } }),
-    compMat: { uniforms: { uNose: { value: 0 }, uTail: { value: 0 } } } });
+    compMat: { uniforms: { uNose: { value: 0 }, uTail: { value: 0 }, uLampCol: { value: new THREE.Vector4() }, uLampHalo: { value: new THREE.Vector4() } } } });
+  const lampLook = () => [...bp.compMat.uniforms.uLampCol.value.toArray(), ...bp.compMat.uniforms.uLampHalo.value.toArray()].map(x => +x.toFixed(4));
   const shared = new Set(rx2.order.flatMap(p => p.meshes.map(m => m.material)));
   const disposedShared = [];
   for (const m of shared) m.addEventListener('dispose', () => disposedShared.push(m));
@@ -185,6 +202,9 @@ test('the drawing swaps cars: removeVehicle disposes only its own G-buffer clone
   const clones = bp.vehicleMeshes.map(m => m.userData.gMat);
   let disposed = 0; for (const c of clones) c.addEventListener('dispose', () => disposed++);
   assert.equal(bp.compMat.uniforms.uNose.value, rx2.SPEC.NOSE);
+  const rx2Look = [...LAMP_STYLE.colour, LAMP_STYLE.mix, 1, 1, 1, 0];
+  assert.deepEqual(lampLook(), rx2Look, 'the RX2 keeps the pale cream lamps, no halo');
+  assert.equal(rx2.lampStyle, undefined);
   bp.removeVehicle(rx2);
   assert.equal(disposed, clones.length, 'every per-mesh clone is disposed');
   assert.deepEqual(disposedShared, [], 'the RX2\'s shared materials are never disposed');
@@ -197,7 +217,11 @@ test('the drawing swaps cars: removeVehicle disposes only its own G-buffer clone
   assert.equal(bp.vehicleMeshes.filter(m => m.userData.gMat.uniforms.uLamp.value === 2).length, roadster.pickables.filter(m => m.userData.lamp === 2).length);
   assert.ok(bp.vehicleMeshes.every(m => m.userData.gMat.uniforms.uLamp.value === m.userData.lamp), 'each clone carries its mesh\'s lamp flag');
   assert.equal(bp.compMat.uniforms.uTail.value, roadster.SPEC.TAIL);
+  assert.deepEqual(lampLook(), [...roadster.lampStyle.colour, roadster.lampStyle.mix, ...roadster.lampStyle.halo.colour, roadster.lampStyle.halo.strength].map(x => +x.toFixed(4)), 'the Roadster\'s light bar: its own colour and the halo');
+  assert.ok(roadster.lampStyle.halo.strength > 0);
+  assert.ok(roadster.lampStyle.idle > 0.30, 'and a stronger idle glow than the RX2\'s pulse');
   bp.removeVehicle(roadster); bp.addVehicle(rx2);
   assert.equal(bp.vehicleMeshes.length, rx2.pickables.length, 'the RX2 comes back whole');
+  assert.deepEqual(lampLook(), rx2Look, 'and its lamps look as they did');
   bp.removeVehicle(rx2);
 });

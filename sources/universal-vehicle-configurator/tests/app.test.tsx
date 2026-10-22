@@ -1,11 +1,13 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app/App";
+import { ownerGuideBridge } from "../src/owner-guide/owner-guide-bridge";
 import { configuratorPresentation } from "../src/webmcp/configurator-tools";
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  ownerGuideBridge.setWorkspace("configure");
 });
 
 function useMobileMedia({ reducedMotion = false } = {}) {
@@ -25,7 +27,41 @@ describe("vehicle configurator app", () => {
     expect(screen.getByRole("group", { name: "Wheels" })).toBeVisible();
     expect(screen.getByRole("group", { name: "Interior" })).toBeVisible();
     expect(screen.getByRole("group", { name: "Towing" })).toBeVisible();
-    expect(await screen.findByText("Manual mode")).toBeVisible();
+    // The status chip left with the top bar; the state is still announced.
+    expect(await screen.findByText("Manual mode")).toHaveAttribute("role", "status");
+  });
+
+  it("has no top bar: the brand and site nav live in the viewport corner", () => {
+    const { container } = render(<App />);
+    expect(container.querySelector(".configurator-header")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Shop" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "My Car" })).toBeNull();
+    const viewport = screen.getByRole("region", { name: "Interactive vehicle configurator" });
+    const nav = within(viewport).getByRole("navigation", { name: "AutoLab" });
+    expect(within(nav).getByRole("link", { name: "AutoLab" })).toHaveAttribute("href", "../");
+    expect(within(nav).getByRole("link", { name: "Build" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Learn" })).toHaveAttribute("href", "../garage/");
+    expect(within(nav).getByRole("link", { name: "Create" })).toHaveAttribute("href", "../engine/");
+    // Share is an icon beside Reset view, with no visible label.
+    const share = within(viewport).getByRole("button", { name: "Share build" });
+    expect(share.textContent).toBe("");
+    expect(share.closest(".vc-footer")).not.toBeNull();
+    expect(screen.queryByText(/Live 3D/i)).toBeNull();
+    expect(screen.queryByText("Drag to orbit")).toBeNull();
+    expect(screen.queryByText("UVC / 01")).toBeNull();
+  });
+
+  it("returns from the My Car deep link to Build through the site nav", () => {
+    ownerGuideBridge.setWorkspace("garage");
+    const { container } = render(<App />);
+    const shell = container.querySelector(".configurator-shell");
+    expect(shell).toHaveAttribute("data-workspace", "garage");
+    const guide = screen.getByRole("region", { name: "AutoLab Garage digital twin" });
+    const build = within(guide).getByRole("link", { name: "Build" });
+    expect(build).not.toHaveAttribute("aria-current");
+    fireEvent.click(build);
+    expect(shell).toHaveAttribute("data-workspace", "configure");
+    expect(ownerGuideBridge.getWorkspace()).toBe("configure");
   });
 
   it("brings an agent-requested presentation into view on a stacked layout", () => {

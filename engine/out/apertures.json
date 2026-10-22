@@ -26,20 +26,20 @@
       "outwardSign": 1,
       "skinMeshes": 1,
       "skinTriangles": 2368,
-      "footprintArea_m2": 2.0106,
+      "footprintArea_m2": 1.9824,
       "assemblyParts": [
         "hood"
       ],
       "bounds_m": {
         "min": [
           1.1080000143051145,
-          0.909610798528671,
-          -0.8735474605560303
+          1.0047820116786954,
+          -0.8743034262657166
         ],
         "max": [
           2.272499930381775,
           1.2006404657363892,
-          0.8735474605560303
+          0.8743034262657166
         ]
       },
       "poses": [
@@ -50,19 +50,17 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.5,
+              "intrusionDepth_mm": 5.8,
               "at_m": {
-                "x": 2.196366,
-                "y": 1.079429,
-                "z": 0.70796
+                "x": 2.197,
+                "y": 1.083104,
+                "z": 0.589091
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             }
           ],
           "edgeContacts": [
-            "headlamps",
-            "lightBar",
             "pillars"
           ]
         },
@@ -73,19 +71,17 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.5,
+              "intrusionDepth_mm": 5.8,
               "at_m": {
-                "x": 2.196366,
-                "y": 1.079429,
-                "z": 0.70796
+                "x": 2.197,
+                "y": 1.083104,
+                "z": 0.589091
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             }
           ],
           "edgeContacts": [
-            "headlamps",
-            "lightBar",
             "pillars"
           ]
         },
@@ -96,19 +92,17 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.5,
+              "intrusionDepth_mm": 5.8,
               "at_m": {
-                "x": 2.196366,
-                "y": 1.079429,
-                "z": 0.70796
+                "x": 2.197,
+                "y": 1.083104,
+                "z": 0.589091
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             }
           ],
           "edgeContacts": [
-            "headlamps",
-            "lightBar",
             "pillars"
           ]
         },
@@ -119,19 +113,17 @@
             {
               "part": "body",
               "inset_mm": 76,
-              "intrusionDepth_mm": 5.5,
+              "intrusionDepth_mm": 5.8,
               "at_m": {
-                "x": 2.196366,
-                "y": 1.079429,
-                "z": 0.70796
+                "x": 2.197,
+                "y": 1.083104,
+                "z": 0.589091
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             }
           ],
           "edgeContacts": [
-            "headlamps",
-            "lightBar",
             "pillars"
           ]
         }
@@ -145,20 +137,20 @@
       "outwardSign": -1,
       "skinMeshes": 2,
       "skinTriangles": 2042,
-      "footprintArea_m2": 0.9855,
+      "footprintArea_m2": 1.0436,
       "assemblyParts": [
         "doorFL"
       ],
       "bounds_m": {
         "min": [
-          -0.3059999389648438,
-          0.49762732195854187,
-          -0.9299999726625283
+          -0.24699995708465572,
+          0.4961082081794739,
+          -0.9299999723782142
         ],
         "max": [
-          0.7149999995604157,
-          1.5687623281478882,
-          -0.6627871212275822
+          0.8049999732505531,
+          1.6037045974731445,
+          -0.6537312103112538
         ]
       },
       "poses": [
@@ -220,20 +212,20 @@
       "outwardSign": 1,
       "skinMeshes": 2,
       "skinTriangles": 2042,
-      "footprintArea_m2": 0.9857,
+      "footprintArea_m2": 1.0436,
       "assemblyParts": [
         "doorFR"
       ],
       "bounds_m": {
         "min": [
-          -0.3059999389648438,
-          0.49762732195854187,
-          0.6627871212275822
+          -0.24699995708465572,
+          0.4961082081794739,
+          0.6537312103112538
         ],
         "max": [
-          0.7149999995604157,
-          1.5687623281478882,
-          0.9299999726625283
+          0.8049999732505531,
+          1.6037045974731445,
+          0.9299999723782142
         ]
       },
       "poses": [
@@ -294,21 +286,21 @@
       "projection": "z",
       "outwardSign": -1,
       "skinMeshes": 3,
-      "skinTriangles": 1846,
-      "footprintArea_m2": 0.9425,
+      "skinTriangles": 1622,
+      "footprintArea_m2": 0.9118,
       "assemblyParts": [
         "doorRL"
       ],
       "bounds_m": {
         "min": [
-          -1.2500000386238097,
+          -1.2458124547004699,
           0.49837121772766113,
           -0.9299999731481077
         ],
         "max": [
           -0.24400000663101673,
-          1.5683626194000244,
-          -0.7264286177158357
+          1.6033097763061523,
+          -0.7135716574192048
         ]
       },
       "poses": [
@@ -318,24 +310,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
-              "intrusionDepth_mm": 4,
+              "inset_mm": 160,
+              "intrusionDepth_mm": 3.9,
               "at_m": {
-                "x": -0.401628,
-                "y": 1.412005,
-                "z": -0.843
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": -0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.401603,
-                "y": 1.385079,
-                "z": -0.856917
+                "x": -0.401896,
+                "y": 1.393636,
+                "z": -0.855338
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -353,24 +345,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
-              "intrusionDepth_mm": 4,
+              "inset_mm": 160,
+              "intrusionDepth_mm": 3.9,
               "at_m": {
-                "x": -0.401628,
-                "y": 1.412005,
-                "z": -0.843
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": -0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.401603,
-                "y": 1.385079,
-                "z": -0.856917
+                "x": -0.401896,
+                "y": 1.393636,
+                "z": -0.855338
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -387,24 +379,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
-              "intrusionDepth_mm": 4,
+              "inset_mm": 160,
+              "intrusionDepth_mm": 3.9,
               "at_m": {
-                "x": -0.401628,
-                "y": 1.412005,
-                "z": -0.843
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": -0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.401603,
-                "y": 1.385079,
-                "z": -0.856917
+                "x": -0.401896,
+                "y": 1.393636,
+                "z": -0.855338
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -421,24 +413,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
-              "intrusionDepth_mm": 4,
+              "inset_mm": 160,
+              "intrusionDepth_mm": 3.9,
               "at_m": {
-                "x": -0.401628,
-                "y": 1.412005,
-                "z": -0.843
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": -0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.401603,
-                "y": 1.385079,
-                "z": -0.856917
+                "x": -0.401896,
+                "y": 1.393636,
+                "z": -0.855338
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -458,20 +450,20 @@
       "projection": "z",
       "outwardSign": 1,
       "skinMeshes": 3,
-      "skinTriangles": 1846,
-      "footprintArea_m2": 0.9425,
+      "skinTriangles": 1622,
+      "footprintArea_m2": 0.9117,
       "assemblyParts": [
         "doorRR"
       ],
       "bounds_m": {
         "min": [
-          -1.2500000386238097,
+          -1.2458124547004699,
           0.49837121772766113,
-          0.7264286177158357
+          0.7135716574192048
         ],
         "max": [
           -0.24400000663101673,
-          1.5683626194000244,
+          1.6033097763061523,
           0.9299999731481077
         ]
       },
@@ -482,24 +474,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 4.1,
               "at_m": {
-                "x": -0.401394,
-                "y": 1.223556,
-                "z": 0.906704
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": 0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.40041,
-                "y": 1.354457,
-                "z": 0.867624
+                "x": -0.40184,
+                "y": 1.422912,
+                "z": 0.845018
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -517,24 +509,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 4.1,
               "at_m": {
-                "x": -0.401394,
-                "y": 1.223556,
-                "z": 0.906704
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": 0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.40041,
-                "y": 1.354457,
-                "z": 0.867624
+                "x": -0.40184,
+                "y": 1.422912,
+                "z": 0.845018
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -551,24 +543,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 4.1,
               "at_m": {
-                "x": -0.401394,
-                "y": 1.223556,
-                "z": 0.906704
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": 0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.40041,
-                "y": 1.354457,
-                "z": 0.867624
+                "x": -0.40184,
+                "y": 1.422912,
+                "z": 0.845018
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -585,24 +577,24 @@
           "offenders": [
             {
               "part": "greenhouse",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 4.1,
               "at_m": {
-                "x": -0.401394,
-                "y": 1.223556,
-                "z": 0.906704
+                "x": -0.401973,
+                "y": 1.272235,
+                "z": 0.891667
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
             },
             {
               "part": "pillars",
-              "inset_mm": 158,
+              "inset_mm": 160,
               "intrusionDepth_mm": 0,
               "at_m": {
-                "x": -0.40041,
-                "y": 1.354457,
-                "z": 0.867624
+                "x": -0.40184,
+                "y": 1.422912,
+                "z": 0.845018
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -617,20 +609,20 @@
     },
     {
       "aperture": "tailgate",
-      "status": "FAIL",
+      "status": "PASS",
       "gated": true,
       "projection": "x",
       "outwardSign": -1,
       "skinMeshes": 3,
-      "skinTriangles": 3116,
-      "footprintArea_m2": 1.6402,
+      "skinTriangles": 3075,
+      "footprintArea_m2": 1.2766,
       "assemblyParts": [
         "tailgate"
       ],
       "bounds_m": {
         "min": [
           -2.3930000348091123,
-          0.5520175819396973,
+          0.7830000047683716,
           -0.9159999747276306
         ],
         "max": [
@@ -642,102 +634,46 @@
       "poses": [
         {
           "openT": 0,
-          "status": "FAIL",
-          "offenders": [
-            {
-              "part": "cargoFloor",
-              "inset_mm": 156,
-              "intrusionDepth_mm": 0,
-              "at_m": {
-                "x": -2.392,
-                "y": 0.71,
-                "z": -0.55
-              },
-              "evidence": "surface intersection",
-              "depthIsLowerBound": false
-            }
-          ],
+          "status": "PASS",
+          "offenders": [],
           "edgeContacts": [
             "body",
-            "fasciaRear",
             "greenhouse",
             "pillars",
-            "roofGlass"
+            "tailPills"
           ]
         },
         {
           "openT": 0.25,
-          "status": "FAIL",
-          "offenders": [
-            {
-              "part": "cargoFloor",
-              "inset_mm": 156,
-              "intrusionDepth_mm": 0,
-              "at_m": {
-                "x": -2.392,
-                "y": 0.71,
-                "z": -0.55
-              },
-              "evidence": "surface intersection",
-              "depthIsLowerBound": false
-            }
-          ],
+          "status": "PASS",
+          "offenders": [],
           "edgeContacts": [
             "body",
-            "fasciaRear",
             "greenhouse",
             "pillars",
-            "roofGlass"
+            "tailPills"
           ]
         },
         {
           "openT": 0.5,
-          "status": "FAIL",
-          "offenders": [
-            {
-              "part": "cargoFloor",
-              "inset_mm": 156,
-              "intrusionDepth_mm": 0,
-              "at_m": {
-                "x": -2.392,
-                "y": 0.71,
-                "z": -0.55
-              },
-              "evidence": "surface intersection",
-              "depthIsLowerBound": false
-            }
-          ],
+          "status": "PASS",
+          "offenders": [],
           "edgeContacts": [
             "body",
-            "fasciaRear",
             "greenhouse",
             "pillars",
-            "roofGlass"
+            "tailPills"
           ]
         },
         {
           "openT": 1,
-          "status": "FAIL",
-          "offenders": [
-            {
-              "part": "cargoFloor",
-              "inset_mm": 156,
-              "intrusionDepth_mm": 0,
-              "at_m": {
-                "x": -2.392,
-                "y": 0.71,
-                "z": -0.55
-              },
-              "evidence": "surface intersection",
-              "depthIsLowerBound": false
-            }
-          ],
+          "status": "PASS",
+          "offenders": [],
           "edgeContacts": [
             "body",
-            "fasciaRear",
             "greenhouse",
             "pillars",
-            "roofGlass"
+            "tailPills"
           ]
         }
       ]
@@ -758,13 +694,13 @@
       "bounds_m": {
         "min": [
           -2.1670000029802323,
-          0.7290087906678194,
-          -0.939938242001855
+          0.7995427385946904,
+          -0.9397529411683649
         ],
         "max": [
           -2.0129999970197683,
-          0.9030087924559588,
-          -0.8739382418975469
+          0.9735427403828297,
+          -0.8737529410640568
         ]
       },
       "poses": [
@@ -777,9 +713,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.087533,
-                "y": 0.823123,
-                "z": -0.924905
+                "x": -2.087743,
+                "y": 0.893417,
+                "z": -0.924697
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -789,9 +725,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 43,
               "at_m": {
-                "x": -2.08821,
-                "y": 0.813768,
-                "z": -0.915438
+                "x": -2.088269,
+                "y": 0.884234,
+                "z": -0.915254
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": false
@@ -808,9 +744,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.087533,
-                "y": 0.823123,
-                "z": -0.924905
+                "x": -2.087743,
+                "y": 0.893417,
+                "z": -0.924697
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -820,9 +756,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 43,
               "at_m": {
-                "x": -2.08821,
-                "y": 0.813768,
-                "z": -0.915438
+                "x": -2.088269,
+                "y": 0.884234,
+                "z": -0.915254
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": false
@@ -839,9 +775,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.087533,
-                "y": 0.823123,
-                "z": -0.924905
+                "x": -2.087743,
+                "y": 0.893417,
+                "z": -0.924697
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -851,9 +787,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 43,
               "at_m": {
-                "x": -2.08821,
-                "y": 0.813768,
-                "z": -0.915438
+                "x": -2.088269,
+                "y": 0.884234,
+                "z": -0.915254
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": false
@@ -870,9 +806,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 13,
               "at_m": {
-                "x": -2.087533,
-                "y": 0.823123,
-                "z": -0.924905
+                "x": -2.087743,
+                "y": 0.893417,
+                "z": -0.924697
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": true
@@ -882,9 +818,9 @@
               "inset_mm": 74,
               "intrusionDepth_mm": 43,
               "at_m": {
-                "x": -2.08821,
-                "y": 0.813768,
-                "z": -0.915438
+                "x": -2.088269,
+                "y": 0.884234,
+                "z": -0.915254
               },
               "evidence": "surface intersection",
               "depthIsLowerBound": false

@@ -4,7 +4,8 @@
 
 html {
   min-width: 320px;
-  background: var(--paper);
+  /* The configurator is a white studio from edge to edge. */
+  background: #fff;
   font-family: var(--font-display);
   color: var(--ink);
   text-rendering: geometricPrecision;
@@ -14,9 +15,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at 72% 48%, rgba(255, 255, 255, 0.9), transparent 28rem),
-    var(--paper);
+  background: #fff;
 }
 
 button,

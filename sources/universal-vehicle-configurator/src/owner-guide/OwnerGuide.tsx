@@ -1,12 +1,17 @@
 import { BatteryCharging, Boxes, DoorOpen, Play, RotateCcw, Square } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { applyGuideAction, isGuideActionActive, type GuideAction, type GuideState } from "./guide-actions";
 import { ownerGuideBridge, type VehicleTwinContext } from "./owner-guide-bridge";
 import "./owner-guide.css";
 
-type OwnerGuideProps = { active: boolean; context: VehicleTwinContext };
+type OwnerGuideProps = {
+  active: boolean;
+  context: VehicleTwinContext;
+  /** The site navigation; its Build link returns to the configuration workspace. */
+  nav?: ReactNode;
+};
 
-export function OwnerGuide({ active, context }: OwnerGuideProps) {
+export function OwnerGuide({ active, context, nav }: OwnerGuideProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const connectionRequest = useRef<AbortController | null>(null);
   const actionRequest = useRef<AbortController | null>(null);
@@ -126,15 +131,18 @@ export function OwnerGuide({ active, context }: OwnerGuideProps) {
     : state?.motions.open ? "Openings shown · tap again to close"
     : state?.motions.panels ? "Body shell revealed · Reset view to restore"
     : state?.selected ? "Part highlighted · Reset view to restore"
-    : "Drag to rotate · Pinch to zoom";
+    : "";
 
   return (
     <section className="owner-guide" data-active={active || undefined}
       aria-label="AutoLab Garage digital twin" aria-hidden={!active}>
-      <aside className="owner-guide__identity" aria-label="Vehicle synced from configurator">
-        <strong>{context.build}</strong>
-        <p>{context.paint} · {context.wheels}</p>
-      </aside>
+      <div className="owner-guide__bar">
+        {nav}
+        <aside className="owner-guide__identity" aria-label="Vehicle synced from configurator">
+          <strong>{context.build}</strong>
+          <p>{context.paint} · {context.wheels}</p>
+        </aside>
+      </div>
       <div className="owner-guide__drawing" aria-busy={connection === "loading"}>
         {shouldLoad && <iframe key={frameVersion} ref={frameRef} className="owner-guide__frame"
           src={`${import.meta.env.BASE_URL}garage/`} title="RX2 interactive digital twin and owner guide"

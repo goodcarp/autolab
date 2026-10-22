@@ -89,7 +89,7 @@ export function inVehicleAperture(p, C) {
   if (az > C.doorZ && p.y > C.doorY0 && p.y < C.doorY1) {
     const lower = p.y < C.beltY;
     const rear = lower ? p.x > ramp(C.rearShut, p.y) && p.x < C.rearX1 : p.x > C.rearFrameX0 && p.x < C.rearGlassX1;
-    const quarter = !lower && p.y > ramp(C.quarterY0, p.x) && p.x > C.quarterX0 && p.x < C.quarterX1;
+    const quarter = !lower && p.y > ramp(C.quarterY0, p.x) && p.x > C.quarterX0 + Math.max(p.y - (C.quarterYR ?? 0), 0) * (C.quarterRake ?? 0) && p.x < C.quarterX1 + Math.max(p.y - (C.quarterYR ?? 0), 0) * (C.quarterRakeF ?? 0); // the raked quarter light, as cutGLSL draws it
     const xg = p.y >= C.sailY ? C.qa + C.qb * p.y + C.qc * p.y * p.y : C.frontGlassX1 - (p.y - C.beltY) * C.sailSlope;
     const front = p.x > (lower ? C.frontX0 : C.frontGlassX0) && p.x < (lower ? C.frontX1 : Math.min(C.frontX1, xg));
     if (rear || quarter || front) return true;

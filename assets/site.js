@@ -87,6 +87,7 @@
   const EXPERIENCES = [
     {
       id: "configure",
+      label: "Build",
       title: "Web 4.0-enabled Vehicle Configurator",
       role: "sales",
       url: url("configure/"),
@@ -97,16 +98,19 @@
     },
     {
       id: "garage",
+      label: "Learn",
       title: "Agentic Owner's Guide",
       role: "ownership",
       url: url("garage/"),
       tools: 25,
       summary:
-        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. Frame, highlight and measure 42 named components, six authored views, doors and panels open, body dissolves, exploded assembly, a guided tour an agent can start, narrate and interrupt, what is visible on the sheet by component, and surface-to-surface clearance. A second vehicle, the Tesla Roadster, can be driven up the wall-ride ramp.",
+        "General-arrangement drawing of the vehicle that opens into a 3D digital twin. It opens on the Tesla Roadster; the Hudian RX2 is the other vehicle (garage/?vehicle=rx2). Frame, highlight and measure named components (42 on the RX2), six authored views, doors and panels open, body dissolves, exploded assembly, a guided tour an agent can start, narrate and interrupt, what is visible on the sheet by component, and surface-to-surface clearance. Play is a run on the Tesla Roadster: real-time physics up the wall-ride ramp, by keyboard, touch or an agent. The landing page's Fly the Tesla Roadster button opens it directly.",
+      play: { label: "Fly the Tesla Roadster", url: url("garage/?vehicle=roadster&play=1") },
       repo: "https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint",
     },
     {
       id: "engine",
+      label: "Create",
       title: "AutoLab 3D Creation Engine",
       role: "framework",
       url: url("engine/"),
@@ -133,6 +137,8 @@
       ownersGuide: "https://github.com/goodcarp/autolab/tree/main/sources/r2-blueprint",
       engine: "https://github.com/goodcarp/autolab/tree/main/sources/autolab-3d-creation-engine",
     },
+    navigation: { Build: url("configure/"), Learn: url("garage/"), Create: url("engine/") },
+    play: { label: "Fly the Tesla Roadster", url: url("garage/?vehicle=roadster&play=1") },
     disclaimer:
       "Independent and unofficial; not associated with, endorsed by, or sponsored by Rivian, Tesla or any manufacturer. Geometry is an independent reconstruction fitted to published dimensions, not manufacturer CAD.",
   };
@@ -145,7 +151,7 @@
       name: "list_autolab_experiences",
       title: "List the AutoLab experiences",
       description:
-        "Return the three AutoLab experiences (configure, garage, engine) with their URLs, roles, WebMCP tool counts, summaries and source repositories.",
+        "Return the three AutoLab experiences with their navigation labels, Build (configure), Learn (garage) and Create (engine), plus their URLs, roles, WebMCP tool counts, summaries and source repositories. The garage entry carries the direct link to the Tesla Roadster's Play run.",
       inputSchema: noArgs,
       annotations: readOnly,
       execute: async () => ({ experiences: EXPERIENCES }),
@@ -163,11 +169,11 @@
       name: "open_autolab_experience",
       title: "Open an AutoLab experience",
       description:
-        "Navigate this tab to the Configurator ('configure'), the Owner's Guide ('garage') or the Engine ('engine'). Each destination publishes its own WebMCP tools once loaded.",
+        "Navigate this tab to Build, the Configurator ('configure'); Learn, the Owner's Guide ('garage'), which opens on the Tesla Roadster; or Create, the 3D Creation Engine ('engine'). Each destination publishes its own WebMCP tools once loaded. To fly the Tesla Roadster, open 'garage' and call start_run there; garage/?vehicle=roadster&play=1 starts the same run as a link.",
       inputSchema: {
         type: "object",
         properties: {
-          experience: { type: "string", enum: ["configure", "garage", "engine"], description: "Which experience to open." },
+          experience: { type: "string", enum: ["configure", "garage", "engine"], description: "Which experience to open: configure (Build), garage (Learn) or engine (Create)." },
         },
         required: ["experience"],
         additionalProperties: false,
@@ -180,7 +186,7 @@
           throw new Error(`no experience "${experience}". Call list_autolab_experiences; the ids are ${ids}.`);
         }
         setTimeout(() => location.assign(target.url), 50);
-        return { ok: true, opening: target.id, url: target.url, toolsOnArrival: target.tools };
+        return { ok: true, opening: target.id, label: target.label, url: target.url, toolsOnArrival: target.tools };
       },
     },
   ];
@@ -252,46 +258,52 @@
   renderSheet();
   window.AutoLabUI.bindToolsSheet();
 
-  // ---- the tour, played in place ----------------------------------------
-  // The still is a capture from the Owner's Guide; the click swaps in the live
-  // sheet running its tour. Nothing 3D loads until someone asks for it.
-  const demo = document.getElementById("hero-demo"), play = document.getElementById("hero-play");
-  if (demo && play) {
-    let pending = false, attempts = 0;
-    const label = play.querySelector(".hero-demo__label");
-    const launch = async () => {
-      if (pending) return;
-      pending = true;
-      play.setAttribute("aria-busy", "true");
-      play.setAttribute("aria-disabled", "true");
-      play.setAttribute("aria-label", "Preparing the guided tour");
-      if (label) label.textContent = "Preparing the guided tour…";
-      // A fresh module URL lets a retry recover from a failed module fetch.
-      const moduleUrl = ++attempts === 1 ? "./home-demo.mjs" : `./home-demo.mjs?retry=${attempts}`;
-      let importDeadline;
-      try {
-        // Racing the download bounds this attempt and ignores a late result
-        // after timeout, including while a newer retry is already loading.
-        const { mountHomeDemo } = await Promise.race([
-          import(moduleUrl),
-          new Promise((_, reject) => {
-            importDeadline = window.setTimeout(() => reject(new Error("The guided tour download timed out.")), 20_000);
-          }),
-        ]);
-        const controller = mountHomeDemo({ demo, play, src: url("garage/?demo=1&tour=1&nodrift=1") });
-        play.removeEventListener("click", launch);
-        controller.start();
-      } catch {
-        play.setAttribute("aria-label", "Retry the guided tour");
-        if (label) label.textContent = "Couldn’t load · Retry tour";
-      } finally {
-        window.clearTimeout(importDeadline);
-        pending = false;
-        play.removeAttribute("aria-busy");
-        play.removeAttribute("aria-disabled");
-      }
+  // ---- the hero film -----------------------------------------------------
+  // A muted loop of the Tesla Roadster coming apart while the camera circles it. With reduced
+  // motion it never starts on its own (the poster stays; Play still works). The button pauses and
+  // resumes it; it rests while the tab is hidden or the hero is scrolled away. If no source loads,
+  // the poster stays and the button goes away.
+  const video = document.getElementById("hero-video"), videoToggle = document.getElementById("hero-video-toggle");
+  if (video) {
+    const still = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    let held = !!still?.matches, inView = true, failed = false;
+    const label = () => {
+      if (!videoToggle) return;
+      const paused = video.paused || held;
+      videoToggle.dataset.paused = String(paused);
+      videoToggle.setAttribute("aria-label", paused ? "Play the animation" : "Pause the animation");
     };
-    play.addEventListener("click", launch);
+    const sync = () => {
+      const run = !held && !failed && inView && !document.hidden;
+      if (run && video.paused) {
+        const started = video.play();
+        // A blocked autoplay (low-power mode, a browser policy) waits for the button; an
+        // interrupted play (paused again before it began) just tries again on the next sync.
+        if (started && typeof started.catch === "function") started.catch((err) => { if (err?.name === "NotAllowedError") held = true; label(); });
+      } else if (!run && !video.paused) video.pause();
+      label();
+    };
+    if (held) { video.autoplay = false; video.removeAttribute("autoplay"); video.pause(); }
+    still?.addEventListener?.("change", () => { if (still.matches) held = true; sync(); });
+    if (videoToggle) {
+      videoToggle.hidden = false;
+      videoToggle.addEventListener("click", () => { held = !held; sync(); });
+    }
+    const sources = video.querySelectorAll("source");
+    sources[sources.length - 1]?.addEventListener("error", () => {
+      failed = true;
+      if (videoToggle) videoToggle.hidden = true;
+    });
+    video.addEventListener("play", label);
+    video.addEventListener("pause", label);
+    document.addEventListener("visibilitychange", sync);
+    if (window.IntersectionObserver) {
+      new window.IntersectionObserver((entries) => {
+        inView = entries.some((entry) => entry.isIntersecting);
+        sync();
+      }).observe(video);
+    }
+    sync();
   }
 
   // ---- copyable starter prompts -----------------------------------------

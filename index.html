@@ -6,7 +6,8 @@
 <title>AutoLab by AutoMoto</title>
 <meta name="description" content="Super intelligence for car lovers. A WebMCP vehicle configurator, an agentic owner's guide with a live digital twin, and the 3D creation engine that measures the model instead of looking at it.">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" href="assets/brand/autolab-mark.png" type="image/png">
+<link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AutoLab by AutoMoto">
 <meta property="og:title" content="AutoLab by AutoMoto">
@@ -17,18 +18,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=20260908">
+<link rel="stylesheet" href="assets/site.css?v=20261022">
 </head>
 <body class="home-page">
 <header class="top">
-  <a class="brand" href="./" aria-label="AutoLab by AutoMoto home">
+  <a class="brand" href="./" aria-label="AutoLab by AutoMoto home" aria-current="page">
     <img class="brand-mark" src="assets/brand/autolab-mark.svg" alt="" width="44" height="41">
     <span class="brand-word">AutoLab <small>by AutoMoto <sup>©</sup></small></span>
   </a>
   <nav class="nav" id="site-navigation" aria-label="Experiences">
-    <a href="configure/">Configure</a>
-    <a href="garage/">Garage</a>
-    <a href="engine/">Engine</a>
+    <a href="configure/">Build</a>
+    <a href="garage/">Learn</a>
+    <a href="engine/">Create</a>
     <a href="https://github.com/goodcarp/autolab" rel="noopener">GitHub</a>
   </nav>
   <button class="chip" id="chip" type="button" aria-live="polite" aria-expanded="false" aria-controls="tools-sheet">
@@ -40,20 +41,21 @@
 <section class="hero">
   <p class="eyebrow">Beta</p>
   <h1>Super<br>intelligence<br>for car lovers.</h1>
-  <figure class="hero-demo" id="hero-demo">
-    <button type="button" class="hero-demo__play" id="hero-play" aria-label="Play the guided tour of the Owner's Guide here">
-      <img src="garage/docs/demo/tour/step-4_half.jpg" alt="The Agentic Owner's Guide mid-tour: the body shell dissolved and the structural battery pack highlighted on the drawing sheet" width="1680" height="1050" fetchpriority="high" decoding="async">
-      <span class="hero-demo__label"><span class="hero-demo__dot" aria-hidden="true"></span>Play the guided tour</span>
-    </button>
+  <figure class="hero-media" id="hero-media">
+    <video class="hero-media__video" id="hero-video" autoplay muted loop playsinline preload="metadata" poster="assets/hero/roadster-explode.webp" width="1568" height="880" aria-describedby="hero-media-caption">
+      <source src="assets/hero/roadster-explode-960.mp4" type="video/mp4" media="(max-width: 720px)">
+      <source src="assets/hero/roadster-explode.mp4" type="video/mp4">
+      <source src="assets/hero/roadster-explode.webm" type="video/webm">
+      <img src="assets/hero/roadster-explode.jpg" alt="" width="1568" height="880">
+    </video>
+    <figcaption class="sr-only" id="hero-media-caption">An ink drawing of the Tesla Roadster from the Owner's Guide, coming apart into its parts and back together while the camera circles it.</figcaption>
+    <button class="hero-media__toggle" id="hero-video-toggle" type="button" aria-controls="hero-video" aria-label="Pause the animation" hidden><span aria-hidden="true"></span></button>
   </figure>
   <p class="lede">Buy, learn, repair, play.<br>All with the help of your favorite agent.<br><br>AutoLab is a project in structured data, webMCP tools, and UX design originally shipped for OpenAI's WebMCP Challenge.</p>
   <div class="cta">
-    <a class="btn primary" href="configure/">Open the Configurator</a>
-    <a class="btn" href="garage/">Open the Owner's Guide</a>
-    <a class="btn ghost" href="engine/">See the Engine</a>
+    <a class="btn primary" href="garage/?vehicle=roadster&amp;play=1">Fly the Tesla Roadster</a>
   </div>
   <p class="hero-note">Now available for Muse, Grok Bot, ChatGPT Dots, Hermes Agent and more.</p>
-
 </section>
 
 <section class="experiences" id="experiences">

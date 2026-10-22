@@ -6,7 +6,10 @@
 //   - the drawing look: every mesh drawn with the RX2's white Lambert, shadows cast but not
 //     received; the lab's PBR material stays on userData.pbrMat for later;
 //   - lamps: a per-mesh flag (userData.lamp) the G-buffer carries, because the Roadster's lamps
-//     are single meshes inside larger parts (blueprint.js lampKind);
+//     are single meshes inside larger parts (blueprint.js lampKind); the light bar along the nose
+//     (and the pop-up lamps' LED rows) share the head-lamp material, so they are flagged together;
+//   - how they look lit (lampStyle): the bar is 14 mm tall, a pale line between its own outlines in
+//     the RX2's lamp look, so here it is a warm gold, kept plainly lit at idle, with a soft halo;
 //   - pickables, a hidden Set, bob, the shell dissolve (PANELS), callout anchors on the skin for
 //     the key items, explode guide points, and the LIGHTS flash at the pop-up lamps.
 // OPEN raises the gull-wing doors, DRIVE spins the wheels and EXPLODE uses the lab's own
@@ -52,6 +55,13 @@ function lampFlag(car, mesh) {
   if (m === L.tail || m === car.materials?.marker || m?.name === 'tail lamp' || m?.name === 'side marker') return 2;
   return 0;
 }
+
+// The light bar lit in the ink look: a bright pale yellow core, all the way to it at full glow, inside
+// a saturated amber halo 1-2 px wide where its ink outline was (pale on its own would vanish into the
+// paper, as the RX2's cream does on a lamp this thin); 0.6 of full glow when the car just sits there,
+// 1 with the LIGHTS motion.
+export const LAMP_STYLE = Object.freeze({ idle: 0.6, colour: Object.freeze([1.0, 0.94, 0.62]), mix: 1.0,
+  halo: Object.freeze({ colour: Object.freeze([1.0, 0.72, 0.12]), strength: 0.9 }) });
 
 const raycaster = new THREE.Raycaster();
 function onSkin(part, aim) {
@@ -111,6 +121,8 @@ export function adaptRoadster(car) {
   if (!car.lampFlash.locals.length) car.lampFlash.locals = [[S.NOSE, 0.6, -0.6], [S.NOSE, 0.6, 0.6]];
 
   car.lampIds = []; car.tailIds = [];   // lamps are flagged per mesh above
+  // the running lights at idle (main.js; the RX2 pulses at 0.30) and the lit look (blueprint.js)
+  car.lampStyle = LAMP_STYLE;
   car.shellNames = order.filter((p) => p.category === 'shell').map((p) => p.name);
   car.hidden = new Set();
   car.dissolve = dissolve;

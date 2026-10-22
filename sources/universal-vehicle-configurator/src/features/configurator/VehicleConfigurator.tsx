@@ -3,10 +3,8 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  ChevronRight,
-  CircleGauge,
   Clock3,
-  Route,
+  Plus,
   Sparkles,
   X,
 } from "lucide-react";
@@ -102,7 +100,6 @@ export interface VehicleConfiguratorProps {
   onBuyerContextChange: (patch: BuyerContextInput) => void;
   onInvalidSelection?: (meta: InvalidSelectionMeta) => void;
   onReviewBuild?: (result: ResolveResult) => void;
-  onViewVehicle?: () => void;
   className?: string;
 }
 
@@ -173,26 +170,59 @@ function valueAsNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function groupIntro(groupId: string): string {
-  if (groupId === "build") return "Choose your balance of range, comfort and power.";
+/** Groups drawn as a row of round swatches, the way a real configurator shows them. */
+const SWATCH_GROUPS = new Set(["paint", "wheels", "interior"]);
+
+/**
+ * A section intro only where it tells the buyer something the choices do not.
+ * With a mouse the swatches show a colour's price and delivery only on hover,
+ * so Paint says up front that both can move.
+ */
+function groupIntro(groupId: string): string | null {
   if (groupId === "paint") return "Your color can change both price and delivery.";
-  if (groupId === "wheels") return "Wheel choice changes the silhouette—and the real range.";
-  if (groupId === "interior") return "Set the atmosphere you will live with every day.";
-  if (groupId === "towing") return "Add capability without hiding the total cost.";
-  return "Make this part of the build yours.";
+  return null;
 }
 
-function impactLabel(projection: OptionProjection): string[] {
-  if (!projection.candidate.valid) return ["Needs a paired change"];
+const AVAILABLE_NOW = "Available now";
 
-  const labels: string[] = [];
+/** "Late 2026" reads as "Coming late 2026", as on the maker's own configurator. */
+function availabilityLabel(window: string): string {
+  if (window === AVAILABLE_NOW) return AVAILABLE_NOW;
+  return `Coming ${window.charAt(0).toLowerCase()}${window.slice(1)}`;
+}
+
+/**
+ * What choosing this option would change. A trim card states its own delivery
+ * window, so its impact repeats the build's window only when another choice
+ * makes the build later than the trim itself.
+ */
+function impacts(projection: OptionProjection, ownWindow?: string): { text: string; spoken: string }[] {
+  if (!projection.candidate.valid) return [{ text: "Needs a paired change", spoken: "needs a paired change" }];
+
+  const list: { text: string; spoken: string }[] = [];
   if (projection.rangeDelta !== null && projection.rangeDelta !== 0) {
-    labels.push(`${projection.rangeDelta > 0 ? "+" : "−"}${Math.abs(projection.rangeDelta)} mi`);
+    const text = `${projection.rangeDelta > 0 ? "+" : "−"}${Math.abs(projection.rangeDelta)} mi`;
+    list.push({ text, spoken: `range ${text}` });
   }
-  if (projection.deliveryChanged && projection.candidate.delivery) {
-    labels.push(projection.candidate.delivery.window);
+  const window = projection.candidate.delivery?.window;
+  if (projection.deliveryChanged && window && window !== ownWindow) {
+    list.push({ text: window, spoken: `delivery ${window}` });
   }
-  return labels;
+  return list;
+}
+
+/**
+ * What a swatch's card shows besides its name and price, as one sentence for
+ * its input's description: orderability and what choosing it would change.
+ */
+function swatchDetails(option: CatalogOption, changes: { spoken: string }[]): string | null {
+  const parts = [
+    ...(option.orderability !== "orderable_now" ? [orderabilityLabel(option)] : []),
+    ...changes.map((change) => change.spoken),
+  ];
+  if (parts.length === 0) return null;
+  const sentence = parts.join(", ");
+  return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
 }
 
 function describeAlternative(
@@ -321,7 +351,7 @@ function OptionVisual({ groupId, option, selected }: { groupId: string; option: 
   if (groupId === "towing") {
     return (
       <span className="config-option__capability" aria-hidden="true">
-        {selected ? <Check /> : <Route />}
+        {selected ? <Check /> : <Plus />}
       </span>
     );
   }
@@ -353,41 +383,71 @@ function ConfigurationGroup({
 }: ConfigurationGroupProps) {
   const activeIds = selectedIds(result, group.id);
   const isTowing = group.id === "towing";
+  const isBuild = group.id === "build";
+  const swatches = SWATCH_GROUPS.has(group.id);
   const orderedOptions = isTowing
     ? [...options].sort((a, b) => Number(!projections.get(a.id)?.candidate.valid) - Number(!projections.get(b.id)?.candidate.valid))
     : options;
-  const selectedLabel = options.filter((option) => activeIds.includes(option.id))
+  const selectedOptions = options.filter((option) => activeIds.includes(option.id));
+  const current = selectedOptions[0];
+  const selectedLabel = selectedOptions
     .map((option) => isTowing ? `Tow package · ${optionPrice(option)}` : trimBuildLabel(option.label)).join(", ") || "None";
+  const intro = groupIntro(group.id);
+  const introId = `${fieldsetId}-intro`;
+  const range = valueAsNumber(result.specs.range_mi);
   return (
-    <fieldset className={joinClassNames("config-group", `config-group--${group.id}`)} aria-label={group.label} aria-describedby={expanded ? `${fieldsetId}-intro` : undefined}>
+    <fieldset className={joinClassNames("config-group", `config-group--${group.id}`)}
+      data-layout={swatches ? "swatches" : "cards"} aria-label={group.label}
+      aria-describedby={expanded && intro ? introId : undefined}>
       <legend>
         {collapsible ? (
           <button className="config-group__toggle" type="button" aria-label={`${group.label} options`}
             aria-expanded={expanded} aria-controls={`${fieldsetId}-choices`} onClick={onToggle}>
-            <span className="config-group__number" aria-hidden="true" />
             <span><strong>{group.label}</strong><small>{selectedLabel}</small></span>
             <ChevronDown aria-hidden="true" />
           </button>
-        ) : <>
-        <span className="config-group__number" aria-hidden="true" />
-        <span>{group.label}</span>
-        </>}
+        ) : <span>{group.label}</span>}
       </legend>
       <div id={`${fieldsetId}-choices`} hidden={collapsible && !expanded}>
-      <p id={`${fieldsetId}-intro`} className="config-group__intro">
-        {groupIntro(group.id)}
-      </p>
+      {swatches && current && (
+        // The reference heading row: the chosen name on the left, its price on the right.
+        <p className="config-group__current">
+          <span>
+            {current.label}
+            {current.orderability !== "orderable_now" && (
+              <small className="config-group__current-orderability" data-orderability={current.orderability}>
+                {orderabilityLabel(current)}
+              </small>
+            )}
+          </span>
+          <span className="config-group__current-price">
+            {current.price.confidence === "estimated" && <abbr title="Estimated">Est.</abbr>}
+            {optionPrice(current)}
+          </span>
+        </p>
+      )}
+      {intro && <p id={introId} className="config-group__intro">{intro}</p>}
       <div className="config-group__options">
         {orderedOptions.map((option) => {
           const selected = activeIds.includes(option.id);
           const projection = projections.get(option.id);
-          const impacts = projection && !selected && !isTowing ? impactLabel(projection) : [];
+          const ownWindow = isBuild ? option.delivery?.window : undefined;
+          const changes = projection && !selected && !isTowing ? impacts(projection, ownWindow) : [];
+          const impactTexts = changes.map((change) => change.text);
+          // A swatch's card is hover-only on a mouse, so its input also
+          // carries the card's orderability and impacts as a description.
+          const details = swatches ? swatchDetails(option, changes) : null;
+          const detailsId = `${fieldsetId}-${option.id}-details`;
           const otherBuild = isTowing && !selected && !projection?.candidate.valid;
           const launchPackage = option.id === "towing.launch_included";
           const towingNote = launchPackage
             ? otherBuild ? "Requires Performance with Launch Package." : "Included with your Performance Launch Package."
             : otherBuild ? "Requires Standard or Premium. Availability unconfirmed." : "Availability unconfirmed.";
           const description = isTowing ? "Hitch + towing software" : option.copy?.short;
+          // A trim card shows its description once chosen; the others keep it
+          // for screen readers so the stack stays one compact card per trim.
+          const descriptionId = `${fieldsetId}-${option.id}-description`;
+          const descriptionVisible = !isBuild || selected;
           // One price per choice: a valid alternative previews the actual total
           // change; a selected or paired-change choice retains its catalog quote.
           const comparesCurrent = !isTowing && !selected && projection?.candidate.valid;
@@ -403,6 +463,18 @@ function ConfigurationGroup({
               activeIds.includes(current.id) && current.price.confidence === "estimated"
               && !projection.candidate.selections[group.id]?.includes(current.id)));
           const accessiblePrice = `${hasEstimate ? "Estimated " : ""}${priceLabel}${priceBasis ? ` ${priceBasis}` : ""}`;
+          const describedBy = isTowing
+            ? `${fieldsetId}-${option.id}-eligibility`
+            : isBuild && description && !descriptionVisible ? descriptionId
+              : details ? detailsId : undefined;
+          const meta = !isTowing && (option.orderability !== "orderable_now" || impactTexts.length > 0) && <span className="config-option__meta">
+            {option.orderability !== "orderable_now" && <span data-orderability={option.orderability}>{orderabilityLabel(option)}</span>}
+            {impactTexts.map((impact) => (
+              <span key={impact} className="config-option__impact">
+                {impact}
+              </span>
+            ))}
+          </span>;
           return (
             <label
               className="config-option"
@@ -419,38 +491,58 @@ function ConfigurationGroup({
                 checked={selected}
                 onChange={() => onChoose(group, option)}
                 aria-label={`${option.label}, ${accessiblePrice}`}
-                aria-describedby={isTowing ? `${fieldsetId}-${option.id}-eligibility` : undefined}
+                aria-describedby={describedBy}
               />
               <OptionVisual groupId={group.id} option={option} selected={selected} />
+              {details && <span id={detailsId} className="config-sr-only" aria-hidden="true">{details}</span>}
+              {/* On a swatch this body is a hover card with a mouse, and a
+                  row of the list under the swatches on touch or while the
+                  keyboard is in the row. */}
               <span className="config-option__body">
+                {swatches && (
+                  <span className="config-option__mini" aria-hidden="true">
+                    <OptionVisual groupId={group.id} option={option} selected={false} />
+                  </span>
+                )}
                 {otherBuild && <span className="config-option__other-builds">Other builds</span>}
                 <span className="config-option__heading">
-                  <strong>{isTowing ? "Tow package" : group.id === "build" ? trimBuildLabel(option.label) : option.label}</strong>
+                  <strong>{isTowing ? "Tow package" : isBuild ? trimBuildLabel(option.label) : option.label}</strong>
                   <span className="config-option__price">
                     {hasEstimate && <abbr title="Estimated">Est.</abbr>}
                     <span className="config-option__amount">{priceLabel}</span>
                     {priceBasis && <small className="config-option__price-basis">{priceBasis}</small>}
                   </span>
                 </span>
-                {description && <span className="config-option__description">{description}</span>}
+                {description && !swatches && (
+                  <span className={descriptionVisible ? "config-option__description" : "config-option__description config-sr-only"}
+                    id={descriptionVisible ? undefined : descriptionId}>{description}</span>
+                )}
                 {isTowing && <span className="config-option__eligibility" id={`${fieldsetId}-${option.id}-eligibility`}>{towingNote}</span>}
                 {otherBuild && <span className="config-option__explore">View compatible build</span>}
-                {!isTowing && (option.orderability !== "orderable_now" || impacts.length > 0) && <span className="config-option__meta">
-                  {option.orderability !== "orderable_now" && <span data-orderability={option.orderability}>{orderabilityLabel(option)}</span>}
-                  {impacts.map((impact) => (
-                    <span key={impact} className="config-option__impact">
-                      {impact}
+                {!isBuild && meta}
+              </span>
+              {isBuild && (
+                <span className="config-option__side">
+                  {option.delivery && (
+                    <span className="config-option__availability" data-now={option.delivery.window === AVAILABLE_NOW || undefined}>
+                      {availabilityLabel(option.delivery.window)}
                     </span>
-                  ))}
-                </span>}
-              </span>
-              <span className="config-option__check" aria-hidden="true">
-                {selected ? <Check /> : <ChevronRight />}
-              </span>
+                  )}
+                  {meta}
+                </span>
+              )}
             </label>
           );
         })}
       </div>
+      {swatches && current?.copy?.short && <p className="config-group__note">{current.copy.short}</p>}
+      {group.id === "wheels" && (
+        // Wheels change the real range, so the section states it, as the reference does.
+        <p className="config-group__range">
+          <span>Est. range</span>
+          <strong>{range === null ? "Pending" : `${range} mi`}</strong>
+        </p>
+      )}
       </div>
     </fieldset>
   );
@@ -675,7 +767,6 @@ export function VehicleConfigurator({
   onBuyerContextChange,
   onInvalidSelection,
   onReviewBuild,
-  onViewVehicle,
   className,
 }: VehicleConfiguratorProps) {
   const instanceId = useId().replace(/:/g, "");
@@ -790,31 +881,37 @@ export function VehicleConfigurator({
   const selectedBuild = catalog.options.find((option) => option.id === result.selections.build?.[0]);
   const warnings = result.violations.filter((violation) => violation.severity === "warning");
 
+  const deliveryWindow = result.delivery?.window ?? null;
+
   return (
     <section className={joinClassNames("uvc-configurator", className)} aria-label="Configure Hudian RX2">
-      <header className="configurator-head">
-        <div className="configurator-head__model">
-          <span>Configure</span>
-          <h2>{catalog.product.model}</h2>
-          <p>{selectedBuild ? trimBuildLabel(selectedBuild.label) : catalog.product.body}</p>
-        </div>
-        <div className="configurator-head__specs" aria-label="Current build specifications">
-          <div>
-            <strong>{range === null ? "—" : `${range}`}</strong>
-            <span>mi range</span>
-          </div>
-          <div>
-            <strong>{zeroToSixty === null ? "—" : number.format(zeroToSixty)}</strong>
-            <span>sec 0–60</span>
-          </div>
-          <div>
-            <strong>{horsepower === null ? "—" : horsepower}</strong>
-            <span>horsepower</span>
-          </div>
-        </div>
-      </header>
-
       <div className="configurator-scroll">
+        {/* The head scrolls with the choices; only the review footer stays put. */}
+        <header className="configurator-head">
+          <div className="configurator-head__model">
+            <h2>{catalog.product.model}</h2>
+            <p>{selectedBuild ? trimBuildLabel(selectedBuild.label) : catalog.product.body}</p>
+          </div>
+          <div className="configurator-head__specs" aria-label="Current build specifications">
+            <div>
+              <strong>{range === null ? "—" : `${range} mi`}</strong>
+              <span>Est. range</span>
+            </div>
+            <div>
+              <strong>{zeroToSixty === null ? "—" : `${number.format(zeroToSixty)} sec`}</strong>
+              <span>0–60 mph</span>
+            </div>
+            <div>
+              <strong>{horsepower === null ? "—" : horsepower}</strong>
+              <span>hp</span>
+            </div>
+          </div>
+          <p className="configurator-head__price">
+            <span>{usd.format(result.price.vehicleTotal)}</span>
+            <small>Vehicle total · includes destination</small>
+          </p>
+        </header>
+
         {activeBlocked && activeBlocked.option.group !== "towing" && (
           <CompatibilityGuide
             blocked={activeBlocked}
@@ -824,10 +921,10 @@ export function VehicleConfigurator({
           />
         )}
 
-        {catalog.groups.map((group, groupIndex) => {
+        {catalog.groups.map((group) => {
           const options = catalog.options.filter((option) => option.group === group.id);
           return (
-            <div className="config-group-wrap" key={group.id} style={{ "--group-number": `"${String(groupIndex + 1).padStart(2, "0")}"` } as React.CSSProperties}>
+            <div className="config-group-wrap" key={group.id}>
               <ConfigurationGroup
                 group={group}
                 options={options}
@@ -871,21 +968,15 @@ export function VehicleConfigurator({
       </div>
 
       <footer className="configurator-total" aria-label="Current build summary">
-        <div className="configurator-total__consequences">
-          {onViewVehicle && <button className="configurator-total__preview" type="button" onClick={onViewVehicle}>View vehicle</button>}
-          <span>
-            <CircleGauge aria-hidden="true" />
-            {range === null ? "Range pending" : `${range} mi estimated range`}
-          </span>
-          <span>
-            <Clock3 aria-hidden="true" />
-            {result.delivery?.window ?? "Timing to be confirmed"}
-          </span>
-        </div>
         <div className="configurator-total__price">
-          <span>
+          <span className="configurator-total__figure">
             <small>Vehicle total</small>
-            <strong>{usd.format(result.price.vehicleTotal)}</strong>
+            <span className="configurator-total__line">
+              <strong>{usd.format(result.price.vehicleTotal)}</strong>
+              <span className="configurator-total__delivery" data-now={deliveryWindow === AVAILABLE_NOW || undefined}>
+                {deliveryWindow ?? "Timing to be confirmed"}
+              </span>
+            </span>
           </span>
           <button
             type="button"
